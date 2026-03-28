@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Vape Markets | VapeStockHub',
-  description: 'Browse wholesale vape inventory by target market and region.',
+  title: 'Vape Inventory by Market | VapeStockHub',
+  description: 'Find active wholesale vape inventory by target market and region, then move directly into market-specific stock discovery.',
 }
 
 export default function MarketIndexPage() {
@@ -17,10 +17,10 @@ export default function MarketIndexPage() {
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Browse by <span className="text-teal-DEFAULT">Market</span>
+          Find Inventory by <span className="text-teal-DEFAULT">Target Market</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Select a region to find wholesale inventory ready for dispatch to your specific target market.
+          Select a region to explore active wholesale stock aligned with your destination market, warehouse path, and current sourcing priorities.
         </p>
       </div>
 

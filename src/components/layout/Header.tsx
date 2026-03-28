@@ -19,7 +19,7 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
           <Link href="/inventory" className="text-sm font-medium text-muted hover:text-foreground transition-colors">
-            All Inventory
+            Inventory
           </Link>
           <Link href="/market" className="text-sm font-medium text-muted hover:text-foreground transition-colors">
             Markets
@@ -28,7 +28,7 @@ export default function Header() {
             Brands
           </Link>
           <Link href="/price" className="text-sm font-medium text-teal-DEFAULT hover:text-teal-hover transition-colors">
-            Hot Deals
+            Price Range
           </Link>
         </nav>
 
@@ -42,13 +42,13 @@ export default function Header() {
             })}
             className="text-sm font-medium text-foreground hover:text-teal-DEFAULT transition-colors hidden sm:block"
           >
-            Support
+            Telegram
           </a>
           <Link 
             href="/inventory"
             className="text-sm font-medium bg-surface border border-border px-4 py-2 rounded-lg hover:bg-border transition-colors"
           >
-            Browse
+            Browse Inventory
           </Link>
         </div>
       </div>

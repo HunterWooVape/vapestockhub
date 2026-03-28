@@ -19,12 +19,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   return {
     title: `${brandName} Wholesale Vape Inventory | VapeStockHub`,
-    description: `Find verified wholesale suppliers and clearance stock for ${brandName} disposable vapes.`,
+    description: `Browse active wholesale listings for ${brandName}, including bulk offers, clearance stock, and inquiry-ready inventory from verified supply sources.`,
     alternates: {
       canonical: `${siteConfig.url}/brand/${resolvedParams.slug}`,
     },
     robots: {
-      index: (count ?? 0) >= 2,
+      index: (count ?? 0) >= 3,
       follow: true,
     },
   }
@@ -52,16 +52,19 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Inventory
+          Wholesale <span className="text-teal-DEFAULT">{brandName}</span> Inventory
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Explore our verified network of suppliers offering {brandName} products at wholesale prices.
+          Browse active wholesale listings for {brandName}, including bulk offers, clearance stock, and inquiry-ready inventory that can move quickly into direct sourcing conversations.
         </p>
       </div>
 
       <div>
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
-          <h2 className="text-2xl font-bold">{inventory?.length || 0} Products Available</h2>
+          <div>
+            <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
+            <p className="text-sm text-muted mt-1">Use this brand inventory hub to compare current stock and move into product-level inquiry.</p>
+          </div>
         </div>
 
         {items.length > 0 ? (
@@ -73,9 +76,9 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         ) : (
           <div className="text-center py-20 bg-surface rounded-xl border border-border">
             <h3 className="text-lg font-bold mb-2">No inventory currently available</h3>
-            <p className="text-muted mb-6">Check back soon for new {brandName} stock.</p>
+            <p className="text-muted mb-6">Check back soon for new active {brandName} stock and wholesale listings.</p>
             <Link href="/inventory" className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
-              View All Brands
+              View All Inventory
             </Link>
           </div>
         )}

@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Clearance & Wholesale Deals | VapeStockHub',
-  description: 'Find the best wholesale vape deals and clearance stock sorted by price.',
+  title: 'Vape Inventory by Price Range | VapeStockHub',
+  description: 'Browse active wholesale vape inventory by price range and move directly into budget-aligned stock discovery.',
 }
 
 export default function PriceIndexPage() {
@@ -18,10 +18,10 @@ export default function PriceIndexPage() {
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-DEFAULT/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 relative z-10">
-          Browse by <span className="text-teal-DEFAULT">Price & Deals</span>
+          Find Inventory by <span className="text-teal-DEFAULT">Price Range</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto relative z-10">
-          Maximize your margins. Browse our inventory categorized by unit price to find the perfect deals for your budget.
+          Browse active wholesale inventory by unit price so you can quickly focus on clearance and budget-aligned stock for your sourcing target.
         </p>
       </div>
 

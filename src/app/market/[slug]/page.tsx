@@ -18,13 +18,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .ilike('market', `%${marketName}%`)
   
   return {
-    title: `Wholesale Vape Inventory in ${marketName} | VapeStockHub`,
-    description: `Find verified wholesale vape suppliers and clearance stock available for the ${marketName} market.`,
+    title: `Wholesale Vape Inventory for ${marketName} | VapeStockHub`,
+    description: `Browse active wholesale vape stock suitable for the ${marketName} market, including verified listings, bulk offers, and clearance opportunities ready for inquiry.`,
     alternates: {
       canonical: `${siteConfig.url}/market/${resolvedParams.slug}`,
     },
     robots: {
-      index: (count ?? 0) >= 2,
+      index: (count ?? 0) >= 3,
       follow: true,
     },
   }
@@ -52,16 +52,19 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Vape Inventory for <span className="text-teal-DEFAULT">{marketName}</span>
+          Wholesale Vape Inventory for <span className="text-teal-DEFAULT">{marketName}</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Verified suppliers and wholesale stock ready to dispatch to {marketName}.
+          Explore active wholesale stock suitable for buyers targeting {marketName}. Compare listings by brand, quantity, price visibility, and warehouse availability before sending your inquiry.
         </p>
       </div>
 
       <div>
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
-          <h2 className="text-2xl font-bold">{inventory?.length || 0} Products Available</h2>
+          <div>
+            <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
+            <p className="text-sm text-muted mt-1">Use this regional inventory hub to move from target market research into product-level inquiry.</p>
+          </div>
         </div>
 
         {items.length > 0 ? (
@@ -73,7 +76,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
         ) : (
           <div className="text-center py-20 bg-surface rounded-xl border border-border">
             <h3 className="text-lg font-bold mb-2">No inventory currently available</h3>
-            <p className="text-muted mb-6">Check back soon for new stock targeting {marketName}.</p>
+            <p className="text-muted mb-6">Check back soon for new active stock aligned with the {marketName} market.</p>
             <Link href="/inventory" className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
               View All Global Inventory
             </Link>

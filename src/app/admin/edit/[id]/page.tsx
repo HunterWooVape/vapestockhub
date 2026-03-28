@@ -6,7 +6,6 @@ import Link from 'next/link'
 import { adminSessionCookieName } from '@/lib/unlock'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { toSlug } from '@/lib/inventory'
 import DeleteButton from './DeleteButton'
 
 export const dynamic = 'force-dynamic'

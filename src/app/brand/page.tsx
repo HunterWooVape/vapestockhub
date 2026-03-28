@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Vape Brands | VapeStockHub',
-  description: 'Browse wholesale vape inventory by top disposable vape brands.',
+  title: 'Vape Inventory by Brand | VapeStockHub',
+  description: 'Find active wholesale vape inventory by brand and move directly into brand-specific stock discovery.',
 }
 
 export default function BrandIndexPage() {
@@ -17,10 +17,10 @@ export default function BrandIndexPage() {
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Browse by <span className="text-teal-DEFAULT">Brand</span>
+          Find Inventory by <span className="text-teal-DEFAULT">Brand</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Explore our verified network of suppliers offering top vape brands at wholesale prices.
+          Explore active wholesale stock by brand and move quickly from brand preference into current inventory discovery.
         </p>
       </div>
 

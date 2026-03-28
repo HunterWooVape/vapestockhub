@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { getInventoryImageSrc } from '@/lib/inventory'
@@ -29,10 +30,13 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
       <Link href={`/inventory/${item.slug}`} className="flex flex-col h-full">
         {/* Image Section */}
         <div className="relative w-full h-48 bg-black/20 overflow-hidden">
-          <img
+          <Image
+            unoptimized
             src={getInventoryImageSrc(item.images)}
             alt={item.title}
-            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
           
           {/* Top Badges */}

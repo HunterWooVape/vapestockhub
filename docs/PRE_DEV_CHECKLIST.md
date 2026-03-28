@@ -47,7 +47,7 @@
 
 ## 5. SEO最小规则
 - 默认index页面：inventory、market、brand
-- 默认noindex页面：低库存 price 页面、低库存组合页面
+- 默认noindex页面：低库存 market / brand / price 页面、低库存组合页面、参数筛选页
 - 低库存阈值（触发noindex）：库存条数 < 3
 - canonical规则负责人：管理员（单人负责）
 

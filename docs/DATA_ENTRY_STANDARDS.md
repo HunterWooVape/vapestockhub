@@ -92,13 +92,115 @@
 - 若暂无真实图，可临时使用统一占位图。
 - `description` 保持英文短段落，说明库存特征、市场适配或交易信息，不写夸张营销文案。
 
-## 11. 上线前提醒
+## 11. title 与 slug 进阶要求
+- `title` 不只是展示字段，也会直接影响详情页 H1、SEO metadata 与询盘质量。
+- 推荐结构：
+  - 品牌 + 型号 + 关键规格 + 产品类型
+- 推荐示例：
+  - Vozol Star 10000 Disposable Vape
+  - Geek Bar Pulse 15000 Disposable
+  - Elf Bar BC5000 Rechargeable Disposable
+- 不推荐示例：
+  - Best Selling Vozol Vape Hot Deal
+  - Original Stock Available Now
+  - Cheap Disposable Vape for Sale
+- `slug` 必须稳定、可读、全小写，并与 `title` 主语义一致。
+- `slug` 不应包含：
+  - 时间戳
+  - 中文
+  - 空格
+  - 多余营销词
+
+## 12. description / manifest 进阶要求
+- `description` 不应只写一句泛描述，正式上线前建议至少覆盖以下信息中的 3-5 项：
+  - stock / inventory context
+  - available quantity or flavor split
+  - MOQ
+  - target market or suitable region
+  - warehouse or dispatch readiness
+  - transaction notes or inquiry hint
+- 推荐写法：
+  - 保留原始库存清单的可读性
+  - 使用英文短段落或英文 manifest
+  - 强调事实信息，不强调夸张营销
+- 不推荐写法：
+  - 只有一句空泛介绍
+  - 大量形容词堆叠
+  - 写成面向零售消费者的广告文案
+
+## 13. 正式上线前的发布门槛
+- 正式上线前，以下字段不建议缺失：
+  - title
+  - slug
+  - brand
+  - product_type
+  - price
+  - quantity
+  - moq
+  - market
+  - warehouse_location
+  - description
+  - images
+- 正式上线前，以下情况不建议直接发布为高优先级页面：
+  - 图片仍为占位图
+  - description 过短
+  - market 不在标准值范围内
+  - brand 写法不统一
+  - slug 结构不规范
+
+## 14. AI 辅助入库工作流原则
+- 推荐工作流：
+  - 供应商原始资料
+  - AI 提取字段
+  - AI 标准化映射
+  - AI 生成 admin 草稿
+  - 人工最终复核
+  - 发布上线
+- AI 适合负责：
+  - 去重
+  - 字段提取
+  - 品牌 / 市场 /单位标准化
+  - title 草稿生成
+  - description / manifest 清洗
+  - 缺失字段提示
+- 人工必须负责最终确认：
+  - price
+  - quantity
+  - market
+  - warehouse_location
+  - 图片有效性
+  - contact_visibility
+  - 是否立即发布
+- MVP 阶段不建议采用“AI 直接发布”模式。
+
+## 15. 对 admin 后台的约束升级方向
+- 当前 admin 可继续作为基础 CRUD 后台使用。
+- 正式上线前建议逐步增加以下能力：
+  - 标准值提示
+  - 固定选项或推荐选项
+  - 字段格式校验
+  - 过短 description 提示
+  - 占位图提示
+  - slug 规范提示
+- 推荐优先收敛为固定或半固定输入的字段：
+  - brand
+  - market
+  - product_type
+  - contact_visibility
+- 目标不是让 admin 变复杂，而是让 admin 成为可稳定生产 SEO 资产的后台。
+
+## 16. 上线前提醒
 - 当前阶段允许使用模拟数据验证页面和流程。
 - 正式部署前，必须替换为真实库存数据。
 - 正式部署前，需复核以下字段：
   - brand
+  - slug
+  - title
   - market
   - price
+  - quantity
+  - moq
   - warehouse_location
+  - description
   - images
   - contact_visibility

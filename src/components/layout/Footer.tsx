@@ -17,17 +17,17 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted max-w-sm">
-              The premier B2B marketplace for global vape inventory. Connecting verified suppliers with wholesale buyers worldwide.
+              A B2B inventory hub for global vape stock. Browse active wholesale listings by market, brand, and price range before moving into direct inquiry.
             </p>
           </div>
           
           <div>
             <h4 className="font-semibold mb-4">Quick Links</h4>
             <ul className="space-y-2 text-sm text-muted">
-              <li><Link href="/inventory" className="hover:text-foreground transition-colors">All Inventory</Link></li>
-              <li><Link href="/market" className="hover:text-foreground transition-colors">Browse by Market</Link></li>
-              <li><Link href="/brand" className="hover:text-foreground transition-colors">Browse by Brand</Link></li>
-              <li><Link href="/price" className="hover:text-foreground transition-colors">Browse by Price</Link></li>
+              <li><Link href="/inventory" className="hover:text-foreground transition-colors">Browse Inventory</Link></li>
+              <li><Link href="/market" className="hover:text-foreground transition-colors">Find by Market</Link></li>
+              <li><Link href="/brand" className="hover:text-foreground transition-colors">Find by Brand</Link></li>
+              <li><Link href="/price" className="hover:text-foreground transition-colors">Find by Price</Link></li>
               <li><Link href="/about" className="hover:text-foreground transition-colors">About</Link></li>
               <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
             </ul>

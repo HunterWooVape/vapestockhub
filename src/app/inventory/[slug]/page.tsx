@@ -1,36 +1,58 @@
 import { createClient } from '@/lib/supabase/server'
 import ContactButtons from '@/components/contact/ContactButtons'
-import { getInventoryImageSrc } from '@/lib/inventory'
+import { getInventoryImageSrc, InventoryRecord, toSlug } from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
 import { isPriceUnlocked, unlockedItemsCookieName } from '@/lib/unlock'
 import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import Image from 'next/image'
 import { Metadata } from 'next'
 import InventoryCard from '@/components/inventory/InventoryCard'
-import { InventoryRecord } from '@/lib/inventory'
+import { cache } from 'react'
 
 // Add cache control to ensure we get fresh data but don't overwhelm the DB
 export const revalidate = 3600 // revalidate every hour
 
+const getInventoryItem = cache(async (slug: string) => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('inventory')
+    .select('*')
+    .eq('slug', slug)
+    .single()
+
+  return (data ?? null) as InventoryRecord | null
+})
+
+function buildInventoryMetadataDescription(item: InventoryRecord) {
+  const summaryParts = [
+    `${item.brand} wholesale stock offer`,
+    `available for ${item.market}`,
+    `${item.quantity.toLocaleString()} pcs in stock`,
+    `MOQ ${item.moq.toLocaleString()} pcs`,
+    `warehouse ${item.warehouse_location}`,
+  ]
+
+  if (item.puff) {
+    summaryParts.splice(2, 0, `${item.puff.toLocaleString()} puffs`)
+  }
+
+  return `${summaryParts.join(', ')}.`
+}
+
 // Dynamically generate SEO metadata based on the inventory item
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
-  const supabase = await createClient()
-  
-  const { data: item } = await supabase
-    .from('inventory')
-    .select('title, brand, market, description')
-    .eq('slug', resolvedParams.slug)
-    .single()
+  const item = await getInventoryItem(resolvedParams.slug)
 
   if (!item) {
     return { title: 'Not Found | VapeStockHub' }
   }
 
   return {
-    title: `${item.title} Wholesale in ${item.market} | VapeStockHub`,
-    description: item.description || `Wholesale stock for ${item.title} by ${item.brand} available in ${item.market}.`,
+    title: `${item.title} Wholesale Stock | ${item.market} | VapeStockHub`,
+    description: buildInventoryMetadataDescription(item),
     alternates: {
       canonical: `${siteConfig.url}/inventory/${resolvedParams.slug}`,
     },
@@ -43,35 +65,26 @@ export default async function InventoryDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const resolvedParams = await params
-  const supabase = await createClient()
   const cookieStore = await cookies()
-  
-  const { data: item, error } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('slug', resolvedParams.slug)
-    .single()
+  const item = await getInventoryItem(resolvedParams.slug)
 
-  if (error || !item) {
+  if (!item) {
     notFound()
   }
+
+  const supabase = await createClient()
 
   const unlocked = item.contact_visibility === 'public'
     ? true
     : isPriceUnlocked(cookieStore.get(unlockedItemsCookieName)?.value, item.slug)
 
-  // FOMO random values (deterministic based on item ID so it doesn't flicker on re-render)
-  const charSum = item.id.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0)
-  const viewersCount = (charSum % 15) + 3 // 3 to 17 viewers
-  const inquiryCount = (charSum % 8) + 1  // 1 to 8 inquiries
   const isHot = item.is_featured || item.quantity < 5000
-
-  // Flavor Tags Logic
   const flavorList = item.flavor ? item.flavor.split(',').map((f: string) => f.trim()).filter(Boolean) : []
   const displayFlavors = flavorList.slice(0, 6)
   const extraFlavorsCount = flavorList.length - 6
+  const brandSlug = toSlug(item.brand)
+  const marketSlug = toSlug(item.market)
 
-  // Fetch Related Products (same brand or same market, excluding current item)
   const { data: relatedInventory } = await supabase
     .from('inventory')
     .select('*')
@@ -91,9 +104,9 @@ export default async function InventoryDetailPage({
           <span>/</span>
           <Link href="/inventory" className="hover:text-foreground transition-colors">Inventory</Link>
           <span>/</span>
-          <Link href={`/brand/${item.brand.toLowerCase().replace(/\s+/g, '-')}`} className="hover:text-teal-DEFAULT transition-colors font-medium">{item.brand}</Link>
+          <Link href={`/brand/${brandSlug}`} className="hover:text-teal-DEFAULT transition-colors font-medium">{item.brand}</Link>
         </div>
-        
+
         <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center flex-wrap gap-4">
           {item.title}
           {item.status === 'active' && (
@@ -107,23 +120,27 @@ export default async function InventoryDetailPage({
             </span>
           )}
         </h1>
+        <p className="text-muted mt-4 max-w-3xl">
+          Active wholesale stock offer for the {item.market} market with warehouse availability in {item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Left Column: Image & Details */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Main Image */}
           <div className="aspect-[4/3] bg-surface rounded-2xl border border-border overflow-hidden relative flex items-center justify-center">
-            <img
+            <Image
+              unoptimized
               src={getInventoryImageSrc(item.images)}
               alt={item.title}
-              className="object-cover w-full h-full"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 66vw"
+              className="object-cover"
             />
           </div>
 
-          {/* Specifications Grid */}
           <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
-            <h2 className="text-xl font-bold mb-6">Product Specifications</h2>
+            <h2 className="text-xl font-bold mb-6">Inventory Specifications</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
               <div>
                 <div className="text-sm text-muted mb-1">Brand</div>
@@ -153,7 +170,6 @@ export default async function InventoryDetailPage({
               )}
             </div>
 
-            {/* Flavor Tags Section */}
             {flavorList.length > 0 && (
               <div className="border-t border-border pt-6">
                 <div className="text-sm text-muted mb-3 flex items-center justify-between">
@@ -175,7 +191,6 @@ export default async function InventoryDetailPage({
             )}
           </div>
 
-          {/* Description / Inventory Manifest */}
           {item.description && (
             <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
               <h2 className="text-xl font-bold mb-4">Inventory Manifest & Details</h2>
@@ -188,17 +203,16 @@ export default async function InventoryDetailPage({
           )}
         </div>
 
-        {/* Right Column: Pricing & Contact (Sticky) */}
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
             <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
               {isHot && (
                 <div className="mb-6 flex items-center gap-3 text-sm font-medium text-orange-500 bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
-                  <span className="animate-pulse">👁️</span>
-                  <span>{viewersCount} buyers are viewing this deal right now.</span>
+                  <span>Hot</span>
+                  <span>Fast-moving stock. Send your inquiry early to confirm remaining availability.</span>
                 </div>
               )}
-              
+
               <div className="space-y-4">
                 <div>
                   <div className="text-sm text-muted mb-1">Available Quantity</div>
@@ -214,7 +228,7 @@ export default async function InventoryDetailPage({
                     {item.market} <span className="text-muted text-sm font-normal">({item.warehouse_location})</span>
                   </div>
                 </div>
-                
+
                 <div className="pt-4 border-t border-border">
                   <div className="text-sm text-muted mb-1">Wholesale Price</div>
                   {unlocked ? (
@@ -234,24 +248,18 @@ export default async function InventoryDetailPage({
                   sourcePageType="inventory"
                   sourcePageSlug={item.slug}
                   itemSlug={item.slug}
-                  primaryLabel={unlocked ? 'Request Better Offer via Telegram' : 'Unlock Price via Telegram'}
+                  primaryLabel={unlocked ? 'Request Availability via Telegram' : 'Unlock Price via Telegram'}
                   message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Market: ${item.market}). Could you share the wholesale price and availability?`}
                 />
-                
+
                 {!unlocked && (
                   <p className="text-xs text-center text-muted">
-                    We unlock the price after your contact request so you can continue browsing without logging in.
+                    We unlock pricing after your inquiry so active stock and current terms can be confirmed together.
                   </p>
                 )}
-                
-                {unlocked && inquiryCount > 0 && (
-                  <p className="text-xs text-center text-orange-500 font-medium">
-                    🔥 {inquiryCount} inquiries received in the last 24 hours. Inventory moves fast!
-                  </p>
-                )}
-                
+
                 <p className="text-xs text-center text-muted mt-4">
-                  Last verified: {new Date(item.last_verified_at).toLocaleDateString()}
+                  Last verified on {new Date(item.last_verified_at).toLocaleDateString()}
                 </p>
               </div>
             </div>
@@ -259,15 +267,14 @@ export default async function InventoryDetailPage({
         </div>
       </div>
 
-      {/* Related Products Section */}
       {relatedItems.length > 0 && (
         <div className="mt-16 pt-16 border-t border-border">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-2xl font-bold">Similar Wholesale Deals</h2>
-              <p className="text-muted mt-1">Other stock available for {item.market} or from {item.brand}.</p>
+              <h2 className="text-2xl font-bold">Related Inventory</h2>
+              <p className="text-muted mt-1">Other active stock offers for the {item.market} market or from {item.brand}.</p>
             </div>
-            <Link href={`/inventory?market=${item.market.toLowerCase().replace(/\s+/g, '-')}`} className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
+            <Link href={`/market/${marketSlug}`} className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
               View All →
             </Link>
           </div>
