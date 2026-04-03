@@ -204,3 +204,42 @@
   - description
   - images
   - contact_visibility
+
+## 17. AI Draft Package 最小输出口径
+- AI 不直接输出“可发布库存”，而是输出一份 `AI Draft Package`。
+- 最小结构建议为：
+  - `rawInput`
+  - `normalizedFields`
+  - `missingFields`
+  - `riskFlags`
+  - `humanReviewFocus`
+- `rawInput` 至少保留：
+  - `sourceType`
+  - `supplierName`
+  - `submittedAt`
+  - `sourceLabel`
+  - `rawText`
+- `normalizedFields` 至少保留：
+  - `title`
+  - `slug`
+  - `brand`
+  - `product_type`
+  - `price`
+  - `quantity`
+  - `moq`
+  - `market`
+  - `warehouse_location`
+  - `nicotine`
+  - `puff`
+  - `e_liquid`
+  - `contact_visibility`
+  - `images`
+  - `flavor_tags`
+  - `flavor_breakdown`
+  - `description_summary`
+  - `manifest_notes`
+- admin 回填时：
+  - `description_summary` + `manifest_notes` 合并回填到 `description`
+  - `flavor_tags` 回填到 `flavor`
+  - 默认状态仍为 `draft`
+- `missingFields`、`riskFlags`、`humanReviewFocus` 的目标，是减少人工通读成本，而不是替代人工终审。

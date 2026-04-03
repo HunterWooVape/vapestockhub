@@ -15,7 +15,7 @@ export type InventoryRecord = {
   market: string
   warehouse_location: string
   images: string[] | null
-  status: 'active' | 'reserved' | 'sold' | 'expired'
+  status: 'draft' | 'active' | 'reserved' | 'sold' | 'expired'
   contact_visibility: 'public' | 'contact_required'
   is_featured: boolean | null
   is_urgent_clearance: boolean | null
