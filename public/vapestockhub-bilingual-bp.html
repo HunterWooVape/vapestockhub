@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>VapeStockHub | Bilingual BP</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --surface: #111827;
+      --surface-2: #0f1722;
+      --border: #1f2937;
+      --text: #f3f4f6;
+      --muted: #94a3b8;
+      --accent: #22c7a9;
+      --accent-soft: rgba(34, 199, 169, 0.12);
+      --danger: #fb7185;
+      --warning: #f59e0b;
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+      --max: 1200px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top right, rgba(34, 199, 169, 0.16), transparent 26%),
+        radial-gradient(circle at top left, rgba(14, 165, 233, 0.08), transparent 22%),
+        var(--bg);
+      line-height: 1.6;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      width: min(100%, var(--max));
+      margin: 0 auto;
+      padding: 32px 20px 80px;
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(34, 199, 169, 0.24), rgba(34, 199, 169, 0.06));
+      border: 1px solid rgba(34, 199, 169, 0.35);
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      box-shadow: var(--shadow);
+    }
+
+    .nav-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .nav-links a {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--muted);
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .hero {
+      padding: 36px;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      background: linear-gradient(180deg, rgba(17, 24, 39, 0.92), rgba(11, 15, 20, 0.96));
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: -120px;
+      right: -80px;
+      width: 300px;
+      height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(34, 199, 169, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      border: 1px solid rgba(34, 199, 169, 0.26);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .headline {
+      font-size: clamp(36px, 5vw, 64px);
+      line-height: 1.04;
+      letter-spacing: -0.04em;
+      margin-bottom: 18px;
+      max-width: 900px;
+    }
+
+    .headline span {
+      color: var(--accent);
+    }
+
+    .hero-copy {
+      color: var(--muted);
+      font-size: 16px;
+      max-width: 860px;
+    }
+
+    .dual {
+      display: grid;
+      gap: 10px;
+    }
+
+    .dual .cn {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .dual .en {
+      color: var(--muted);
+    }
+
+    .hero-aside {
+      display: grid;
+      gap: 14px;
+      align-content: start;
+    }
+
+    .mini-card,
+    .card,
+    .metric,
+    .quote,
+    .source,
+    .timeline-item {
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      border-radius: 22px;
+    }
+
+    .mini-card {
+      padding: 18px;
+    }
+
+    .mini-card strong {
+      display: block;
+      color: var(--accent);
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    .mini-card span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .hero-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .hero-tags span {
+      padding: 9px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      color: #cbd5e1;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    section {
+      margin-top: 28px;
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: clamp(24px, 3vw, 34px);
+      letter-spacing: -0.03em;
+    }
+
+    .section-subtitle {
+      color: var(--muted);
+      max-width: 720px;
+      font-size: 14px;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-4 {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-4 {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .card {
+      padding: 22px;
+    }
+
+    .card h3 {
+      font-size: 19px;
+      margin-bottom: 12px;
+    }
+
+    .card ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      display: grid;
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 22px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .metric strong {
+      font-size: 32px;
+      line-height: 1;
+      color: var(--accent);
+    }
+
+    .metric small {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .metric .caption {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .quote {
+      padding: 22px;
+      display: grid;
+      gap: 12px;
+      background: linear-gradient(180deg, rgba(34, 199, 169, 0.08), rgba(255, 255, 255, 0.02));
+    }
+
+    .quote p {
+      color: var(--text);
+      font-size: 18px;
+    }
+
+    .quote span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .timeline-item {
+      padding: 18px 20px;
+      display: grid;
+      grid-template-columns: 110px 1fr;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .timeline-item strong {
+      color: var(--accent);
+    }
+
+    .timeline-item .body {
+      color: var(--muted);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .table th,
+    .table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    .table th {
+      color: var(--text);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .table td {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      color: var(--text);
+      border: 1px solid rgba(34, 199, 169, 0.22);
+      background: rgba(34, 199, 169, 0.1);
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+
+    .danger {
+      color: var(--danger);
+    }
+
+    .warning {
+      color: var(--warning);
+    }
+
+    .source-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .source {
+      padding: 16px 18px;
+    }
+
+    .source strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .source span {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .footer-note {
+      margin-top: 22px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1024px) {
+      .hero-grid,
+      .grid-4,
+      .grid-3,
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .shell {
+        padding: 20px 14px 56px;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+
+      .timeline-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div class="nav">
+      <div class="brand">
+        <div class="brand-mark">VS</div>
+        <div>VapeStockHub</div>
+      </div>
+      <div class="nav-links">
+        <a href="#opportunity">Opportunity</a>
+        <a href="#solution">Solution</a>
+        <a href="#model">Business Model</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="#sources">Sources</a>
+      </div>
+    </div>
+
+    <header class="hero">
+      <div class="eyebrow">Bilingual Business Plan · 中英双语商业计划书</div>
+      <div class="hero-grid">
+        <div>
+          <h1 class="headline">The <span>B2B inventory infrastructure</span> layer for a fragmented global vape trade.</h1>
+          <div class="dual">
+            <div class="cn">VapeStockHub 不是再做一个零售商城，而是在做全球电子烟现货交易链路中的“库存可见性 + 询盘路由 + 数据标准化”基础设施。</div>
+            <div class="en">VapeStockHub is not another retail storefront. It is building the inventory visibility, inquiry routing, and data standardization layer for the global vape stock trade.</div>
+          </div>
+          <div class="hero-tags">
+            <span>Global B2B Vape Inventory</span>
+            <span>Lead Generation First</span>
+            <span>SEO + AI Ingestion</span>
+            <span>Market / Brand / Price Intelligence</span>
+          </div>
+        </div>
+        <div class="hero-aside">
+          <div class="mini-card">
+            <strong>USD 45.74B</strong>
+            <span>Global e-cigarette and vape market size in 2025, according to Grand View Research.</span>
+          </div>
+          <div class="mini-card">
+            <strong>61%</strong>
+            <span>Gartner reported that 61% of B2B buyers prefer a rep-free buying experience in 2025.</span>
+          </div>
+          <div class="mini-card">
+            <strong>Draft-first</strong>
+            <span>Operational model: AI-assisted ingestion, admin review, then publish — never auto-publish.</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section id="opportunity">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Opportunity</h2>
+          <p class="section-subtitle">Why the market is large enough, digital enough, and fragmented enough for a focused B2B inventory layer.</p>
+        </div>
+      </div>
+      <div class="grid-4">
+        <div class="metric">
+          <strong>USD 45.74B</strong>
+          <div class="caption">Global market size</div>
+          <small>Grand View Research estimates the global e-cigarette and vape market at USD 45.74 billion in 2025.</small>
+        </div>
+        <div class="metric">
+          <strong>34.1%</strong>
+          <div class="caption">Forecast CAGR</div>
+          <small>Projected CAGR from 2026 to 2033 according to Grand View Research.</small>
+        </div>
+        <div class="metric">
+          <strong>43.5%</strong>
+          <div class="caption">North America share</div>
+          <small>North America accounted for 43.5% of the market in 2025, while Asia Pacific was the fastest-growing region.</small>
+        </div>
+        <div class="metric">
+          <strong>80.9%</strong>
+          <div class="caption">Retail still dominates</div>
+          <small>Retail stores led distribution in 2025, while online was the fastest-growing channel — a signal that digital discovery is underbuilt, not overbuilt.</small>
+        </div>
+      </div>
+      <div class="grid-2" style="margin-top: 16px;">
+        <div class="quote">
+          <p>中国供应侧强、区域需求侧碎片化、监管口径多变，导致“货在、信息不在；买家在、可信线索不在”。</p>
+          <span>The core market gap is not product scarcity. It is inventory opacity, fragmented channels, and weak trust infrastructure.</span>
+        </div>
+        <div class="quote">
+          <p>Digital-first B2B buying is already the norm, but inventory discovery in this category is still highly manual and relationship-driven.</p>
+          <span>That creates room for a lead-generation marketplace before building full transaction rails.</span>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Pain Points</h2>
+          <p class="section-subtitle">What breaks today in the cross-border vape stock workflow.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Supply is invisible</h3>
+          <ul>
+            <li>Inventory lives in WhatsApp chats, spreadsheets, Telegram threads, and inconsistent PDFs.</li>
+            <li>Buyers cannot compare by market, brand, or price range without manual back-and-forth.</li>
+            <li>Search traffic has nowhere structured to land.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data is messy</h3>
+          <ul>
+            <li>Brand naming, market labels, flavor lists, quantities, and warehouse data are inconsistent.</li>
+            <li>Descriptions are often raw manifests, not usable B2B pages.</li>
+            <li>Human operators spend too much time cleaning instead of closing.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Trust is expensive</h3>
+          <ul>
+            <li>Buyers want fast digital discovery, but still need confidence before making contact.</li>
+            <li>Suppliers want leads, but do not want heavy onboarding or complex systems.</li>
+            <li>Regulatory fragmentation increases the penalty for vague or outdated listings.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="solution">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Solution</h2>
+          <p class="section-subtitle">A lead-generation marketplace built around inventory visibility, not cart checkout.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>What VapeStockHub does</h3>
+          <ul>
+            <li>Publishes active wholesale inventory pages optimized by market, brand, and price band.</li>
+            <li>Routes inquiries into Telegram and WhatsApp with structured context.</li>
+            <li>Turns messy supplier material into structured draft inventory using AI Draft Packages.</li>
+            <li>Lets a single operator control quality through draft status, blocker rules, and review workflows.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>为什么这种切法更对</h3>
+          <ul>
+            <li>先做“信息 + 询盘”闭环，比直接做交易闭环更轻、更快验证市场。</li>
+            <li>先拿下高价值流量入口，再决定是否扩到支付、履约、卖家系统。</li>
+            <li>用 SEO 页面承接自然搜索，用私域承接询盘，成本结构明显优于重销售团队。</li>
+            <li>用 AI 解决录入效率问题，用人工解决真实性与发布边界问题。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Why Now</h2>
+          <p class="section-subtitle">Multiple trend lines are converging in favor of a structured B2B inventory layer.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Market growth + format shift</h3>
+          <ul>
+            <li>Grand View Research projects strong category expansion into 2033.</li>
+            <li>Rechargeable devices already held the largest product share in 2025, while online distribution is the fastest-growing channel.</li>
+            <li>This favors searchable, structured inventory rather than only offline relationship selling.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Buyer behavior is digital-first</h3>
+          <ul>
+            <li>Gartner reported in 2025 that 61% of B2B buyers prefer a rep-free buying experience.</li>
+            <li>TrustRadius reported in 2024 that 78% of buyers shortlisted products they had heard of before research began.</li>
+            <li>Discovery, visibility, and brand presence now influence the shortlist before the first human conversation.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Regulation is fragmenting the field</h3>
+          <ul>
+            <li>The UK banned single-use vapes from 1 June 2025, accelerating shifts in assortment and compliance.</li>
+            <li>Regulatory fragmentation increases demand for better categorization, cleaner stock data, and market-specific positioning.</li>
+            <li>Opaque inventory becomes more costly when product formats and rules change quickly.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="model">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Business Model</h2>
+          <p class="section-subtitle">Monetization is staged: lead generation first, operating leverage second, data services later.</p>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Revenue Logic</th>
+            <th>What Partners/Investors Should Notice</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>MVP</strong></td>
+            <td>Qualified inquiry routing, featured inventory placement, managed lead delivery.</td>
+            <td>Low product complexity, fast time-to-market, direct signal on demand quality.</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 2</strong></td>
+            <td>Supplier subscription for premium visibility, faster listing service, structured inventory operations.</td>
+            <td>Recurring revenue becomes possible without needing checkout or payments.</td>
+          </tr>
+          <tr>
+            <td><strong>Phase 3</strong></td>
+            <td>Market intelligence, inventory data services, category reports, managed sourcing workflows.</td>
+            <td>Data network effects improve retention and margin quality over time.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Product Architecture</h2>
+          <p class="section-subtitle">Built for a single-operator MVP today, but deliberately compatible with a larger data pipeline later.</p>
+        </div>
+      </div>
+      <div class="grid-4">
+        <div class="card">
+          <h3>SEO Layer</h3>
+          <ul>
+            <li>Homepage</li>
+            <li>Inventory index</li>
+            <li>Inventory detail</li>
+            <li>Market / Brand / Price pages</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Lead Layer</h3>
+          <ul>
+            <li>Telegram / WhatsApp routing</li>
+            <li>Auto-filled context</li>
+            <li>Source page attribution</li>
+            <li>Inquiry-first UX</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Data Layer</h3>
+          <ul>
+            <li>Draft-first admin flow</li>
+            <li>Publish blocker rules</li>
+            <li>Supplier template intake</li>
+            <li>Structured inventory normalization</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>AI Layer</h3>
+          <ul>
+            <li>AI Draft Package schema</li>
+            <li>Prompt asset v1</li>
+            <li>JSON import to draft</li>
+            <li>Human review before publish</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Go-To-Market</h2>
+          <p class="section-subtitle">Focus on the highest-signal workflow: searchable stock pages + direct messaging conversion.</p>
+        </div>
+      </div>
+      <div class="timeline">
+        <div class="timeline-item">
+          <strong>Step 01</strong>
+          <div class="body">
+            <div class="cn">优先聚焦 2–3 个目标市场、3–5 个重点品牌，先把关键页面做成“有真实库存支撑的询盘入口”。</div>
+            <div class="en">Focus on 2–3 target markets and 3–5 priority brands, then support the highest-value pages with real inventory.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <strong>Step 02</strong>
+          <div class="body">
+            <div class="cn">通过 SEO 页面获取高意图搜索流量，而不是先烧广告。</div>
+            <div class="en">Acquire high-intent traffic through search-optimized inventory pages before scaling paid acquisition.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <strong>Step 03</strong>
+          <div class="body">
+            <div class="cn">把询盘直接路由到 Telegram / WhatsApp，缩短从发现到沟通的路径。</div>
+            <div class="en">Route inquiries directly into Telegram or WhatsApp to compress time from discovery to conversation.</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <strong>Step 04</strong>
+          <div class="body">
+            <div class="cn">用 AI + 单人后台快速扩充可发布库存，而不是先重投入做复杂卖家系统。</div>
+            <div class="en">Scale listing throughput through AI-assisted ingestion and a lightweight admin backend before building heavy seller software.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Why This Can Win</h2>
+          <p class="section-subtitle">The moat is not pure software. It is structured distribution plus operational intelligence.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Core advantages</h3>
+          <div>
+            <span class="pill">Search-indexed inventory surfaces</span>
+            <span class="pill">Category-specific semantics</span>
+            <span class="pill">AI ingestion workflow</span>
+            <span class="pill">Low-overhead admin operations</span>
+            <span class="pill">Supplier template standardization</span>
+            <span class="pill">Inquiry attribution feedback loop</span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Why incumbents are slow</h3>
+          <ul>
+            <li>Traditional wholesalers often depend on private relationships and manual messaging.</li>
+            <li>Generic B2B marketplaces lack category-specific inventory semantics and market pages.</li>
+            <li>Retail-style vape sites optimize for checkout, not cross-border inventory discovery.</li>
+            <li>Most players have data, but not clean, searchable, trust-building presentation.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Current Readiness</h2>
+          <p class="section-subtitle">The MVP is intentionally narrow, which is a strength, not a weakness.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <div class="card">
+          <h3>Already built</h3>
+          <ul>
+            <li>SEO page structure for inventory, market, brand, and price.</li>
+            <li>Admin draft-first publishing logic.</li>
+            <li>Publish blocker system and operator feedback loop.</li>
+            <li>AI Draft Package schema and JSON import route.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Now being validated</h3>
+          <ul>
+            <li>Prompt asset standardization.</li>
+            <li>Messy supplier sample dry-runs.</li>
+            <li>First-wave real inventory replacement strategy.</li>
+            <li>Soft launch readiness checklist.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>What this means</h3>
+          <ul>
+            <li>The business is at the right moment for pilot suppliers and strategic channel partners.</li>
+            <li>The model can prove demand quality before costly platform expansion.</li>
+            <li>Execution risk is being reduced in a disciplined sequence.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Roadmap</h2>
+          <p class="section-subtitle">A realistic path from MVP validation to a stronger operating system.</p>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Phase</th>
+            <th>Chinese</th>
+            <th>English</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Now</strong></td>
+            <td>完成真实数据接入准备、AI Draft Package 干跑、首批供应商试探。</td>
+            <td>Finish real-data intake preparation, AI Draft Package dry-runs, and first supplier outreach.</td>
+          </tr>
+          <tr>
+            <td><strong>Soft Launch</strong></td>
+            <td>用一批高质量真实库存撑住首页、列表页、重点市场页和若干详情页，验证询盘质量。</td>
+            <td>Use a high-quality first wave of real inventory to support the homepage, index, target market pages, and selected detail pages, then validate inquiry quality.</td>
+          </tr>
+          <tr>
+            <td><strong>Expansion</strong></td>
+            <td>扩充供应侧与页面覆盖，开始形成“品牌 + 市场 + 价格带”的组合搜索资产。</td>
+            <td>Expand supply-side coverage and page depth to build a defensible search asset across brand, market, and price combinations.</td>
+          </tr>
+          <tr>
+            <td><strong>Platformization</strong></td>
+            <td>在需求验证后，再考虑供应商自助、付费能力、数据服务与更深层 workflow。</td>
+            <td>Only after demand validation should the business expand into supplier self-service, paid tools, data services, and deeper workflows.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Partner / Investor Fit</h2>
+          <p class="section-subtitle">This is designed to be useful for both strategic partners and early-stage backers.</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <h3>For strategic partners</h3>
+          <ul>
+            <li>Get structured visibility for real inventory.</li>
+            <li>Receive better-context leads instead of low-signal cold messages.</li>
+            <li>Reduce manual data cleanup through standardized templates and AI ingestion.</li>
+            <li>Test market response by geography, brand, and price band without building your own media stack.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>For investors</h3>
+          <ul>
+            <li>Capital-efficient MVP focused on inquiry generation, not operationally heavy commerce.</li>
+            <li>A category with large market size, rapid format change, and information opacity.</li>
+            <li>Product path with measurable milestones: traffic, page-to-contact CTR, qualified leads, inventory coverage.</li>
+            <li>Potential to evolve from media-like distribution into workflow + data + supplier infrastructure.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Closing Message</h2>
+          <p class="section-subtitle">The company is deliberately starting where the market pain is sharpest and the feedback loop is fastest.</p>
+        </div>
+      </div>
+      <div class="quote">
+        <p>VapeStockHub aims to become the trusted inventory visibility layer between fragmented supply and high-intent global demand.</p>
+        <span>我们的策略不是先做大而全，而是先在“库存信息可见、询盘高效发生、数据可持续运营”这三个关键点上建立壁垒，再逐步向更深层的交易和数据服务延伸。</span>
+      </div>
+    </section>
+
+    <section id="sources">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">Selected Sources</h2>
+          <p class="section-subtitle">The following references informed the data points and market framing used in this document.</p>
+        </div>
+      </div>
+      <div class="source-list">
+        <div class="source">
+          <strong>Grand View Research, E-cigarette and Vape Market Summary</strong>
+          <span>Used for market size, CAGR, product share, regional share, and channel trends: USD 45.74B market size in 2025, 34.1% CAGR from 2026 to 2033, North America 43.5% share, retail stores 80.9% share, online as fastest-growing channel.</span>
+        </div>
+        <div class="source">
+          <strong>UK Government, “Single-use vapes banned from 1 June 2025”</strong>
+          <span>Used to support the thesis that regulation is reshaping assortments and pushing the market toward reusable and more compliant product structures.</span>
+        </div>
+        <div class="source">
+          <strong>Gartner Sales Survey press release, June 2025</strong>
+          <span>Used for the 61% statistic showing that B2B buyers increasingly prefer a rep-free buying experience.</span>
+        </div>
+        <div class="source">
+          <strong>TrustRadius 2024 B2B Buying Disconnect report summary</strong>
+          <span>Used for the idea that 78% of buyers shortlist brands they already know, reinforcing the importance of category visibility and search presence.</span>
+        </div>
+      </div>
+      <div class="footer-note">
+        This file is intended as a sharp early-stage business plan / partner deck narrative in HTML form. It is not a legal or financial forecast. Any future revenue assumptions should be refined with real conversion and supplier data as the platform moves from soft launch to scaled operation.
+      </div>
+    </section>
+  </div>
+</body>
+</html>

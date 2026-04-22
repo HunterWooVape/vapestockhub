@@ -97,6 +97,7 @@
 - AI Draft Package V1 最小结构
 - 提取字段映射逻辑
 - 标准化规则与异常提示
+- prompt 资产结构与版本化规则
 - description_summary / manifest_notes 双段输出
 - flavor_tags / flavor_breakdown 双层输出
 - admin 草稿承接方式
@@ -106,6 +107,8 @@
 - AI 入库工作流图
 - AI Draft Package 结构草案
 - AI Draft Package → admin draft 承接说明
+- admin AI Draft JSON 导入入口
+- prompt asset v1
 - AI 可做 / 不可做边界表
 - 后续实现优先级清单
 
@@ -265,8 +268,11 @@
 - AI Draft Package 到 admin draft 的字段映射
 - flavor 双层模型的承接设计
 - description AI 主生产规则与 prompt 资产化设计
+- prompt asset v1 与版本标记
 - AI Draft Package 输出结构定义
 - 供应商模板 V1 外发试探与反馈收集
+- 供应商提交最小准入标准与 Green / Yellow / Red 分级规则
+- 轻量在线提报入口 V1 方案拆解
 - 部署前最小检查清单草案
 - 软上线与正式公开上线条件确认
 
@@ -277,6 +283,82 @@
 - 真实 inventory detail 样本抽样复核
 - taxonomy 覆盖是否成立的抽样检查
 - 第一批真实数据导入与软上线前复核
+- 模板 V2 与更深度反馈回路优化
+
+### 10.2A 轻量在线提报入口 V1 目标
+- 用在线表单替代反复发送 Excel 模板
+- 支持供应商直接填写，也支持内部人员代填
+- 将提交结果引入内部待处理链路，而不是直接发布
+- 为 AI Draft Package 与 admin draft 提供结构化上游输入
+
+### 10.2B 轻量在线提报入口 V1 边界
+- 不做账号系统
+- 不做 vendor dashboard
+- 不做供应商自助查看历史提交
+- 不做供应商自助编辑状态
+- 不做自动发布
+- 不做批量 Excel 上传解析
+
+### 10.2C 轻量在线提报入口 V1 推荐数据流
+- 在线提报入口提交
+- 内部补全关键字段
+- AI Draft Package 结构化与风险提示
+- admin draft
+- blocker / warning / 人工终审
+- active
+
+### 10.2D 轻量在线提报入口 V1 页面结构
+- 区块 1：Access / Submission Notice
+- 区块 2：Supplier Info
+- 区块 3：Product Basics
+- 区块 4：Trading & Logistics
+- 区块 5：Flavor & Notes
+- 区块 6：Media & Submit
+- 第一轮目标是降低填写摩擦，不是复制 admin 全量字段。
+
+### 10.2E 轻量在线提报入口 V1 最小字段
+- 必填：
+  - Supplier Name
+  - Brand
+  - Model / Product Name
+  - Product Type
+  - Available Qty
+  - Target Market
+  - Warehouse Location
+- 推荐：
+  - Unit Price (USD)
+  - MOQ
+  - Puff Count
+  - Nicotine Strength
+  - E-liquid Capacity
+  - Flavor List
+  - Flavor Breakdown
+  - Image Link
+  - Stock Notes
+  - Packaging Notes
+  - Extra Notes
+
+### 10.2F 轻量在线提报入口 V1 落库设计
+- 第一轮不直接写 `inventory`
+- 第一轮单独写 submission / intake 表
+- submission 状态最少建议：
+  - `new`
+  - `reviewing`
+  - `converted`
+  - `rejected`
+- submission 记录应允许保存：
+  - 原始提报内容
+  - 内部补充说明
+  - AI Draft Package
+  - 最终转换出的 inventory id
+
+### 10.2G 轻量在线提报入口 V1 已落地项
+- `supplier_submissions` 独立表 migration
+- `/submit-stock` 私用提报入口页
+- 简单访问码校验
+- admin 首页 Recent Submissions 区块
+- `/admin/submissions/[id]` review 页面
+- submission → inventory draft 手动转换动作
 
 ### 10.3 软上线前必须完成
 - 管理后台安全项整改
@@ -305,7 +387,10 @@
 ### 10.6 当前推荐执行顺序
 - 第一步：admin 后台最小升级项与发布门槛清单
 - 第二步：AI Draft Package / prompt / 规则层方案
-- 第三步：供应商模板外发与第一波反馈收集
-- 第四步：第一批真实数据白名单准备
-- 第五步：部署前最小检查清单落地
-- 第六步：软上线准备与第一批真实数据接入
+- 第三步：供应商模板外发、最小准入标准与 Green / Yellow / Red 分级规则
+- 第四步：轻量在线提报入口 V1 方案与落地
+- 第五步：通过入口收集资料并由内部人工补全关键字段
+- 第六步：AI Draft Package → draft 小批量真实数据接入
+- 第七步：从真实候选池中筛选第一批白名单并覆盖关键页面
+- 第八步：部署前最小检查清单落地
+- 第九步：软上线准备与第一批真实数据接入

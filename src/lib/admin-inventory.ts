@@ -1,7 +1,7 @@
 export const placeholderInventoryImage = '/images/inventory-placeholder.svg'
 
 export const productTypeOptions = [
-  'Disposable',
+  'Disposable Vape',
   'Pod System',
   'Pod',
   'E-liquid',
@@ -150,6 +150,13 @@ export type InventoryAiDraftPackage = {
   missingFields: string[]
   riskFlags: InventoryAiDraftRiskFlag[]
   humanReviewFocus: InventoryAiDraftReviewFocus[]
+}
+
+export type InventoryAiPromptAsset = {
+  version: 'v1'
+  systemPrompt: string
+  userPromptTemplate: string
+  outputContract: string
 }
 
 export function isValidInventorySlug(slug: string) {
@@ -304,7 +311,7 @@ export function createEmptyInventoryAiDraftPackage(
       title: '',
       slug: '',
       brand: '',
-      product_type: 'Disposable',
+      product_type: 'Disposable Vape',
       price: '',
       quantity: '',
       moq: '1',
@@ -326,6 +333,88 @@ export function createEmptyInventoryAiDraftPackage(
   }
 }
 
+export function getInventoryAiDraftPackageExample() {
+  return JSON.stringify(createEmptyInventoryAiDraftPackage(), null, 2)
+}
+
+export function buildInventoryAiPromptAsset(options?: {
+  knownBrands?: string[]
+  knownMarkets?: string[]
+  productTypes?: readonly string[]
+}) {
+  const knownBrands = options?.knownBrands?.filter(Boolean) ?? []
+  const knownMarkets = options?.knownMarkets?.filter(Boolean) ?? []
+  const productTypes = options?.productTypes ?? productTypeOptions
+  const systemPrompt = [
+    'You are the inventory-ingestion AI for VapeStockHub.',
+    'Your job is to convert messy supplier inventory material into one AI Draft Package JSON object.',
+    'The site is a B2B wholesale vape inventory marketplace focused on stock visibility and lead generation.',
+    'Always write frontend-facing content in English.',
+    'Use a B2B inventory tone, not a retail ecommerce tone.',
+    'Be SEO-aware but truth-first.',
+    'Do not invent brands, quantities, warehouses, flavors, or images that are not supported by the source.',
+    'Do not use language such as retail shop, best deal, cheapest, must buy, hot sale, or other consumer-style promotion.',
+    'Preserve ambiguity through missingFields, riskFlags, and humanReviewFocus instead of hallucinating.',
+    `Allowed contact_visibility values: ${contactVisibilityOptions.join(', ')}.`,
+    `Preferred product_type values: ${productTypes.join(', ')}.`,
+    knownBrands.length > 0 ? `Known brand references: ${knownBrands.join(', ')}.` : '',
+    knownMarkets.length > 0 ? `Known market references: ${knownMarkets.join(', ')}.` : '',
+    'description_summary should be a short English B2B stock summary.',
+    'manifest_notes should preserve inventory detail, flavor split, packaging notes, or trade notes in factual English.',
+    'flavor_tags are short tags for quick display.',
+    'flavor_breakdown keeps detailed flavor-by-quantity information when available.',
+    'Return JSON only. Do not wrap it in markdown fences.',
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const userPromptTemplate = [
+    'Convert the following raw supplier material into one AI Draft Package JSON object.',
+    'If a field is uncertain, leave the field empty when appropriate and explain the uncertainty in riskFlags or humanReviewFocus.',
+    'Always preserve the original source context in rawInput.',
+    '',
+    'Raw supplier material:',
+    '{{RAW_INPUT}}',
+    '',
+    'Known brand references:',
+    knownBrands.length > 0 ? knownBrands.join(', ') : 'None provided',
+    '',
+    'Known market references:',
+    knownMarkets.length > 0 ? knownMarkets.join(', ') : 'None provided',
+  ].join('\n')
+
+  const outputContract = [
+    'Output must be one JSON object with this structure:',
+    getInventoryAiDraftPackageExample(),
+    'Field rules:',
+    '- version must be "v1".',
+    '- rawInput.rawText must contain the original source text.',
+    '- normalizedFields.title, brand, market, and product_type should be filled when the source supports them.',
+    '- normalizedFields.contact_visibility must be contact_required or public.',
+    '- missingFields is an array of field names that are still absent.',
+    '- riskFlags contains factual risk notes with severity high, medium, or low.',
+    '- humanReviewFocus contains fields the admin should check first and why.',
+  ].join('\n')
+
+  return {
+    version: 'v1' as const,
+    systemPrompt,
+    userPromptTemplate,
+    outputContract,
+  } satisfies InventoryAiPromptAsset
+}
+
+export function buildInventoryAiPromptInput(rawInput: string) {
+  return rawInput.trim()
+}
+
+export function renderInventoryAiUserPrompt(
+  promptAsset: InventoryAiPromptAsset,
+  rawInput: string
+) {
+  return promptAsset.userPromptTemplate.replace('{{RAW_INPUT}}', buildInventoryAiPromptInput(rawInput))
+}
+
 export function buildInventoryDescriptionFromDraftPackage(
   draftPackage: Pick<InventoryAiDraftPackage, 'normalizedFields'>
 ) {
@@ -335,6 +424,154 @@ export function buildInventoryDescriptionFromDraftPackage(
   ].filter(Boolean)
 
   return sections.join('\n\n')
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function getStringValue(value: unknown) {
+  return typeof value === 'string' ? value : ''
+}
+
+function getNullableStringValue(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value : null
+}
+
+function getStringArrayValue(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean)
+    : []
+}
+
+export function parseInventoryAiDraftPackage(input: string):
+  | { success: true; draftPackage: InventoryAiDraftPackage }
+  | { success: false; errors: string[] } {
+  let parsedValue: unknown
+
+  try {
+    parsedValue = JSON.parse(input)
+  } catch {
+    return {
+      success: false,
+      errors: ['AI Draft Package must be valid JSON.'],
+    }
+  }
+
+  if (!isPlainObject(parsedValue)) {
+    return {
+      success: false,
+      errors: ['AI Draft Package root value must be a JSON object.'],
+    }
+  }
+
+  const rawInput = isPlainObject(parsedValue.rawInput) ? parsedValue.rawInput : {}
+  const normalizedFields = isPlainObject(parsedValue.normalizedFields) ? parsedValue.normalizedFields : {}
+  const riskFlagsInput = Array.isArray(parsedValue.riskFlags) ? parsedValue.riskFlags : []
+  const reviewFocusInput = Array.isArray(parsedValue.humanReviewFocus) ? parsedValue.humanReviewFocus : []
+  const missingFields = getStringArrayValue(parsedValue.missingFields)
+
+  const sourceType = aiDraftInputSourceOptions.includes(rawInput.sourceType as AiDraftInputSource)
+    ? (rawInput.sourceType as AiDraftInputSource)
+    : 'other'
+
+  const contactVisibility = contactVisibilityOptions.includes(
+    normalizedFields.contact_visibility as typeof contactVisibilityOptions[number]
+  )
+    ? (normalizedFields.contact_visibility as typeof contactVisibilityOptions[number])
+    : 'contact_required'
+
+  const draftPackage: InventoryAiDraftPackage = {
+    version: parsedValue.version === 'v1' ? 'v1' : 'v1',
+    rawInput: {
+      sourceType,
+      supplierName: getNullableStringValue(rawInput.supplierName),
+      submittedAt: getNullableStringValue(rawInput.submittedAt),
+      sourceLabel: getNullableStringValue(rawInput.sourceLabel),
+      rawText: getStringValue(rawInput.rawText),
+    },
+    normalizedFields: {
+      title: getStringValue(normalizedFields.title),
+      slug: getStringValue(normalizedFields.slug),
+      brand: getStringValue(normalizedFields.brand),
+      product_type: getStringValue(normalizedFields.product_type) || 'Disposable Vape',
+      price: getStringValue(normalizedFields.price),
+      quantity: getStringValue(normalizedFields.quantity),
+      moq: getStringValue(normalizedFields.moq) || '1',
+      market: getStringValue(normalizedFields.market),
+      warehouse_location: getStringValue(normalizedFields.warehouse_location),
+      nicotine: getStringValue(normalizedFields.nicotine),
+      puff: getStringValue(normalizedFields.puff),
+      e_liquid: getStringValue(normalizedFields.e_liquid),
+      contact_visibility: contactVisibility,
+      images: getStringArrayValue(normalizedFields.images),
+      flavor_tags: getStringArrayValue(normalizedFields.flavor_tags),
+      flavor_breakdown: getStringValue(normalizedFields.flavor_breakdown),
+      description_summary: getStringValue(normalizedFields.description_summary),
+      manifest_notes: getStringValue(normalizedFields.manifest_notes),
+    },
+    missingFields,
+    riskFlags: riskFlagsInput
+      .filter(isPlainObject)
+      .map((item) => ({
+        code: getStringValue(item.code),
+        severity: aiDraftRiskSeverityOptions.includes(item.severity as AiDraftRiskSeverity)
+          ? (item.severity as AiDraftRiskSeverity)
+          : 'medium',
+        message: getStringValue(item.message),
+      }))
+      .filter((item) => item.code || item.message),
+    humanReviewFocus: reviewFocusInput
+      .filter(isPlainObject)
+      .map((item) => ({
+        field: aiDraftReviewFieldOptions.includes(item.field as AiDraftReviewField)
+          ? (item.field as AiDraftReviewField)
+          : 'description',
+        reason: getStringValue(item.reason),
+      }))
+      .filter((item) => item.reason),
+  }
+
+  const errors: string[] = []
+
+  if (!draftPackage.normalizedFields.title.trim()) {
+    errors.push('normalizedFields.title is required.')
+  }
+
+  if (!draftPackage.normalizedFields.brand.trim()) {
+    errors.push('normalizedFields.brand is required.')
+  }
+
+  if (!draftPackage.normalizedFields.product_type.trim()) {
+    errors.push('normalizedFields.product_type is required.')
+  }
+
+  if (!draftPackage.normalizedFields.market.trim()) {
+    errors.push('normalizedFields.market is required.')
+  }
+
+  if (!draftPackage.rawInput.rawText.trim()) {
+    errors.push('rawInput.rawText is required.')
+  }
+
+  if (
+    !draftPackage.normalizedFields.description_summary.trim() &&
+    !draftPackage.normalizedFields.manifest_notes.trim()
+  ) {
+    errors.push('At least one of description_summary or manifest_notes is required.')
+  }
+
+  if (errors.length > 0) {
+    return {
+      success: false,
+      errors,
+    }
+  }
+
+  return {
+    success: true,
+    draftPackage,
+  }
 }
 
 export function convertAiDraftPackageToInventoryDraft(

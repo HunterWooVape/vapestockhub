@@ -30,16 +30,31 @@ You MUST strictly follow these rules in this project. Do not deviate unless expl
 - **Accent Color**: Teal (`#22C7A9`).
 - **Font**: Inter.
 - **Vibe**: Professional B2B terminal, clean, data-dense. NOT a flashy B2C e-commerce store.
-- **Language**: All frontend UI text MUST be in English. (Communication with the user in prompt responses MUST be in Chinese).
+- **Language Rule**:
+  - Public-facing pages, SEO pages, and marketplace pages MUST use English.
+  - Private internal pages, private submission pages, and all backoffice/admin pages MUST use Chinese.
+  - Do NOT heavily mix Chinese and English in the same backoffice screen. Prioritize short, direct Chinese operational labels.
 
 ## 4. Operational & Conversion Rules (Newly Added)
 - **Data Entry & Display**: Maintain high operational efficiency for data entry. Use comma-separated strings for multi-value tags (e.g., `flavor`) and parse them in the frontend. Preserve raw formatting (`whitespace-pre-wrap`) for `description` to allow easy copy-pasting of inventory manifests from Excel.
 - **Conversion-Driven UX**: Prioritize features that create FOMO (Fear Of Missing Out) and urgency, such as dynamic hot-selling badges and strategic price hiding. Always ensure the CTA (Call to Action) leads smoothly to WhatsApp/Telegram with auto-filled context.
-- **Admin Philosophy**: The `/admin` panel is for the platform owner only. Keep it brutally simple (basic CRUD + Status toggle + Feature flags). Do not add complex user role management or vendor onboarding logic.
+- **Backoffice Philosophy**:
+  - The backoffice is a private internal operating system, not a public product surface.
+  - Organize internal pages around simple workbenches: intake, review, and publish.
+  - Keep internal UI action-oriented and reduce explanation noise, repeated hints, and oversized side panels.
+  - Preserve raw data, AI signals, and review context, but collapse secondary detail by default when it helps focus.
+- **Role Strategy (MVP)**:
+  - Use the minimum role split only: `Admin` and `Staff`.
+  - `Admin` handles total backoffice visibility, final draft editing, publish decisions, and exceptional actions.
+  - `Staff` focuses on intake, review, AI suggestion generation, and draft conversion.
+  - Do NOT build a complex user management system, role matrix, or vendor onboarding logic in MVP.
 
 ## 5. Workflow & Communication
 - **Pair-Programming Stance**: Do not be a "yes-man". If the user's proposal compromises UX, SEO, or MVP speed, push back with professional, well-reasoned alternatives (Ultrathink). Always present a balance between operational efficiency and frontend experience.
 - ALWAYS check `docs/MVP_PLAN.md` and `docs/PRE_DEV_CHECKLIST.md` before proposing major architectural changes.
 - Never write code for features outside the MVP scope. If the user asks for one, suggest logging it in `docs/PARKING_LOT.md` first.
 - Execute tasks end-to-end when given a clear directive. Don't ask for permission at every micro-step, but DO stop and ask when a business logic decision is required.
-
+- **Backoffice Workflow Rule**:
+  - Default internal flow is `提报 -> 审核 -> AI建议 -> 转草稿 -> 草稿编辑 -> 发布`.
+  - The private `submit-stock` entry is treated as an internal Chinese intake page, even if selected suppliers also use it.
+  - When redesigning backoffice pages, optimize first for operator speed, task focus, and clear next actions.

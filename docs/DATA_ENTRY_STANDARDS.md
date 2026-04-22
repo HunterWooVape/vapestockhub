@@ -243,3 +243,62 @@
   - `flavor_tags` 回填到 `flavor`
   - 默认状态仍为 `draft`
 - `missingFields`、`riskFlags`、`humanReviewFocus` 的目标，是减少人工通读成本，而不是替代人工终审。
+
+## 18. 供应商提交最小准入标准
+- 不是所有供应商资料都应直接进入 AI Draft Package 主通道。
+- 第一阶段应优先推动供应商按模板提供资料，降低后续 AI 与人工复核成本。
+- 最小可持续输入目标为：
+  - `brand`
+  - `model / product name`
+  - `product_type`
+  - `quantity`
+  - `market`
+  - `warehouse_location`
+- 若以上字段长期无法稳定获取，则该供应商资料不适合作为主通道库存输入。
+
+## 19. Green / Yellow / Red 分级处理规则
+- `Green`
+  - 商品主体明确
+  - 关键身份字段基本完整
+  - 可直接进入 AI Draft Package → admin draft
+- `Yellow`
+  - 有明显商品主体，但字段不完整
+  - 可先做 AI 提取或人工补录
+  - 不应直接视为可发布库存来源
+- `Red`
+  - 商品主体不清
+  - 多类信息混杂，无法稳定拆条
+  - 含大量高风险尾货/过期/不良信息但无清晰归属
+  - 不进入主通道，优先退回补模板或人工重建
+
+## 20. 各分级的处理口径
+- `Green`
+  - 直接进入 AI Draft Package
+  - 生成 draft 后继续走 blocker / warning / 人工终审
+- `Yellow`
+  - 先补齐 `brand`、`model / product name`、`market`、`warehouse_location` 等关键字段
+  - 关键字段补齐后再进入 AI Draft Package 或 admin draft
+- `Red`
+  - 不优先投入 AI 解析算力
+  - 不直接进 admin draft
+  - 只在业务价值高时人工摘取高价值信息
+
+## 21. 对尾货 / 清仓 / 异常库存的处理提醒
+- 若资料中出现以下信息，应默认提高风险等级：
+  - 无日期
+  - 过期
+  - 包装破损
+  - 产品不良
+  - 清仓尾货
+- 这类信息不能只当作普通 description 文本处理。
+- 在后续结构升级前，至少应在 `riskFlags` 与人工复核阶段显式标记。
+
+## 22. 当前推荐执行链路
+- 当前阶段优先采用：
+  - 供应商按模板提交
+  - 内部人工补全缺失关键字段
+  - AI 生成 `AI Draft Package`
+  - admin 导入为 `draft`
+  - blocker / warning + 人工终审
+  - 再决定是否进入 `active`
+- 这条链路的核心目标不是追求一次性完美自动化，而是以较低风险、更快速度推进真实数据上线。

@@ -171,9 +171,69 @@ Clearance batch, fast-moving stock.
 
 ---
 
-## 7. 你向供应商收集反馈时建议重点问的问题
+## 7. 最小准入标准（内部使用）
 
-### 7.1 中文版
+### 7.1 Green：可直接进入 AI Draft Package 主通道
+- 满足以下条件时，可直接进入标准 AI Draft Package 流程：
+  - `Brand` 已提供
+  - `Model / Product Name` 已提供
+  - `Product Type` 已提供
+  - `Available Qty` 已提供
+  - `Target Market` 已提供，或可由现有上下文明确判断
+  - `Warehouse Location` 已提供，或可由现有上下文明确判断
+  - `Unit Price`、`MOQ`、`Flavor List`、`Stock Notes` 中至少再提供 2 项
+- Green 的目标不是信息完美，而是“已具备明确商品主体 + 基本交易上下文”。
+
+### 7.2 Yellow：可接收，但必须先人工补录或二次确认
+- 出现以下任一情况，进入 Yellow：
+  - `Brand` 明确，但 `Model / Product Name` 不完整
+  - 有价格、数量、日期，但商品主体不完整
+  - 有 Flavor Breakdown，但没有 Flavor List
+  - `Market` 或 `Warehouse Location` 缺失
+  - 供应商使用自己格式，但字段仍能大致拆出主体
+- Yellow 的处理原则：
+  - 允许进入 AI 草稿整理
+  - 但必须先人工补齐关键字段
+  - 不允许直接视为可发布库存来源
+
+### 7.3 Red：不进入主通道，要求补资料或人工重建
+- 出现以下任一情况，进入 Red：
+  - 无明确品牌、型号、产品主体
+  - 同一表混有多类产品、报价备注、素材文件、清仓说明，无法稳定拆条
+  - 只有零碎数量、日期、价格，没有商品主语义
+  - 出现“过期 / 包装破损 / 产品不良 / 无日期”等高风险信息，但没有清晰对应商品
+  - 图片、素材、聊天记录堆叠在一起，无法判断记录边界
+- Red 的处理原则：
+  - 不直接进入 AI Draft Package 主通道
+  - 优先要求供应商补模板
+  - 若业务价值高，再人工拆分重建
+
+### 7.4 最小必填字段建议
+- 对首次合作或配合度一般的供应商，最小目标不是让其填完整模板，而是至少拿到：
+  - Brand
+  - Model / Product Name
+  - Product Type
+  - Available Qty
+  - Target Market
+  - Warehouse Location
+- 若连以上字段都无法稳定提供，则该批资料不应被视为可持续主通道输入。
+
+### 7.5 内部处理原则
+- Green：
+  - 直接进入 AI Draft Package
+  - 生成 draft 后再走 publish blocker
+- Yellow：
+  - 先人工补录核心身份字段
+  - 再进入 AI Draft Package 或 admin draft
+- Red：
+  - 不优先投入 AI 解析算力
+  - 先退回补资料，或仅人工摘取高价值信息
+
+---
+
+## 8. 你向供应商收集反馈时建议重点问的问题
+
+### 8.1 中文版
 - 这个模板是否太复杂？
 - 哪些字段你们平时最不方便提供？
 - 你们更愿意填表格，还是直接按文本格式回复？
@@ -181,7 +241,7 @@ Clearance batch, fast-moving stock.
 - 图片链接、库存备注、包装备注这些字段是否容易提供？
 - 你们是否有自己常用的库存表格式，可以发给我们参考？
 
-### 7.2 English version
+### 8.2 English version
 - Is this template too complicated for your team?
 - Which fields are difficult for you to provide regularly?
 - Do you prefer a spreadsheet format or a text message format?
@@ -191,7 +251,7 @@ Clearance batch, fast-moving stock.
 
 ---
 
-## 8. 收到第一波反馈后建议重点观察的事
+## 9. 收到第一波反馈后建议重点观察的事
 - 供应商最愿意填的是哪些字段
 - 供应商最常漏掉的是哪些字段
 - Flavor Breakdown 是否普遍能配合
@@ -202,7 +262,7 @@ Clearance batch, fast-moving stock.
 
 ---
 
-## 9. 当前版本定位
+## 10. 当前版本定位
 - 本模板是 V1，目标是快速试探供应商配合度，而不是一次性定死最终格式。
 - 第一轮反馈回来后，再决定：
   - 哪些字段简化

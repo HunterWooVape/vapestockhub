@@ -618,6 +618,359 @@
   - 规则层不负责理解原始杂乱资料
 - 这也是第二阶段避免“AI 看起来很对，但实际不可发布”的关键边界。
 
+### 2.55 已确认的第一轮导入入口形态
+- 第一轮不直接接 AI API，不做自动模型调用入口。
+- 第一轮先在 `/admin` 提供一个“AI Draft Package JSON 导入入口”。
+- 管理员可直接粘贴 AI Draft Package JSON，由系统完成：
+  - JSON 结构校验
+  - 最小字段校验
+  - 字段映射
+  - draft 入库
+- 该入口的目标是先把“AI 输出 → admin draft”链路跑通，而不是先追求完整自动化。
+
+### 2.56 已确认的第一轮导入入口边界
+- 第一轮导入入口只接受已经生成好的 AI Draft Package。
+- 不在本小项内解决：
+  - 在线调用模型
+  - 上传 Excel 后自动解析
+  - 批量多条导入
+  - 图片自动处理
+- 这些能力后续可以继续叠加，但当前优先级低于先跑通单条链路。
+
+### 2.57 已确认的导入入口成功标准
+- 导入成功后，系统必须：
+  - 创建一条新的 inventory draft
+  - 不直接发布为 active
+  - 保留现有 publish blocker 规则
+  - 允许管理员继续在 edit 页面复核
+- 也就是说，导入入口只是“draft 生成入口”，不是“发布入口”。
+
+### 2.58 已确认的 prompt 资产化形态
+- prompt 第一轮不以散落文本存在，而应作为代码侧可复用资产存在。
+- 第一轮 prompt 资产至少包含：
+  - systemPrompt
+  - userPromptTemplate
+  - outputContract
+- 目标是让后续：
+  - 手工调用模型
+  - 接 AI API
+  - 做批量导入
+  - 做 prompt 版本升级
+  都能复用同一套基线。
+
+### 2.59 已确认的 systemPrompt 约束
+- systemPrompt 必须明确写入以下约束：
+  - B2B wholesale inventory 语境
+  - 英文输出
+  - SEO-aware but truth-first
+  - 不得幻觉
+  - 不得写成零售导购文案
+  - flavor 双层结构要求
+  - description 双段式输出要求
+  - 返回 JSON only
+- systemPrompt 负责定义“角色与边界”，而不是承载具体原始资料。
+
+### 2.60 已确认的 userPromptTemplate 作用
+- userPromptTemplate 负责承接：
+  - 原始供应商资料
+  - 当前已知 brand / market 参考值
+  - 当前任务说明
+- userPromptTemplate 应支持把原始资料直接插入占位符，而不是每次重新手写 prompt。
+- 该模板的主要目标是降低后续手工试跑与 API 接入时的提示词漂移。
+
+### 2.61 已确认的 outputContract 作用
+- outputContract 必须显式约束 AI 返回：
+  - AI Draft Package JSON 结构
+  - 字段要求
+  - riskFlags / missingFields / humanReviewFocus 的写法
+- outputContract 的目标不是解释业务，而是把模型输出收束到可解析的结构上。
+
+### 2.62 已确认的 prompt 版本化方向
+- prompt 资产第一轮采用 `v1` 版本标记。
+- 后续若改：
+  - 字段结构
+  - 风险口径
+  - title / description 语气
+  - flavor 输出规范
+  应通过版本升级处理，而不是悄悄覆盖旧 prompt。
+- 这样后续出现输出波动时，才有能力回溯是哪个 prompt 版本导致的。
+
+### 2.63 已确认的当前优先级不是重型 Intake Queue
+- 基于真实脏样本测试结果，当前不应优先投入重型 Intake Queue。
+- 当前更高 ROI 的方向是：
+  - 供应商模板推进
+  - 最小准入标准
+  - Green / Yellow / Red 分级处理
+- 原因是当前最需要解决的问题，不是“如何吞掉所有脏输入”，而是“如何降低脏输入比例”。
+
+### 2.64 已确认的供应商提交最小准入标准
+- 第一阶段对供应商资料的最小可持续输入要求为：
+  - Brand
+  - Model / Product Name
+  - Product Type
+  - Available Qty
+  - Target Market
+  - Warehouse Location
+- 以上字段不是要求对方一次填满所有模板，而是要求至少明确商品主体与基本交易上下文。
+- 若连以上字段都无法稳定提供，则该资料不应被视为主通道输入。
+
+### 2.65 已确认的 Green / Yellow / Red 分级规则
+- `Green`
+  - 商品主体明确
+  - 关键身份字段基本完整
+  - 可直接进入 AI Draft Package 主通道
+- `Yellow`
+  - 商品主体大致明确，但字段缺失明显
+  - 可人工补录后再进入 AI Draft Package 或 admin draft
+- `Red`
+  - 商品主体不清，或多类信息严重混杂
+  - 不进入主通道
+  - 优先要求补模板，必要时再人工重建
+
+### 2.66 已确认的分级处理原则
+- `Green`
+  - 直接进入 AI Draft Package → admin draft
+- `Yellow`
+  - 先补录关键字段，再进入 AI Draft Package
+- `Red`
+  - 不优先投入 AI 解析算力
+  - 不直接进入 admin draft
+  - 仅在业务价值高时人工摘取高价值内容
+
+### 2.67 已确认的尾货 / 异常库存处理口径
+- 若资料中出现：
+  - 无日期
+  - 过期
+  - 包装破损
+  - 产品不良
+  - 清仓尾货
+  应默认提高风险等级。
+- 这类信息不能因为能被 AI 读懂，就当成普通库存直接推进。
+- 在后续结构升级前，至少应通过 `riskFlags` 与人工终审显式标记。
+
+### 2.68 已确认的当前执行主张是“模板优先 + 人工补全 + AI 评估 + Draft”
+- 当前不应把时间主要花在反复打磨模板细节或长周期样本预案上。
+- 当前更务实的执行主张是：
+  - 先让供应商尽量按我们的模板提交
+  - 缺失字段由我们内部人工补全
+  - 再交给 AI 做结构化、风险提示与 draft 生成
+  - 最后由 admin blocker / warning 与人工终审把关
+- 这条链路更符合当前 MVP 的速度目标，也更有利于尽快推进软上线准备。
+
+### 2.69 已确认的模板目标不是“完美填写”，而是“降低混乱度”
+- 供应商模板的目标不是让对方像系统录入员一样完整填写所有字段。
+- 模板真正的价值是把原本非常混乱的输入，压缩到“可人工补、可 AI 处理、可进入 draft”的区间。
+- 因此：
+  - 模板 V1 可以先用
+  - 第一轮不需要为了追求完美而反复来回迭代
+  - 只要能显著降低脏输入比例，就已经达到阶段目标
+
+### 2.70 已确认的当前节奏应优先服务软上线
+- 当前阶段的优先级应以“更快完成软上线准备”为导向。
+- 在不牺牲数据安全边界的前提下，应优先走：
+  - 模板收集
+  - 人工补录
+  - AI Draft Package
+  - draft 审核
+  - 小批量真实数据接入
+- 供应商反馈、模板 V2、更多自动化能力，可以放到软上线后持续迭代，而不是作为当前阻塞项。
+
+### 2.71 已确认的方向是“轻量在线提报入口”，不是“供应商后台”
+- 当前适合做的是：
+  - 在线化的供应商提报入口
+  - 模板字段的数字化表单
+  - 提交后进入内部处理链路
+- 当前不适合做的是：
+  - 供应商账号体系
+  - vendor dashboard
+  - 供应商自助管理库存
+  - 多角色权限系统
+- 原因是后者明显超出 MVP 边界，也会拖慢软上线准备节奏。
+
+### 2.72 已确认的轻量在线提报入口 V1 定位
+- 该入口的目标不是替代 admin。
+- 该入口的目标是替代“反复发 Excel 模板”的流程。
+- 它本质上是：
+  - 供应商或内部人员可填写的在线模板
+  - 一个可控、结构化、低摩擦的资料收集入口
+  - 后续 AI Draft Package / admin draft 的上游输入层
+
+### 2.73 已确认的轻量在线提报入口 V1 数据链路
+- 当前推荐链路为：
+  - Supplier Submission Form
+  - Internal Review / 人工补全
+  - AI Draft Package
+  - admin draft
+  - blocker / warning / 人工终审
+  - active
+- 入口提交后不直接发布，不直接进入 active。
+- 入口提交后的记录，应先作为内部待处理资料，而不是前台库存。
+
+### 2.74 已确认的轻量在线提报入口 V1 边界
+- 第一轮不做：
+  - 注册登录
+  - 供应商查看自己历史提交
+  - 供应商修改已提交记录
+  - 供应商查看发布状态
+  - 批量 Excel 上传解析
+  - 自动发布
+- 第一轮只做：
+  - 单条提交
+  - 模板字段填写
+  - 必填项与基础校验
+  - 提交后进入内部处理链路
+
+### 2.75 已确认的轻量在线提报入口 V1 使用人群
+- 第一轮入口不只服务供应商，也应支持内部代填。
+- 也就是说：
+  - 供应商愿意自己填时，可以直接发入口
+  - 供应商只愿意聊天发资料时，内部人员也可代填
+- 这样既保持数字化方向，也不会因为供应商不配合而卡住录入。
+
+### 2.76 已确认的轻量在线提报入口 V1 与白名单关系
+- 轻量在线提报入口上线后，第一批真实数据白名单不再必须“录入前先完全拆好”。
+- 更实际的方式是：
+  - 先通过入口沉淀真实候选池
+  - 再从候选池中筛选白名单
+- 也就是说，白名单不会消失，只是从“先拆后录”改为“先录后筛”。
+
+### 2.77 已确认的轻量在线提报入口 V1 路由定位
+- 第一轮建议使用独立路由，不放入前台主导航。
+- 推荐定位：
+  - 一个私用或半私用的提交入口
+  - 主要给供应商链接直达，或内部人员代填
+- 第一轮不需要做公开曝光的站内入口，避免引入低质量垃圾提交。
+
+### 2.78 已确认的轻量在线提报入口 V1 页面结构
+- 页面建议分为 6 个区块：
+  - Access / Submission Notice
+  - Supplier Info
+  - Product Basics
+  - Trading & Logistics
+  - Flavor & Notes
+  - Media & Submit
+- 目标不是把 admin 全量搬过去，而是保留模板核心字段，让填写成本更低。
+
+### 2.79 已确认的轻量在线提报入口 V1 最小字段方案
+- 第一轮建议必填字段为：
+  - Supplier Name
+  - Brand
+  - Model / Product Name
+  - Product Type
+  - Available Qty
+  - Target Market
+  - Warehouse Location
+- 推荐字段为：
+  - Unit Price (USD)
+  - MOQ
+  - Puff Count
+  - Nicotine Strength
+  - E-liquid Capacity
+  - Flavor List
+  - Flavor Breakdown
+  - Image Link
+  - Stock Notes
+  - Packaging Notes
+  - Extra Notes
+- 该字段层级与当前“模板优先 + 人工补全 + AI 评估 + Draft”主张一致。
+
+### 2.80 已确认的轻量在线提报入口 V1 落库策略
+- 第一轮不建议提交后直接写入 `inventory`。
+- 第一轮应单独落到一张 submission / intake 表中。
+- 原因：
+  - submission 记录本质上是“待处理资料”
+  - inventory 记录本质上是“待发布库存草稿”
+  - 两者语义不同，混在一起会让 admin 边界变脏
+- 因此推荐链路应保持：
+  - submission record
+  - internal review
+  - AI Draft Package
+  - inventory draft
+
+### 2.81 已确认的轻量在线提报入口 V1 submission 表最小结构
+- 第一轮 submission 表建议至少包含：
+  - `id`
+  - `supplier_name`
+  - `contact_name`
+  - `contact_channel`
+  - `source_type`
+  - `brand`
+  - `model_name`
+  - `product_type`
+  - `unit_price_text`
+  - `available_qty_text`
+  - `moq_text`
+  - `target_market`
+  - `warehouse_location`
+  - `puff_text`
+  - `nicotine_text`
+  - `e_liquid_text`
+  - `flavor_list`
+  - `flavor_breakdown`
+  - `image_links`
+  - `stock_notes`
+  - `packaging_notes`
+  - `extra_notes`
+  - `submission_status`
+  - `internal_notes`
+  - `ai_draft_package`
+  - `converted_inventory_id`
+  - `created_at`
+  - `updated_at`
+- 其中多数字段保留 text，是为了第一轮优先保证收集成功率，而不是过早卡死输入格式。
+
+### 2.82 已确认的轻量在线提报入口 V1 submission 状态
+- 第一轮推荐状态最少只保留：
+  - `new`
+  - `reviewing`
+  - `converted`
+  - `rejected`
+- 不建议第一轮把状态做得过多，以免入口本身又演变成复杂工作流系统。
+
+### 2.83 已确认的轻量在线提报入口 V1 与 AI / admin 的衔接方式
+- submission 记录进入内部后：
+  - 可先人工补全关键字段
+  - 再生成 AI Draft Package
+  - 再从 AI Draft Package 转成 inventory draft
+- AI 不直接面向供应商提交页做自动发布判断。
+- publish blocker / warning 仍然只在 inventory draft / admin 阶段生效。
+
+### 2.84 已确认的轻量在线提报入口 V1 安全边界
+- 第一轮至少应避免“任何人都能公开乱提报”。
+- 在不引入完整账号体系的前提下，可接受的第一轮方式包括：
+  - 不挂主导航
+  - 使用专属链接
+  - 或使用简单访问码
+- 具体实现以后续落地时选择最轻量方案为准，但目标必须是减少垃圾提交与爬虫污染。
+
+### 2.85 已确认的轻量在线提报入口 V1 第一轮实际落地方式
+- 第一轮实际落地采用：
+  - 独立路由 `/submit-stock`
+  - 简单访问码校验
+  - `supplier_submissions` 独立表落库
+  - admin 首页展示 Recent Submissions
+  - admin 提供单条 submission review 页
+- 该实现已经满足“在线提报入口 → 内部补全 → inventory draft”的最小链路。
+
+### 2.86 已确认的第一轮实际转换方式
+- submission review 页允许内部人员：
+  - 修改 submission 字段
+  - 保存内部 notes
+  - 手动转换为 inventory draft
+- 第一轮转换不是自动发布，也不是完整 AI 自动转换。
+- 第一轮转换完成后：
+  - submission 状态转为 `converted`
+  - 记录 `converted_inventory_id`
+  - 同时写入一份 AI Draft Package seed 供后续链路复用
+
+### 2.87 已确认的当前安全与运维提醒
+- 轻量在线提报入口虽然已数字化，但数据库迁移必须先执行后才能使用。
+- 访问码环境变量也必须先配置，否则入口只会展示但无法提交。
+- 因此第一轮上线前至少需要：
+  - 执行 `supplier_submissions` 相关 migration
+  - 配置 `SUPPLIER_SUBMISSION_ACCESS_CODE`
+  - 配置 `SUPABASE_SERVICE_ROLE_KEY`
+
 ---
 
 ## 3. 第二阶段待继续拍板主线

@@ -7,6 +7,7 @@ import {
   contactVisibilityOptions,
   formatInventoryQualityMessage,
   getInventoryQualityReport,
+  type InventoryAiDraftPackage,
   inventoryStatusOptions,
   normalizeKnownValue,
   placeholderInventoryImage,
@@ -15,7 +16,12 @@ import {
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { adminSessionCookieName } from '@/lib/unlock'
+import {
+  adminSessionCookieName,
+  getBackofficeRole,
+  isAdminRole,
+  isBackofficeAuthenticated,
+} from '@/lib/unlock'
 import DeleteButton from './DeleteButton'
 
 export const dynamic = 'force-dynamic'
@@ -28,10 +34,7 @@ const errorMessages: Record<string, string> = {
   'missing-service-role-key': 'SUPABASE_SERVICE_ROLE_KEY is missing, so write actions are disabled.',
   'missing-required-fields': 'Fill in the required fields before saving.',
   'publish-blocked': 'This inventory cannot move to active yet. Resolve the blocking issues first.',
-}
-
-function isAdminAuthenticated(value?: string) {
-  return value === 'active'
+  'insufficient-role': '当前角色无权执行该动作。',
 }
 
 function getSingleParam(value?: string | string[]) {
@@ -119,20 +122,29 @@ export default async function EditInventoryPage({
     .map((item) => item.trim())
     .filter(Boolean)
   const cookieStore = await cookies()
-  const isAuthenticated = isAdminAuthenticated(cookieStore.get(adminSessionCookieName)?.value)
+  const sessionValue = cookieStore.get(adminSessionCookieName)?.value
+  const isAuthenticated = isBackofficeAuthenticated(sessionValue)
+  const currentRole = getBackofficeRole(sessionValue)
+  const isAdminUser = currentRole === 'admin'
+  const roleBadgeLabel = isAdminUser ? 'Admin 视图' : 'Staff 视图'
 
   if (!isAuthenticated) {
     redirect('/admin')
   }
 
   const supabase = await createClient()
-  const [{ data: item }, { data: inventoryOptions }] = await Promise.all([
+  const [{ data: item }, { data: inventoryOptions }, { data: linkedSubmission }] = await Promise.all([
     supabase
       .from('inventory')
       .select('*')
       .eq('id', resolvedParams.id)
       .single(),
     supabase.from('inventory').select('brand, market'),
+    supabase
+      .from('supplier_submissions')
+      .select('id, supplier_name, submission_status, ai_draft_package, updated_at')
+      .eq('converted_inventory_id', resolvedParams.id)
+      .maybeSingle(),
   ])
 
   if (!item) {
@@ -162,14 +174,21 @@ export default async function EditInventoryPage({
       knownMarkets,
     }
   )
+  // 中文注释：如果该 inventory 来自 submission，这里把 AI 审查上下文带到 edit 页，避免编辑时断链。
+  const linkedAiDraftPackage: InventoryAiDraftPackage | null =
+    linkedSubmission?.ai_draft_package && typeof linkedSubmission.ai_draft_package === 'object'
+      ? (linkedSubmission.ai_draft_package as InventoryAiDraftPackage)
+      : null
 
   async function updateInventoryAction(formData: FormData) {
     'use server'
 
     const actionCookies = await cookies()
-    if (!isAdminAuthenticated(actionCookies.get(adminSessionCookieName)?.value)) {
+    const actionSessionValue = actionCookies.get(adminSessionCookieName)?.value
+    if (!isBackofficeAuthenticated(actionSessionValue)) {
       redirect('/admin')
     }
+    const actionIsAdmin = isAdminRole(actionSessionValue)
 
     const adminClient = createAdminClient()
     if (!adminClient) {
@@ -194,11 +213,16 @@ export default async function EditInventoryPage({
       contactVisibilityOptions,
       'contact_required'
     )
-    const status = getSelectedValue(
-      String(formData.get('status') || 'draft').trim(),
+    const requestedStatus = getSelectedValue(
+      String(formData.get('status') || item.status).trim(),
       inventoryStatusOptions,
-      'draft'
+      item.status
     )
+    // 中文注释：Staff 允许保存内容，但不允许借由表单提交切换 inventory 状态。
+    if (!actionIsAdmin && requestedStatus !== item.status) {
+      redirect(`/admin/edit/${resolvedParams.id}?error=insufficient-role`)
+    }
+    const status = actionIsAdmin ? requestedStatus : item.status
     const slug = await buildUniqueInventorySlug(
       adminClient,
       String(formData.get('slug') || '').trim() || title,
@@ -265,8 +289,12 @@ export default async function EditInventoryPage({
     'use server'
 
     const actionCookies = await cookies()
-    if (!isAdminAuthenticated(actionCookies.get(adminSessionCookieName)?.value)) {
+    const actionSessionValue = actionCookies.get(adminSessionCookieName)?.value
+    if (!isBackofficeAuthenticated(actionSessionValue)) {
       redirect('/admin')
+    }
+    if (!isAdminRole(actionSessionValue)) {
+      redirect(`/admin/edit/${resolvedParams.id}?error=insufficient-role`)
     }
 
     const adminClient = createAdminClient()
@@ -289,17 +317,31 @@ export default async function EditInventoryPage({
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
       <div className="flex items-center gap-4 text-sm text-muted">
-        <Link href="/admin" className="hover:text-foreground transition-colors">← Back to Admin</Link>
+        <Link href="/admin" className="hover:text-foreground transition-colors">← 返回后台总控台</Link>
       </div>
 
       <div className="flex justify-between items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Edit Inventory</h1>
-          <p className="text-muted mt-1">ID: {item.id}</p>
+        <div className="space-y-2">
+          <div className="inline-flex rounded-full border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-teal-DEFAULT">
+            {roleBadgeLabel}
+          </div>
+          <h1 className="text-3xl font-bold">编辑库存草稿</h1>
+          <p className="text-muted mt-1">
+            ID: {item.id}
+            {isAdminUser
+              ? ' · 可执行完整状态切换与删除动作'
+              : ' · 当前角色可保存内容，但不能切换状态或删除条目'}
+          </p>
         </div>
-        <form action={deleteInventoryAction}>
-          <DeleteButton />
-        </form>
+        {isAdminUser ? (
+          <form action={deleteInventoryAction}>
+            <DeleteButton />
+          </form>
+        ) : (
+          <div className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted">
+            `Staff` 不可删除库存
+          </div>
+        )}
       </div>
 
       {successMessage && (
@@ -324,26 +366,26 @@ export default async function EditInventoryPage({
       <section className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
         <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
           <div className="space-y-1">
-            <h2 className="text-xl font-bold">Edit Inventory</h2>
+            <h2 className="text-xl font-bold">草稿编辑</h2>
             <p className="text-muted mt-1">ID: {item.id}</p>
           </div>
 
           <form action={updateInventoryAction} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Title</label>
+              <label className="text-sm text-muted mb-1 block">标题</label>
               <input name="title" defaultValue={item.title} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Slug (URL)</label>
+              <label className="text-sm text-muted mb-1 block">Slug（URL）</label>
               <input name="slug" defaultValue={item.slug} required className="w-full rounded-lg border border-border bg-background px-4 py-3 font-mono text-sm" />
             </div>
 
             <div>
-              <label className="text-sm text-muted mb-1 block">Brand</label>
+              <label className="text-sm text-muted mb-1 block">品牌</label>
               <input name="brand" list="brand-options-edit" defaultValue={item.brand} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div>
-              <label className="text-sm text-muted mb-1 block">Product Type</label>
+              <label className="text-sm text-muted mb-1 block">产品类型</label>
               <select name="product_type" defaultValue={item.product_type} className="w-full rounded-lg border border-border bg-background px-4 py-3">
                 {currentProductTypeOptions.map((option) => (
                   <option key={option} value={option}>{option}</option>
@@ -352,11 +394,11 @@ export default async function EditInventoryPage({
             </div>
 
             <div>
-              <label className="text-sm text-muted mb-1 block">Price USD</label>
+              <label className="text-sm text-muted mb-1 block">价格 USD</label>
               <input name="price" type="number" step="0.01" defaultValue={item.price} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div>
-              <label className="text-sm text-muted mb-1 block">Quantity</label>
+              <label className="text-sm text-muted mb-1 block">库存数量</label>
               <input name="quantity" type="number" defaultValue={item.quantity} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
@@ -365,46 +407,46 @@ export default async function EditInventoryPage({
               <input name="moq" type="number" defaultValue={item.moq} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div>
-              <label className="text-sm text-muted mb-1 block">Puff</label>
+              <label className="text-sm text-muted mb-1 block">口数 Puff</label>
               <input name="puff" type="number" defaultValue={item.puff || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
             <div>
-              <label className="text-sm text-muted mb-1 block">Nicotine</label>
+              <label className="text-sm text-muted mb-1 block">尼古丁</label>
               <input name="nicotine" defaultValue={item.nicotine || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div>
-              <label className="text-sm text-muted mb-1 block">E-liquid</label>
+              <label className="text-sm text-muted mb-1 block">烟油容量</label>
               <input name="e_liquid" defaultValue={item.e_liquid || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Flavor (Comma separated)</label>
+              <label className="text-sm text-muted mb-1 block">口味（逗号分隔）</label>
               <input name="flavor" defaultValue={item.flavor || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
             <div>
-              <label className="text-sm text-muted mb-1 block">Market</label>
+              <label className="text-sm text-muted mb-1 block">目标市场</label>
               <input name="market" list="market-options-edit" defaultValue={item.market} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
             <div>
-              <label className="text-sm text-muted mb-1 block">Warehouse Location</label>
+              <label className="text-sm text-muted mb-1 block">仓库位置</label>
               <input name="warehouse_location" defaultValue={item.warehouse_location} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Image URL</label>
+              <label className="text-sm text-muted mb-1 block">图片链接</label>
               <input name="image_url" defaultValue={item.images?.[0] || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
 
             <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Description / Manifest</label>
+              <label className="text-sm text-muted mb-1 block">描述 / 清单备注</label>
               <textarea name="description" defaultValue={item.description || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3 min-h-48 font-mono text-sm" />
             </div>
 
             <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm text-muted mb-1 block">Contact Visibility</label>
+                <label className="text-sm text-muted mb-1 block">联系方式可见性</label>
                 <select name="contact_visibility" defaultValue={item.contact_visibility} className="w-full rounded-lg border border-border bg-background px-4 py-3">
                   {contactVisibilityOptions.map((option) => (
                     <option key={option} value={option}>{option}</option>
@@ -412,27 +454,39 @@ export default async function EditInventoryPage({
                 </select>
               </div>
               <div>
-                <label className="text-sm text-muted mb-1 block">Status</label>
-                <select name="status" defaultValue={item.status} className="w-full rounded-lg border border-border bg-background px-4 py-3">
-                  {inventoryStatusOptions.map((option) => (
-                    <option key={option} value={option}>{option}</option>
-                  ))}
-                </select>
+                <label className="text-sm text-muted mb-1 block">库存状态</label>
+                {isAdminUser ? (
+                  <select name="status" defaultValue={item.status} className="w-full rounded-lg border border-border bg-background px-4 py-3">
+                    {inventoryStatusOptions.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <div className="space-y-2">
+                    <input type="hidden" name="status" value={item.status} />
+                    <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium uppercase tracking-wide text-foreground">
+                      {item.status}
+                    </div>
+                    <p className="text-xs text-muted">
+                      `Staff` 保存时会维持当前状态；如需切换为 `active`、`reserved` 或 `sold`，请由 `Admin` 处理。
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-3">
               <input type="checkbox" id="is_featured" name="is_featured" defaultChecked={item.is_featured} className="w-5 h-5" />
-              <label htmlFor="is_featured" className="text-sm font-medium">🔥 Set as Featured Deal</label>
+              <label htmlFor="is_featured" className="text-sm font-medium">🔥 设为重点推荐</label>
             </div>
 
             <div className="flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-3">
               <input type="checkbox" id="is_urgent_clearance" name="is_urgent_clearance" defaultChecked={item.is_urgent_clearance} className="w-5 h-5" />
-              <label htmlFor="is_urgent_clearance" className="text-sm font-medium">⚡ Urgent Clearance</label>
+              <label htmlFor="is_urgent_clearance" className="text-sm font-medium">⚡ 紧急清仓</label>
             </div>
 
             <button className="rounded-lg bg-teal-DEFAULT text-background font-semibold py-4 px-4 md:col-span-2 mt-4 hover:bg-teal-hover transition-colors">
-              Save Changes
+              保存修改
             </button>
 
             <datalist id="brand-options-edit">
@@ -449,14 +503,14 @@ export default async function EditInventoryPage({
         </div>
 
         <aside className="bg-surface border border-border rounded-2xl p-6 space-y-4 h-fit">
-          <h2 className="text-xl font-bold">Publish Readiness</h2>
+          <h2 className="text-xl font-bold">发布准备度</h2>
           <div className="rounded-xl border border-border bg-background px-4 py-3">
-            <div className="text-sm text-muted">Current status</div>
+            <div className="text-sm text-muted">当前状态</div>
             <div className="mt-1 text-lg font-semibold uppercase tracking-wide">{item.status}</div>
           </div>
           <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-2">
             <div className="text-sm font-medium">
-              {qualityReport.blockingIssues.length > 0 ? 'Blocking issues' : 'No blocking issues'}
+              {qualityReport.blockingIssues.length > 0 ? '发布阻塞项' : '当前无发布阻塞项'}
             </div>
             {qualityReport.blockingIssues.length > 0 ? (
               <ul className="list-disc pl-5 space-y-1 text-sm text-status-danger">
@@ -465,11 +519,13 @@ export default async function EditInventoryPage({
                 ))}
               </ul>
             ) : (
-              <div className="text-sm text-teal-DEFAULT">This item can move to active once you are ready.</div>
+              <div className="text-sm text-teal-DEFAULT">
+                {isAdminUser ? '准备好后，这条记录可以切换为 active。' : '当前质量检查已通过；如需切换为 active，请交由 Admin 执行。'}
+              </div>
             )}
           </div>
           <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-2">
-            <div className="text-sm font-medium">Warnings</div>
+            <div className="text-sm font-medium">警告项</div>
             {qualityReport.warnings.length > 0 ? (
               <ul className="list-disc pl-5 space-y-1 text-sm text-status-warning">
                 {qualityReport.warnings.map((issue) => (
@@ -477,9 +533,58 @@ export default async function EditInventoryPage({
                 ))}
               </ul>
             ) : (
-              <div className="text-sm text-muted">No warnings right now.</div>
+              <div className="text-sm text-muted">当前没有警告项。</div>
             )}
           </div>
+          {linkedSubmission && (
+            <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-medium text-foreground">来源提报</div>
+                <Link
+                  href={`/admin/submissions/${linkedSubmission.id}`}
+                  className="text-xs font-medium text-teal-DEFAULT hover:underline"
+                >
+                  打开审核
+                </Link>
+              </div>
+              <div className="space-y-1 text-sm text-muted">
+                <div>提报 ID：<span className="text-foreground">{linkedSubmission.id}</span></div>
+                <div>供应商：<span className="text-foreground">{linkedSubmission.supplier_name || '未知'}</span></div>
+                <div>状态：<span className="text-foreground uppercase">{linkedSubmission.submission_status}</span></div>
+              </div>
+              <div className="border-t border-border pt-3 space-y-2 text-sm text-muted">
+                <div className="font-medium text-foreground">AI 审核上下文</div>
+                <div>
+                  缺失字段：{' '}
+                  <span className="text-foreground">
+                    {linkedAiDraftPackage?.missingFields?.length
+                      ? linkedAiDraftPackage.missingFields.join(' | ')
+                      : '无'}
+                  </span>
+                </div>
+                <div>
+                  风险标记：{' '}
+                  <span className="text-foreground">
+                    {linkedAiDraftPackage?.riskFlags?.length
+                      ? linkedAiDraftPackage.riskFlags
+                        .map((flag) => `${flag.severity}: ${flag.message}`)
+                        .join(' | ')
+                      : '无'}
+                  </span>
+                </div>
+                <div>
+                  人工复核重点：{' '}
+                  <span className="text-foreground">
+                    {linkedAiDraftPackage?.humanReviewFocus?.length
+                      ? linkedAiDraftPackage.humanReviewFocus
+                        .map((focus) => `${focus.field}: ${focus.reason}`)
+                        .join(' | ')
+                      : '无'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </aside>
       </section>
     </main>
