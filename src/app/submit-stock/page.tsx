@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { SubmissionFormDraftSync } from '@/components/submissions/form-draft-sync'
+import { BackofficeFlowBar } from '@/components/submissions/backoffice-flow-bar'
 import {
   SubmissionFieldHint,
   SubmissionFieldLabel,
@@ -235,6 +236,9 @@ export default async function SubmitStockPage({
             <div className="rounded-full border border-border bg-background px-3 py-1.5">
               价格、图片可后补
             </div>
+          </div>
+          <div className="mt-5">
+            <BackofficeFlowBar currentStep="submit" />
           </div>
         </div>
 
@@ -525,7 +529,7 @@ export default async function SubmitStockPage({
                         </div>
                       </div>
                       <div className="text-xs text-muted">
-                        提交后将直接进入审核页
+                        提交后直接去审核页
                       </div>
                     </div>
                   </div>
@@ -533,7 +537,7 @@ export default async function SubmitStockPage({
                     disabled={!serviceKeyReady}
                     className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    提交进入内部审核
+                    提交并去审核
                   </button>
                 </div>
               </div>

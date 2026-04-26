@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { BackofficeFlowBar } from '@/components/submissions/backoffice-flow-bar'
 import {
   contactVisibilityOptions,
   formatInventoryStatusLabel,
@@ -29,8 +30,8 @@ import DeleteButton from './DeleteButton'
 export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
-  'inventory-updated': '库存草稿已保存。',
-  'draft-created-from-submission': '已完成 LLM 整理，当前进入发布前确认。',
+  'inventory-updated': '库存草稿已保存，可继续发布检查。',
+  'draft-created-from-submission': '已完成转草稿，当前进入发布前确认。',
 }
 
 const errorMessages: Record<string, string> = {
@@ -336,7 +337,14 @@ export default async function EditInventoryPage({
   const hasBlockingIssues = qualityReport.blockingIssues.length > 0
   const hasWarnings = qualityReport.warnings.length > 0
   const readinessLabel = hasBlockingIssues ? `阻塞 ${qualityReport.blockingIssues.length} 项` : '可进入发布判断'
-  const sourceSubmissionLabel = linkedSubmission ? linkedSubmission.supplier_name || linkedSubmission.id : '手动创建'
+  const blockingSummaryText = hasBlockingIssues
+    ? `还有 ${qualityReport.blockingIssues.length} 个发布阻塞项。`
+    : '当前没有发布阻塞项。'
+  const nextActionSummaryText = hasBlockingIssues
+    ? '先处理阻塞项，再保存修改。'
+    : isAdminUser
+      ? '确认无误后，可切换为 active 并保存。'
+      : '确认内容无误后，交由 Admin 发布。'
   const publishDecisionText = hasBlockingIssues
     ? '当前不能发布，请先处理阻塞项。'
     : isAdminUser
@@ -396,27 +404,28 @@ export default async function EditInventoryPage({
               <div className="mt-2 text-sm font-medium text-foreground">{formatInventoryStatusLabel(item.status)}</div>
             </div>
             <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">来源提报</div>
-              <div className="mt-2 text-sm text-foreground">{sourceSubmissionLabel}</div>
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">当前阻塞</div>
+              <div className={`mt-2 text-sm font-medium ${hasBlockingIssues ? 'text-status-danger' : 'text-foreground'}`}>
+                {blockingSummaryText}
+              </div>
+              <div className="mt-1 text-xs text-muted">
+                {hasBlockingIssues ? readinessLabel : '当前已达到发布检查门槛。'}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">下一步动作</div>
+              <div className="mt-2 text-sm text-foreground">{nextActionSummaryText}</div>
               {linkedSubmission && (
                 <Link
                   href={appendReturnTo(`/admin/submissions/${linkedSubmission.id}`, currentEditHref)}
                   className="mt-2 inline-flex text-xs font-medium text-teal-DEFAULT hover:underline"
                 >
-                  打开来源审核
+                  回到来源审核
                 </Link>
               )}
             </div>
-            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">发布准备度</div>
-              <div className={`mt-2 text-sm font-medium ${hasBlockingIssues ? 'text-status-danger' : 'text-teal-DEFAULT'}`}>
-                {readinessLabel}
-              </div>
-              <div className="mt-1 text-xs text-muted">
-                {hasBlockingIssues ? '先处理阻塞项，再考虑切换状态。' : '当前已达到发布检查门槛。'}
-              </div>
-            </div>
           </div>
+          <BackofficeFlowBar currentStep="edit" />
         </div>
 
         {successMessage && (
@@ -593,23 +602,8 @@ export default async function EditInventoryPage({
               </div>
             </div>
             <div className="text-sm text-foreground">{publishDecisionText}</div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-border/70 px-3 py-3">
-                <div className="text-xs text-muted">当前状态</div>
-                <div className="mt-1 text-sm font-semibold text-foreground">{formatInventoryStatusLabel(item.status)}</div>
-              </div>
-              <div className="rounded-xl border border-border/70 px-3 py-3">
-                <div className="text-xs text-muted">阻塞项</div>
-                <div className={`mt-1 text-sm font-semibold ${hasBlockingIssues ? 'text-status-danger' : 'text-teal-DEFAULT'}`}>
-                  {qualityReport.blockingIssues.length}
-                </div>
-              </div>
-              <div className="rounded-xl border border-border/70 px-3 py-3">
-                <div className="text-xs text-muted">警告项</div>
-                <div className={`mt-1 text-sm font-semibold ${hasWarnings ? 'text-status-warning' : 'text-foreground'}`}>
-                  {qualityReport.warnings.length}
-                </div>
-              </div>
+            <div className="text-xs text-muted">
+              警告项 {qualityReport.warnings.length} 条，阻塞项明细在下方查看。
             </div>
           </div>
 
@@ -657,7 +651,7 @@ export default async function EditInventoryPage({
                   href={`/admin/submissions/${linkedSubmission.id}`}
                   className="text-xs font-medium text-teal-DEFAULT hover:underline"
                 >
-                  打开审核
+                  去来源审核
                 </Link>
               </div>
               <div className="space-y-1 text-sm text-muted">
@@ -666,35 +660,41 @@ export default async function EditInventoryPage({
                 <div>状态：<span className="text-foreground uppercase">{linkedSubmission.submission_status}</span></div>
               </div>
               <div className="border-t border-border pt-3 space-y-2 text-sm text-muted">
-                <div className="font-medium text-foreground">规则整理上下文</div>
-                <div>
-                  缺失字段：{' '}
-                  <span className="text-foreground">
-                    {linkedAiDraftPackage?.missingFields?.length
-                      ? linkedAiDraftPackage.missingFields.join(' | ')
-                      : '无'}
-                  </span>
-                </div>
-                <div>
-                  风险标记：{' '}
-                  <span className="text-foreground">
-                    {linkedAiDraftPackage?.riskFlags?.length
-                      ? linkedAiDraftPackage.riskFlags
-                        .map((flag) => `${flag.severity}: ${flag.message}`)
-                        .join(' | ')
-                      : '无'}
-                  </span>
-                </div>
-                <div>
-                  人工复核重点：{' '}
-                  <span className="text-foreground">
-                    {linkedAiDraftPackage?.humanReviewFocus?.length
-                      ? linkedAiDraftPackage.humanReviewFocus
-                        .map((focus) => `${focus.field}: ${focus.reason}`)
-                        .join(' | ')
-                      : '无'}
-                  </span>
-                </div>
+                <details className="group">
+                  <summary className="cursor-pointer list-none font-medium text-foreground">
+                    展开规则整理上下文
+                  </summary>
+                  <div className="mt-3 space-y-2">
+                    <div>
+                      缺失字段：{' '}
+                      <span className="text-foreground">
+                        {linkedAiDraftPackage?.missingFields?.length
+                          ? linkedAiDraftPackage.missingFields.join(' | ')
+                          : '无'}
+                      </span>
+                    </div>
+                    <div>
+                      风险标记：{' '}
+                      <span className="text-foreground">
+                        {linkedAiDraftPackage?.riskFlags?.length
+                          ? linkedAiDraftPackage.riskFlags
+                            .map((flag) => `${flag.severity}: ${flag.message}`)
+                            .join(' | ')
+                          : '无'}
+                      </span>
+                    </div>
+                    <div>
+                      人工复核重点：{' '}
+                      <span className="text-foreground">
+                        {linkedAiDraftPackage?.humanReviewFocus?.length
+                          ? linkedAiDraftPackage.humanReviewFocus
+                            .map((focus) => `${focus.field}: ${focus.reason}`)
+                            .join(' | ')
+                          : '无'}
+                      </span>
+                    </div>
+                  </div>
+                </details>
               </div>
             </div>
           )}

@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { BackofficeFlowBar } from '@/components/submissions/backoffice-flow-bar'
 import {
   formatInventoryStatusActionLabel,
   formatInventoryQualityMessage,
@@ -33,16 +34,16 @@ export const dynamic = 'force-dynamic'
 const ITEMS_PER_PAGE = 10
 
 const successMessages: Record<string, string> = {
-  'status-updated': 'Inventory status updated successfully.',
+  'status-updated': '库存状态已更新。',
 }
 
 const errorMessages: Record<string, string> = {
   'invalid-credentials': '用户名或密码不正确。',
-  'missing-service-role-key': 'SUPABASE_SERVICE_ROLE_KEY is missing, so write actions are disabled.',
+  'missing-service-role-key': '缺少 `SUPABASE_SERVICE_ROLE_KEY`，当前无法执行写入动作。',
   'missing-session-secret': '缺少 BACKOFFICE_SESSION_SECRET，后台登录已被禁用。',
-  'missing-required-fields': 'Fill in the required inventory fields before saving the draft.',
-  'publish-blocked': 'This inventory cannot be published yet. Resolve the blocking issues first.',
-  'invalid-status': 'The selected status is not allowed.',
+  'missing-required-fields': '请先补齐库存必填字段，再保存草稿。',
+  'publish-blocked': '当前库存还不能发布，请先处理发布阻塞项。',
+  'invalid-status': '当前状态切换不被允许。',
   'insufficient-role': '当前角色无权使用该后台入口或动作。',
 }
 
@@ -55,6 +56,42 @@ const submissionStatusLabels: Record<(typeof supplierSubmissionStatusOptions)[nu
 
 function formatSubmissionStatusLabel(status: (typeof supplierSubmissionStatusOptions)[number]) {
   return submissionStatusLabels[status]
+}
+
+function getSubmissionPriorityMeta(item: {
+  missingRequiredFields: string[]
+}) {
+  if (item.missingRequiredFields.length > 0) {
+    return {
+      label: '优先补齐',
+      className: 'border-status-warning/30 bg-status-warning/10 text-status-warning',
+      hint: `先补齐 ${item.missingRequiredFields.length} 项最低必填`,
+    }
+  }
+
+  return {
+    label: '优先转草稿',
+    className: 'border-teal-DEFAULT/30 bg-teal-DEFAULT/10 text-teal-DEFAULT',
+    hint: '最低必填已齐，可继续审核并转草稿',
+  }
+}
+
+function getDraftPriorityMeta(item: {
+  qualityReport: { blockingIssues: string[] }
+}) {
+  if (item.qualityReport.blockingIssues.length > 0) {
+    return {
+      label: '先清阻塞',
+      className: 'border-status-danger/30 bg-status-danger/10 text-status-danger',
+      hint: `先处理 ${item.qualityReport.blockingIssues.length} 个发布阻塞项`,
+    }
+  }
+
+  return {
+    label: '可进入发布',
+    className: 'border-teal-DEFAULT/30 bg-teal-DEFAULT/10 text-teal-DEFAULT',
+    hint: '阻塞项已清空，可继续发布检查',
+  }
 }
 
 function resolveBackofficeRoleByCredentials(username: string, password: string): BackofficeRole | null {
@@ -411,9 +448,9 @@ export default async function AdminPage({
     }
   })
   const workflowPrimaryHref = '/admin/submissions'
-  const workflowPrimaryLabel = '进入审核队列 →'
+  const workflowPrimaryLabel = '去审核队列 →'
   const workflowSecondaryHref = '/submit-stock'
-  const workflowSecondaryLabel = '打开内部录入 →'
+  const workflowSecondaryLabel = '去内部录入 →'
   const roleSummary = isAdminUser
     ? 'Admin 负责审核推进、草稿终审和发布判断。'
     : 'Staff 负责内部录入、审核处理和草稿衔接。'
@@ -494,6 +531,7 @@ export default async function AdminPage({
             低频操作已移到独立工具页，首页只保留主流程。
           </div>
         )}
+        <BackofficeFlowBar currentStep="admin" />
       </section>
 
       <section className="space-y-8">
@@ -502,45 +540,62 @@ export default async function AdminPage({
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold">待审核录入</h2>
-                <p className="text-sm text-muted mt-1">这里只放还没转成草稿的录入。</p>
+                <p className="text-sm text-muted mt-1">先补最低必填，再把可推进的记录送进草稿。</p>
               </div>
               <div className="flex items-center gap-3">
                 <Link href="/admin/submissions?return_to=%2Fadmin" className="text-sm text-teal-DEFAULT hover:underline font-medium">
-                  查看审核队列 →
+                  去审核队列 →
                 </Link>
               </div>
             </div>
             <div className="space-y-4">
               {submissionRows.length === 0 ? (
                 <div className="rounded-xl border border-border/70 bg-background px-4 py-5 text-sm text-muted">
-                  当前没有待审核录入。
-                </div>
-              ) : (
-                submissionRows.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-border p-4 space-y-3">
-                    <div className="flex justify-between gap-3">
-                      <div>
-                        <div className="font-semibold">{item.brand || '待补品牌'} · {item.model_name || '待补型号'}</div>
-                        <div className="text-sm text-muted">{item.supplier_name || '待补供应商'}</div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div className="font-medium">{formatSubmissionStatusLabel(item.submission_status)}</div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
-                      {item.missingRequiredFields.length > 0 ? (
-                        <div className="text-sm text-status-warning">
-                          下一步：补齐 {item.missingRequiredFields.length} 项
-                        </div>
-                      ) : (
-                        <div className="text-sm text-teal-DEFAULT">下一步：进入审核并转草稿</div>
-                      )}
-                    </div>
-                    <Link href={`/admin/submissions/${item.id}?return_to=%2Fadmin`} className="inline-flex text-sm text-teal-DEFAULT hover:underline font-medium">
-                      进入审核 →
+                  <div>当前没有待审核录入。</div>
+                  <div className="mt-2">先去内部录入台新增提报，再回到这里推进审核。</div>
+                  <div className="mt-4">
+                    <Link href="/submit-stock?return_to=%2Fadmin" className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-teal-DEFAULT hover:bg-surface">
+                      去内部录入 →
                     </Link>
                   </div>
-                ))
+                </div>
+              ) : (
+                submissionRows.map((item) => {
+                  const priorityMeta = getSubmissionPriorityMeta(item)
+
+                  return (
+                    <div key={item.id} className="rounded-xl border border-border p-4 space-y-3">
+                      <div className="flex justify-between gap-3">
+                        <div>
+                          <div className="font-semibold">{item.brand || '待补品牌'} · {item.model_name || '待补型号'}</div>
+                          <div className="text-sm text-muted">{item.supplier_name || '待补供应商'}</div>
+                        </div>
+                        <div className="text-right text-sm">
+                          <div className="font-medium">{formatSubmissionStatusLabel(item.submission_status)}</div>
+                        </div>
+                      </div>
+                      <div className="rounded-xl border border-border/70 bg-background px-4 py-3 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted">处理优先级</span>
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${priorityMeta.className}`}>
+                            {priorityMeta.label}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted">{priorityMeta.hint}</div>
+                        {item.missingRequiredFields.length > 0 ? (
+                          <div className="text-sm text-status-warning">
+                            下一步：补齐 {item.missingRequiredFields.length} 项
+                          </div>
+                        ) : (
+                          <div className="text-sm text-teal-DEFAULT">下一步：去审核并转草稿</div>
+                        )}
+                      </div>
+                      <Link href={`/admin/submissions/${item.id}?return_to=%2Fadmin`} className="inline-flex text-sm text-teal-DEFAULT hover:underline font-medium">
+                        去审核 →
+                      </Link>
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>
@@ -549,53 +604,65 @@ export default async function AdminPage({
             <div className="flex justify-between items-center">
               <div>
                 <h2 className="text-xl font-bold">待发布草稿</h2>
-                <p className="mt-1 text-sm text-muted">这里只放 `draft`，已上线库存不在这里显示。</p>
+                <p className="mt-1 text-sm text-muted">先清发布阻塞，再决定是否直接上线。</p>
               </div>
               <span className="text-sm text-muted">草稿数：{totalItems}</span>
             </div>
             <div className="space-y-4">
               {inventoryRows.length === 0 ? (
                 <div className="rounded-xl border border-border/70 bg-background px-4 py-5 text-sm text-muted">
-                  当前没有待发布草稿。
+                  <div>当前没有待发布草稿。</div>
+                  <div className="mt-2">审核队列转出草稿后，会自动回到这里继续发布检查。</div>
                 </div>
               ) : (
-                inventoryRows.map((item) => (
-                  <div key={item.id} className="rounded-xl border border-border p-4 space-y-4">
-                    <div className="flex justify-between gap-3">
-                      <div>
-                        <div className="font-semibold">{item.title}</div>
-                        <div className="text-sm text-muted">{item.brand} · {item.market}</div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div className="font-medium tracking-wide text-muted">待发布</div>
-                      </div>
-                    </div>
-                    <div className="rounded-xl border border-border/70 bg-background px-4 py-3">
-                      {item.qualityReport.blockingIssues.length > 0 ? (
-                        <div className="text-sm text-status-danger">
-                          下一步：先处理 {item.qualityReport.blockingIssues.length} 个发布阻塞项
+                inventoryRows.map((item) => {
+                  const priorityMeta = getDraftPriorityMeta(item)
+
+                  return (
+                    <div key={item.id} className="rounded-xl border border-border p-4 space-y-4">
+                      <div className="flex justify-between gap-3">
+                        <div>
+                          <div className="font-semibold">{item.title}</div>
+                          <div className="text-sm text-muted">{item.brand} · {item.market}</div>
                         </div>
-                      ) : (
-                        <div className="text-sm text-teal-DEFAULT">下一步：可以直接发布</div>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                      <Link href={`/admin/edit/${item.id}?return_to=%2Fadmin`} className="text-sm text-teal-DEFAULT hover:underline font-medium">
-                        进入发布检查 →
-                      </Link>
-                      {isAdminUser ? (
-                        <form action={updateStatusAction} className="flex flex-wrap gap-2 xl:justify-end">
-                          <input type="hidden" name="id" value={item.id} />
-                          <button name="status" value="active" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-background transition-colors">{formatInventoryStatusActionLabel('active')}</button>
-                        </form>
-                      ) : (
-                        <div className="text-xs text-muted">
-                          `Staff` 角色请进入草稿页继续处理内容。
+                        <div className="text-right text-sm">
+                          <div className="font-medium tracking-wide text-muted">待发布</div>
                         </div>
-                      )}
+                      </div>
+                      <div className="rounded-xl border border-border/70 bg-background px-4 py-3 space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs text-muted">处理优先级</span>
+                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${priorityMeta.className}`}>
+                            {priorityMeta.label}
+                          </span>
+                        </div>
+                        <div className="text-xs text-muted">{priorityMeta.hint}</div>
+                        {item.qualityReport.blockingIssues.length > 0 ? (
+                          <div className="text-sm text-status-danger">
+                            下一步：先处理 {item.qualityReport.blockingIssues.length} 个发布阻塞项
+                          </div>
+                        ) : (
+                          <div className="text-sm text-teal-DEFAULT">下一步：可以直接发布</div>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                        <Link href={`/admin/edit/${item.id}?return_to=%2Fadmin`} className="text-sm text-teal-DEFAULT hover:underline font-medium">
+                          去发布检查 →
+                        </Link>
+                        {isAdminUser ? (
+                          <form action={updateStatusAction} className="flex flex-wrap gap-2 xl:justify-end">
+                            <input type="hidden" name="id" value={item.id} />
+                            <button name="status" value="active" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-background transition-colors">{formatInventoryStatusActionLabel('active')}</button>
+                          </form>
+                        ) : (
+                          <div className="text-xs text-muted">
+                            `Staff` 角色请进入草稿页继续处理内容。
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  )
+                })
               )}
             </div>
 

@@ -4,6 +4,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import {
+  BackofficeFlowBar,
+} from '@/components/submissions/backoffice-flow-bar'
+import {
   SubmissionFieldLabel,
 } from '@/components/submissions/field-meta'
 import {
@@ -37,9 +40,9 @@ import {
 export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
-  'submission-created': '录入已写入成功，当前页面就是这条提报的审核入口。',
-  'submission-updated': '提报已保存。',
-  'submission-converted': '提报已转换为库存草稿。',
+  'submission-created': '提报已录入成功，当前页面就是这条记录的审核入口。',
+  'submission-updated': '提报已保存，可继续审核。',
+  'submission-converted': '已完成转草稿，下一步去草稿继续编辑。',
 }
 
 const errorMessages: Record<string, string> = {
@@ -250,6 +253,16 @@ export default async function EditSubmissionPage({
       ? item.submission_status
       : 'new',
   })
+  const normalizedModelName = submissionValues.modelName.trim()
+  const { data: sameModelSubmissionMatches } = normalizedModelName
+    ? await adminClient
+        .from('supplier_submissions')
+        .select('id, supplier_name, brand, model_name, submission_status, converted_inventory_id, created_at')
+        .ilike('model_name', normalizedModelName)
+        .neq('id', resolvedParams.id)
+        .order('created_at', { ascending: false })
+        .limit(6)
+    : { data: [] }
   const requiredFieldIssues = getSupplierSubmissionMissingRequiredFields(submissionValues)
   const highlightedFields = new Set<SupplierSubmissionRequiredField>([
     ...requiredFieldIssues,
@@ -281,20 +294,25 @@ export default async function EditSubmissionPage({
     ? 'LLM 处理已可用，可直接生成草稿辅助上下文。'
     : 'LLM 处理暂不可用，先补齐最低必填项。'
   const primaryActionLabel = hasConvertedDraft
-    ? '打开库存草稿'
+    ? '去草稿继续编辑'
     : aiAssistReady
       ? 'LLM 完善并生成草稿'
       : '保存审核'
+  const statusSummaryText = formatSubmissionStatusLabel(submissionValues.submissionStatus)
   const blockingSummaryText = hasConvertedDraft
     ? '这条录入已经转成草稿。'
     : requiredFieldCount === 0
       ? '最低必填项已补齐。'
       : `还缺 ${requiredFieldCount} 项最低必填。`
   const nextStepSummaryText = hasConvertedDraft
-    ? '进入草稿页继续编辑并准备发布。'
+    ? '去草稿继续编辑，并准备发布。'
     : aiAssistReady
       ? '可直接执行标准化并转成草稿。'
       : '先补齐高亮字段，再保存审核。'
+  const duplicateModelHintRows = (sameModelSubmissionMatches ?? []).filter((match) => match.model_name?.trim())
+  const duplicateModelSummaryText = duplicateModelHintRows.length > 0
+    ? `发现 ${duplicateModelHintRows.length} 条同型号记录，转草稿前先确认是否重复。`
+    : '当前没有发现同型号记录。'
   const queueHref = returnTo ?? '/admin/submissions'
   const queueLabel = returnTo?.startsWith('/submit-stock') ? '内部录入' : '提报队列'
   const currentDetailHref = buildSubmissionDetailHref(resolvedParams.id, {}, returnTo)
@@ -555,7 +573,12 @@ export default async function EditSubmissionPage({
             </div>
           </div>
 
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">当前状态</div>
+              <div className="mt-2 text-sm font-medium text-foreground">{statusSummaryText}</div>
+              <div className="mt-1 text-xs text-muted">当前主动作：{primaryActionLabel}</div>
+            </div>
             <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
               <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">当前阻塞</div>
               <div className={`mt-2 text-sm ${requiredFieldCount > 0 && !hasConvertedDraft ? 'text-status-warning' : 'text-foreground'}`}>
@@ -563,10 +586,64 @@ export default async function EditSubmissionPage({
               </div>
             </div>
             <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
-              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">下一步</div>
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">下一步动作</div>
               <div className="mt-2 text-sm text-foreground">{nextStepSummaryText}</div>
             </div>
           </div>
+          <BackofficeFlowBar currentStep="review" />
+
+          {normalizedModelName && (
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-1">
+                  <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">同型号提示</div>
+                  <div className={`text-sm ${duplicateModelHintRows.length > 0 ? 'text-status-warning' : 'text-foreground'}`}>
+                    {duplicateModelSummaryText}
+                  </div>
+                  <div className="text-xs text-muted">
+                    当前按型号 `{normalizedModelName}` 检查，不以同供应商或同品牌单独判重。
+                  </div>
+                </div>
+              </div>
+
+              {duplicateModelHintRows.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {duplicateModelHintRows.map((match) => (
+                    <div key={match.id} className="flex flex-col gap-2 rounded-xl border border-border bg-surface px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium text-foreground">
+                          {match.brand || '待补品牌'} · {match.model_name || '待补型号'}
+                        </div>
+                        <div className="text-xs text-muted">
+                          {match.supplier_name || '待补供应商'} · {formatSubmissionStatusLabel(
+                            supplierSubmissionStatusOptions.includes(match.submission_status)
+                              ? match.submission_status
+                              : 'new'
+                          )} · {new Date(match.created_at).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-sm">
+                        <Link
+                          href={appendReturnTo(`/admin/submissions/${match.id}`, currentDetailHref)}
+                          className="font-medium text-teal-DEFAULT hover:underline"
+                        >
+                          打开记录 →
+                        </Link>
+                        {match.converted_inventory_id && (
+                          <Link
+                            href={appendReturnTo(`/admin/edit/${match.converted_inventory_id}`, currentDetailHref)}
+                            className="font-medium text-teal-DEFAULT hover:underline"
+                          >
+                            打开草稿 →
+                          </Link>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {successMessage && (
@@ -785,7 +862,7 @@ export default async function EditSubmissionPage({
                   href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)}
                   className="inline-flex items-center justify-center rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background"
                 >
-                  打开库存草稿
+                  去草稿继续编辑
                 </Link>
               ) : aiAssistReady ? (
                 <button
@@ -822,27 +899,21 @@ export default async function EditSubmissionPage({
 
           <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             <div className="rounded-3xl border border-border bg-surface p-6">
-              <h2 className="text-xl font-bold text-foreground">处理摘要</h2>
+              <h2 className="text-xl font-bold text-foreground">处理提醒</h2>
               <div className="mt-4 space-y-4 text-sm text-muted">
-                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div>当前状态：<span className="font-medium text-foreground">{formatSubmissionStatusLabel(submissionValues.submissionStatus)}</span></div>
-                  <div>当前主动作：<span className="font-medium text-foreground">{primaryActionLabel}</span></div>
-                  <div>最后更新：{new Date(item.updated_at).toLocaleString()}</div>
-                </div>
-
                 {item.converted_inventory_id && (
                   <div className="rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-4 py-3 space-y-2">
                     <div>已关联草稿：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
                     <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
-                      打开草稿编辑 →
+                      去草稿继续编辑 →
                     </Link>
                   </div>
                 )}
 
                 <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div className="font-medium text-foreground">当前阻塞</div>
+                  <div className="font-medium text-foreground">处理重点</div>
                   {requiredFieldCount === 0 ? (
-                    <div className="text-teal-DEFAULT">无，可继续下一步。</div>
+                    <div className="text-teal-DEFAULT">最低必填已齐，可继续下一步。</div>
                   ) : (
                     <ul className="list-disc space-y-1 pl-5">
                       {requiredFieldIssues.map((field) => (
@@ -854,6 +925,9 @@ export default async function EditSubmissionPage({
                       ))}
                     </ul>
                   )}
+                </div>
+                <div className="text-xs text-muted">
+                  最后更新：{new Date(item.updated_at).toLocaleString()}
                 </div>
               </div>
             </div>
