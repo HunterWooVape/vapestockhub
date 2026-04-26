@@ -1,5 +1,10 @@
 # VapeStockHub 后台信息架构重构蓝图
 
+> 状态说明：
+> - 本文件保留为历史蓝图参考
+> - 当前实施基线已切换到 `BACKOFFICE_WORKFLOW_REFACTOR_V1.md`
+> - 如需排期与开发顺序，请改看 `BACKOFFICE_REFACTOR_EXECUTION_PLAN.md`
+
 ## 1. 文档定位
 
 本文件是“目标态蓝图”，用于指导后台中文化与工作台化重构。

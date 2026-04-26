@@ -1,5 +1,10 @@
 # VapeStockHub 后台中文 UI/UX 轻量执行清单
 
+> 状态说明：
+> - 本文件继续保留，但页面定位与优先级需按 `BACKOFFICE_WORKFLOW_REFACTOR_V1.md` 重新对齐
+> - 当前执行阶段和依赖关系以 `BACKOFFICE_REFACTOR_EXECUTION_PLAN.md` 为准
+> - 后续应围绕 `库存录入台 / 提报队列 / LLM 完善与审核 / 发布前确认` 重排清单
+
 ## 1. 目的
 
 本清单用于承接后台蓝图中的第 3 段：

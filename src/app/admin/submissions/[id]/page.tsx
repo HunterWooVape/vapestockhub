@@ -4,9 +4,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import {
-  SubmissionFieldHint,
   SubmissionFieldLabel,
-  SubmissionGuidePanel,
 } from '@/components/submissions/field-meta'
 import {
   buildAiDraftPackageSeedFromSubmission,
@@ -15,6 +13,7 @@ import {
   buildSubmissionTitle,
   convertSubmissionToDraftSeed,
   formatSupplierSubmissionFieldLabel,
+  formatSupplierSubmissionSourceLabel,
   getSupplierSubmissionMissingRequiredFields,
   normalizeSupplierSubmissionValues,
   supplierSubmissionSourceOptions,
@@ -29,20 +28,31 @@ import {
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
-import { adminSessionCookieName, isBackofficeAuthenticated } from '@/lib/unlock'
+import {
+  adminSessionCookieName,
+  isBackofficeAuthenticated,
+  normalizeBackofficeReturnTo,
+} from '@/lib/unlock'
 
 export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
+  'submission-created': '录入已写入成功，当前页面就是这条提报的审核入口。',
   'submission-updated': '提报已保存。',
   'submission-converted': '提报已转换为库存草稿。',
-  'ai-suggestion-generated': 'AI 建议包已生成。',
 }
 
 const errorMessages: Record<string, string> = {
   'missing-service-role-key': '缺少 `SUPABASE_SERVICE_ROLE_KEY`，当前无法执行写入操作。',
   'missing-required-fields': '请先补齐最低必填项，再保存或转草稿。',
   'already-converted': '该提报已经关联到库存草稿。',
+}
+
+const submissionStatusLabels: Record<(typeof supplierSubmissionStatusOptions)[number], string> = {
+  new: '新录入',
+  reviewing: '审核中',
+  converted: '已转草稿',
+  rejected: '已驳回',
 }
 
 function getSingleParam(value?: string | string[]) {
@@ -52,6 +62,10 @@ function getSingleParam(value?: string | string[]) {
 function getUniqueValues(values: Array<string | null | undefined>) {
   return Array.from(new Set(values.map((value) => value?.trim()).filter(Boolean) as string[]))
     .sort((left, right) => left.localeCompare(right))
+}
+
+function formatSubmissionStatusLabel(status: (typeof supplierSubmissionStatusOptions)[number]) {
+  return submissionStatusLabels[status]
 }
 
 const reviewFieldAnchorIds: Record<SupplierSubmissionRequiredField, string> = {
@@ -70,14 +84,52 @@ function getReviewFieldWrapperClass(isHighlighted: boolean) {
     : 'space-y-2'
 }
 
-function buildMissingFieldsRedirect(path: string, fields: string[]) {
-  const searchParams = new URLSearchParams({ error: 'missing-required-fields' })
+const reviewInputClassName = 'w-full rounded-xl border border-border bg-background px-4 py-3 text-sm'
+const reviewSelectClassName = 'w-full rounded-xl border border-border bg-background px-4 py-3 text-sm'
+const reviewTextareaClassName = 'w-full min-h-32 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm'
 
-  if (fields.length > 0) {
-    searchParams.set('missing_fields', fields.join(','))
+function buildSubmissionDetailHref(
+  id: string,
+  params: Record<string, string | null | undefined> = {},
+  returnTo?: string | null
+) {
+  const searchParams = new URLSearchParams()
+
+  if (returnTo) {
+    searchParams.set('return_to', returnTo)
   }
 
-  return `${path}?${searchParams.toString()}`
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) {
+      searchParams.set(key, value)
+    }
+  })
+
+  const queryString = searchParams.toString()
+  return queryString ? `/admin/submissions/${id}?${queryString}` : `/admin/submissions/${id}`
+}
+
+function buildMissingFieldsRedirect(id: string, fields: string[], returnTo?: string | null) {
+  const searchParams: Record<string, string> = {
+    error: 'missing-required-fields',
+  }
+
+  if (fields.length > 0) {
+    searchParams.missing_fields = fields.join(',')
+  }
+
+  return buildSubmissionDetailHref(id, searchParams, returnTo)
+}
+
+function appendReturnTo(path: string, returnTo?: string | null) {
+  const normalizedReturnTo = normalizeBackofficeReturnTo(returnTo)
+
+  if (!normalizedReturnTo) {
+    return path
+  }
+
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}return_to=${encodeURIComponent(normalizedReturnTo)}`
 }
 
 function revalidateSubmissionRoutes(id: string, inventoryId?: string, inventorySlug?: string) {
@@ -139,6 +191,7 @@ export default async function EditSubmissionPage({
   const resolvedSearchParams = await searchParams
   const success = getSingleParam(resolvedSearchParams.success)
   const error = getSingleParam(resolvedSearchParams.error)
+  const returnTo = normalizeBackofficeReturnTo(getSingleParam(resolvedSearchParams.return_to))
   const missingFields = (getSingleParam(resolvedSearchParams.missing_fields) ?? '')
     .split(',')
     .map((item) => item.trim())
@@ -165,7 +218,7 @@ export default async function EditSubmissionPage({
   }
 
   const knownBrands = getUniqueValues((inventoryOptions ?? []).map((entry) => entry.brand))
-  const knownMarkets = getUniqueValues((inventoryOptions ?? []).map((entry) => entry.market))
+  const knownMarkets = getUniqueValues(['Global', ...((inventoryOptions ?? []).map((entry) => entry.market))])
   const submissionValues = normalizeSupplierSubmissionValues({
     supplierName: item.supplier_name ?? '',
     contactName: item.contact_name ?? '',
@@ -180,10 +233,12 @@ export default async function EditSubmissionPage({
     availableQtyText: item.available_qty_text ?? '',
     moqText: item.moq_text ?? '',
     targetMarket: item.target_market ?? '',
+    marketAccessNote: item.market_access_note ?? '',
     warehouseLocation: item.warehouse_location ?? '',
     puffText: item.puff_text ?? '',
     nicotineText: item.nicotine_text ?? '',
     eLiquidText: item.e_liquid_text ?? '',
+    productionDateText: item.production_date_text ?? '',
     flavorList: item.flavor_list ?? '',
     flavorBreakdown: item.flavor_breakdown ?? '',
     imageLinks: item.image_links ?? '',
@@ -221,14 +276,28 @@ export default async function EditSubmissionPage({
       ? [submissionValues.productType, ...productTypeOptions]
       : productTypeOptions
   const requiredFieldCount = requiredFieldIssues.length
-  const reviewNextStep = requiredFieldCount === 0
-    ? item.converted_inventory_id
-      ? '最低必填项已齐，当前可直接进入草稿页继续编辑。'
-      : '最低必填项已齐，当前可生成 AI 建议或转为库存草稿。'
-    : `还差 ${requiredFieldCount} 个最低必填项，先补齐再继续后续动作。`
+  const hasConvertedDraft = Boolean(item.converted_inventory_id)
   const aiSummaryText = aiAssistReady
-    ? 'AI 建议已可用，可作为后续草稿编辑的辅助上下文。'
-    : 'AI 建议暂不可用，先补齐最低必填项。'
+    ? 'LLM 处理已可用，可直接生成草稿辅助上下文。'
+    : 'LLM 处理暂不可用，先补齐最低必填项。'
+  const primaryActionLabel = hasConvertedDraft
+    ? '打开库存草稿'
+    : aiAssistReady
+      ? 'LLM 完善并生成草稿'
+      : '保存审核'
+  const blockingSummaryText = hasConvertedDraft
+    ? '这条录入已经转成草稿。'
+    : requiredFieldCount === 0
+      ? '最低必填项已补齐。'
+      : `还缺 ${requiredFieldCount} 项最低必填。`
+  const nextStepSummaryText = hasConvertedDraft
+    ? '进入草稿页继续编辑并准备发布。'
+    : aiAssistReady
+      ? '可直接执行标准化并转成草稿。'
+      : '先补齐高亮字段，再保存审核。'
+  const queueHref = returnTo ?? '/admin/submissions'
+  const queueLabel = returnTo?.startsWith('/submit-stock') ? '内部录入' : '提报队列'
+  const currentDetailHref = buildSubmissionDetailHref(resolvedParams.id, {}, returnTo)
 
   async function updateSubmissionAction(formData: FormData) {
     'use server'
@@ -240,7 +309,11 @@ export default async function EditSubmissionPage({
 
     const actionAdminClient = createAdminClient()
     if (!actionAdminClient) {
-      redirect(`/admin/submissions/${resolvedParams.id}?error=missing-service-role-key`)
+      redirect(buildSubmissionDetailHref(
+        resolvedParams.id,
+        { error: 'missing-service-role-key' },
+        returnTo
+      ))
     }
 
     const submittedSourceType = String(formData.get('source_type') || '').trim()
@@ -259,10 +332,12 @@ export default async function EditSubmissionPage({
       availableQtyText: String(formData.get('available_qty_text') || '').trim(),
       moqText: String(formData.get('moq_text') || '').trim(),
       targetMarket: String(formData.get('target_market') || '').trim(),
+      marketAccessNote: String(formData.get('market_access_note') || '').trim(),
       warehouseLocation: String(formData.get('warehouse_location') || '').trim(),
       puffText: String(formData.get('puff_text') || '').trim(),
       nicotineText: String(formData.get('nicotine_text') || '').trim(),
       eLiquidText: String(formData.get('e_liquid_text') || '').trim(),
+      productionDateText: String(formData.get('production_date_text') || '').trim(),
       flavorList: String(formData.get('flavor_list') || '').trim(),
       flavorBreakdown: String(formData.get('flavor_breakdown') || '').trim(),
       imageLinks: String(formData.get('image_links') || '').trim(),
@@ -278,7 +353,7 @@ export default async function EditSubmissionPage({
     const nextRequiredFieldIssues = getSupplierSubmissionMissingRequiredFields(nextValues)
 
     if (nextRequiredFieldIssues.length > 0) {
-      redirect(buildMissingFieldsRedirect(`/admin/submissions/${resolvedParams.id}`, nextRequiredFieldIssues))
+      redirect(buildMissingFieldsRedirect(resolvedParams.id, nextRequiredFieldIssues, returnTo))
     }
 
     await actionAdminClient.from('supplier_submissions').update({
@@ -293,10 +368,12 @@ export default async function EditSubmissionPage({
       available_qty_text: nextValues.availableQtyText,
       moq_text: nextValues.moqText || null,
       target_market: nextValues.targetMarket,
+      market_access_note: nextValues.marketAccessNote || null,
       warehouse_location: nextValues.warehouseLocation,
       puff_text: nextValues.puffText || null,
       nicotine_text: nextValues.nicotineText || null,
       e_liquid_text: nextValues.eLiquidText || null,
+      production_date_text: nextValues.productionDateText || null,
       flavor_list: nextValues.flavorList || null,
       flavor_breakdown: nextValues.flavorBreakdown || null,
       image_links: nextValues.imageLinks || null,
@@ -309,10 +386,14 @@ export default async function EditSubmissionPage({
     }).eq('id', resolvedParams.id)
 
     revalidateSubmissionRoutes(resolvedParams.id, item.converted_inventory_id ?? undefined)
-    redirect(`/admin/submissions/${resolvedParams.id}?success=submission-updated`)
+    redirect(buildSubmissionDetailHref(
+      resolvedParams.id,
+      { success: 'submission-updated' },
+      returnTo
+    ))
   }
 
-  async function convertSubmissionAction() {
+  async function generateDraftFromSubmissionAction() {
     'use server'
 
     const actionCookies = await cookies()
@@ -322,7 +403,11 @@ export default async function EditSubmissionPage({
 
     const actionAdminClient = createAdminClient()
     if (!actionAdminClient) {
-      redirect(`/admin/submissions/${resolvedParams.id}?error=missing-service-role-key`)
+      redirect(buildSubmissionDetailHref(
+        resolvedParams.id,
+        { error: 'missing-service-role-key' },
+        returnTo
+      ))
     }
 
     const { data: latestSubmission } = await actionAdminClient
@@ -333,10 +418,6 @@ export default async function EditSubmissionPage({
 
     if (!latestSubmission) {
       redirect('/admin')
-    }
-
-    if (latestSubmission.converted_inventory_id) {
-      redirect(`/admin/submissions/${resolvedParams.id}?error=already-converted`)
     }
 
     const latestValues = normalizeSupplierSubmissionValues({
@@ -353,10 +434,12 @@ export default async function EditSubmissionPage({
       availableQtyText: latestSubmission.available_qty_text ?? '',
       moqText: latestSubmission.moq_text ?? '',
       targetMarket: latestSubmission.target_market ?? '',
+      marketAccessNote: latestSubmission.market_access_note ?? '',
       warehouseLocation: latestSubmission.warehouse_location ?? '',
       puffText: latestSubmission.puff_text ?? '',
       nicotineText: latestSubmission.nicotine_text ?? '',
       eLiquidText: latestSubmission.e_liquid_text ?? '',
+      productionDateText: latestSubmission.production_date_text ?? '',
       flavorList: latestSubmission.flavor_list ?? '',
       flavorBreakdown: latestSubmission.flavor_breakdown ?? '',
       imageLinks: latestSubmission.image_links ?? '',
@@ -371,10 +454,31 @@ export default async function EditSubmissionPage({
     const nextRequiredFieldIssues = getSupplierSubmissionMissingRequiredFields(latestValues)
 
     if (nextRequiredFieldIssues.length > 0) {
-      redirect(buildMissingFieldsRedirect(`/admin/submissions/${resolvedParams.id}`, nextRequiredFieldIssues))
+      redirect(buildMissingFieldsRedirect(resolvedParams.id, nextRequiredFieldIssues, returnTo))
+    }
+
+    const aiDraftPackage = buildRuleBasedAiDraftPackageFromSubmission(latestValues)
+
+    if (latestSubmission.converted_inventory_id) {
+      await actionAdminClient.from('supplier_submissions').update({
+        ai_draft_package: aiDraftPackage,
+        raw_text_snapshot: buildSubmissionRawText(latestValues),
+      }).eq('id', resolvedParams.id)
+
+      revalidateSubmissionRoutes(
+        resolvedParams.id,
+        latestSubmission.converted_inventory_id ?? undefined
+      )
+      redirect(
+        appendReturnTo(
+          `/admin/edit/${latestSubmission.converted_inventory_id}?success=draft-created-from-submission`,
+          currentDetailHref
+        )
+      )
     }
 
     const draftSeed = convertSubmissionToDraftSeed(latestValues)
+    const inventoryImages = draftSeed.imageUrl ? [draftSeed.imageUrl] : []
     const inventoryTitle = buildSubmissionTitle(latestValues)
     const slug = await buildUniqueInventorySlug(actionAdminClient, inventoryTitle)
     const { data: createdInventory } = await actionAdminClient
@@ -390,11 +494,12 @@ export default async function EditSubmissionPage({
         market: draftSeed.market,
         warehouse_location: draftSeed.warehouseLocation,
         description: draftSeed.description || null,
-        images: [draftSeed.imageUrl],
+        images: inventoryImages,
         nicotine: draftSeed.nicotine || null,
         flavor: draftSeed.flavor || null,
         puff: draftSeed.puff ?? null,
         e_liquid: draftSeed.eLiquid || null,
+        production_date_text: draftSeed.productionDateText || null,
         contact_visibility: 'contact_required',
         status: 'draft',
         is_featured: false,
@@ -404,87 +509,23 @@ export default async function EditSubmissionPage({
       .single()
 
     if (!createdInventory) {
-      redirect(`/admin/submissions/${resolvedParams.id}`)
+      redirect(currentDetailHref)
     }
 
     await actionAdminClient.from('supplier_submissions').update({
       submission_status: 'converted',
-      ai_draft_package: buildAiDraftPackageSeedFromSubmission(latestValues),
+      ai_draft_package: aiDraftPackage,
       converted_inventory_id: createdInventory.id,
       raw_text_snapshot: buildSubmissionRawText(latestValues),
     }).eq('id', resolvedParams.id)
 
     revalidateSubmissionRoutes(resolvedParams.id, createdInventory.id, slug)
-    redirect(`/admin/submissions/${resolvedParams.id}?success=submission-converted`)
-  }
-
-  async function generateAiSuggestionAction() {
-    'use server'
-
-    const actionCookies = await cookies()
-    if (!isBackofficeAuthenticated(actionCookies.get(adminSessionCookieName)?.value)) {
-      redirect('/admin')
-    }
-
-    const actionAdminClient = createAdminClient()
-    if (!actionAdminClient) {
-      redirect(`/admin/submissions/${resolvedParams.id}?error=missing-service-role-key`)
-    }
-
-    const { data: latestSubmission } = await actionAdminClient
-      .from('supplier_submissions')
-      .select('*')
-      .eq('id', resolvedParams.id)
-      .single()
-
-    if (!latestSubmission) {
-      redirect('/admin')
-    }
-
-    const latestValues = normalizeSupplierSubmissionValues({
-      supplierName: latestSubmission.supplier_name ?? '',
-      contactName: latestSubmission.contact_name ?? '',
-      contactChannel: latestSubmission.contact_channel ?? '',
-      sourceType: supplierSubmissionSourceOptions.includes(latestSubmission.source_type)
-        ? latestSubmission.source_type
-        : 'supplier_form',
-      brand: latestSubmission.brand ?? '',
-      modelName: latestSubmission.model_name ?? '',
-      productType: latestSubmission.product_type ?? '',
-      unitPriceText: latestSubmission.unit_price_text ?? '',
-      availableQtyText: latestSubmission.available_qty_text ?? '',
-      moqText: latestSubmission.moq_text ?? '',
-      targetMarket: latestSubmission.target_market ?? '',
-      warehouseLocation: latestSubmission.warehouse_location ?? '',
-      puffText: latestSubmission.puff_text ?? '',
-      nicotineText: latestSubmission.nicotine_text ?? '',
-      eLiquidText: latestSubmission.e_liquid_text ?? '',
-      flavorList: latestSubmission.flavor_list ?? '',
-      flavorBreakdown: latestSubmission.flavor_breakdown ?? '',
-      imageLinks: latestSubmission.image_links ?? '',
-      stockNotes: latestSubmission.stock_notes ?? '',
-      packagingNotes: latestSubmission.packaging_notes ?? '',
-      extraNotes: latestSubmission.extra_notes ?? '',
-      internalNotes: latestSubmission.internal_notes ?? '',
-      submissionStatus: supplierSubmissionStatusOptions.includes(latestSubmission.submission_status)
-        ? latestSubmission.submission_status
-        : 'new',
-    })
-
-    const nextRequiredFieldIssues = getSupplierSubmissionMissingRequiredFields(latestValues)
-    if (nextRequiredFieldIssues.length > 0) {
-      redirect(buildMissingFieldsRedirect(`/admin/submissions/${resolvedParams.id}`, nextRequiredFieldIssues))
-    }
-
-    const aiDraftPackage = buildRuleBasedAiDraftPackageFromSubmission(latestValues)
-
-    await actionAdminClient.from('supplier_submissions').update({
-      ai_draft_package: aiDraftPackage,
-      raw_text_snapshot: buildSubmissionRawText(latestValues),
-    }).eq('id', resolvedParams.id)
-
-    revalidateSubmissionRoutes(resolvedParams.id, latestSubmission.converted_inventory_id ?? undefined)
-    redirect(`/admin/submissions/${resolvedParams.id}?success=ai-suggestion-generated`)
+    redirect(
+      appendReturnTo(
+        `/admin/edit/${createdInventory.id}?success=draft-created-from-submission`,
+        currentDetailHref
+      )
+    )
   }
 
   const successMessage = success ? successMessages[success] : null
@@ -493,26 +534,39 @@ export default async function EditSubmissionPage({
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
-            <Link href="/admin" className="text-sm font-medium text-teal-DEFAULT hover:underline">
-              ← 返回后台总控台
-            </Link>
-            <div>
+        <div className="space-y-4 rounded-3xl border border-border bg-surface p-6 sm:p-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                <Link href="/admin" className="font-medium text-teal-DEFAULT hover:underline">
+                  后台总控台
+                </Link>
+                <span>/</span>
+                <Link href={queueHref} className="font-medium text-teal-DEFAULT hover:underline">
+                  {queueLabel}
+                </Link>
+                <span>/</span>
+                <span className="text-foreground">提报审核</span>
+              </div>
               <h1 className="text-3xl font-bold text-foreground">提报审核</h1>
-              <p className="mt-1 text-sm text-muted">
-                先补齐最低必填项并统一字段表达，准备好后再转成内部库存草稿。
+              <p className="text-sm text-muted">
+                {submissionValues.brand || '待补品牌'} · {submissionValues.modelName || '待补型号'} · {submissionValues.supplierName || '待补供应商'}
               </p>
             </div>
           </div>
-          {item.converted_inventory_id && (
-            <Link
-              href={`/admin/edit/${item.converted_inventory_id}`}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-teal-DEFAULT hover:bg-surface"
-            >
-              打开已转换草稿 →
-            </Link>
-          )}
+
+          <div className="grid gap-3 md:grid-cols-2">
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">当前阻塞</div>
+              <div className={`mt-2 text-sm ${requiredFieldCount > 0 && !hasConvertedDraft ? 'text-status-warning' : 'text-foreground'}`}>
+                {blockingSummaryText}
+              </div>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">下一步</div>
+              <div className="mt-2 text-sm text-foreground">{nextStepSummaryText}</div>
+            </div>
+          </div>
         </div>
 
         {successMessage && (
@@ -555,50 +609,36 @@ export default async function EditSubmissionPage({
               </div>
             )}
 
-            <div className="rounded-2xl border border-border/70 bg-background/70 p-5">
-              <SubmissionGuidePanel title="审核规则" defaultOpen>
-                <p>先补齐必填项，再统一品牌、市场、仓库和产品字段表达。</p>
-                <p>这页只做事实性审核，不把内容改写成销售文案。</p>
-                <p>转换后只会生成 draft，不会直接发布上线。</p>
-              </SubmissionGuidePanel>
-            </div>
-
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">供应商信息</h2>
-                  <p className="text-sm text-muted">
-                    在提报继续向下游流转前，先确认货源归属方和回联信息是否清楚。
-                  </p>
-                </div>
+                <h2 className="text-xl font-bold text-foreground">供应商信息</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
                     id={reviewFieldAnchorIds.supplierName}
                     className={getReviewFieldWrapperClass(highlightedFields.has('supplierName'))}
                   >
                     <SubmissionFieldLabel label="供应商名称" required />
-                    <SubmissionFieldHint>请统一成稳定的供应商主体名称。</SubmissionFieldHint>
-                    <input name="supplier_name" defaultValue={submissionValues.supplierName} required placeholder="例如 Shenzhen ABC Trading" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="supplier_name" defaultValue={submissionValues.supplierName} required placeholder="例如 Shenzhen ABC Trading" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="联系人" />
-                    <input name="contact_name" defaultValue={submissionValues.contactName} placeholder="例如 Allen" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="contact_name" defaultValue={submissionValues.contactName} placeholder="例如 Allen" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="联系渠道 / WhatsApp / Telegram" />
-                    <input name="contact_channel" defaultValue={submissionValues.contactChannel} placeholder="例如 WhatsApp +971..." className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm md:col-span-2" />
+                    <input name="contact_channel" defaultValue={submissionValues.contactChannel} placeholder="例如 WhatsApp +971..." className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="来源类型" />
-                    <select name="source_type" defaultValue={submissionValues.sourceType} className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm">
+                    <select name="source_type" defaultValue={submissionValues.sourceType} className={reviewSelectClassName}>
                       {supplierSubmissionSourceOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
+                        <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
                       ))}
                     </select>
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="提报状态" />
-                    <select name="submission_status" defaultValue={submissionValues.submissionStatus} className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm">
+                    <select name="submission_status" defaultValue={submissionValues.submissionStatus} className={reviewSelectClassName}>
                       {supplierSubmissionStatusOptions.map((option) => (
                         <option key={option} value={option}>{option}</option>
                       ))}
@@ -610,45 +650,32 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">产品基础信息</h2>
-                  <p className="text-sm text-muted">
-                    先把品牌、型号和产品类型理顺，后续生成草稿时会更干净。
-                  </p>
-                </div>
-                <SubmissionGuidePanel title="标准化规则">
-                  <p>品牌和型号要分开填写。</p>
-                  <p>产品类型尽量使用标准类型，抛弃式设备统一归到 `Disposable Vape`。</p>
-                  <p>仍不确定的技术字段可以先保留供应商原始写法。</p>
-                </SubmissionGuidePanel>
+                <h2 className="text-xl font-bold text-foreground">产品基础信息</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
                     id={reviewFieldAnchorIds.brand}
                     className={getReviewFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>统一品牌大小写和命名方式，避免后续 SEO 命名混乱。</SubmissionFieldHint>
-                    <input name="brand" list="brand-options" defaultValue={submissionValues.brand} required placeholder="例如 Vozol" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="brand" list="brand-options" defaultValue={submissionValues.brand} required placeholder="例如 Vozol" className={reviewInputClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.modelName}
                     className={getReviewFieldWrapperClass(highlightedFields.has('modelName'))}
                   >
                     <SubmissionFieldLabel label="型号 / 产品名" required />
-                    <SubmissionFieldHint>这里只保留真实型号或产品名。</SubmissionFieldHint>
-                    <input name="model_name" defaultValue={submissionValues.modelName} required placeholder="例如 Star 10000" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="model_name" defaultValue={submissionValues.modelName} required placeholder="例如 Star 10000" className={reviewInputClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.productType}
                     className={getReviewFieldWrapperClass(highlightedFields.has('productType'))}
                   >
                     <SubmissionFieldLabel label="产品类型" required />
-                    <SubmissionFieldHint>尽量使用最接近的标准类型。</SubmissionFieldHint>
                     <select
                       name="product_type"
                       defaultValue={submissionValues.productType || 'Disposable Vape'}
                       required
-                      className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm"
+                      className={reviewSelectClassName}
                     >
                       {currentProductTypeOptions.map((option) => (
                         <option key={option} value={option}>{option}</option>
@@ -657,15 +684,19 @@ export default async function EditSubmissionPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="口数" />
-                    <input name="puff_text" defaultValue={submissionValues.puffText} placeholder="例如 10000" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="puff_text" defaultValue={submissionValues.puffText} placeholder="例如 10000" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="尼古丁浓度" />
-                    <input name="nicotine_text" defaultValue={submissionValues.nicotineText} placeholder="例如 5% 或 50mg" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="nicotine_text" defaultValue={submissionValues.nicotineText} placeholder="例如 5% 或 50mg" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="烟油容量" />
-                    <input name="e_liquid_text" defaultValue={submissionValues.eLiquidText} placeholder="例如 18ml" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="e_liquid_text" defaultValue={submissionValues.eLiquidText} placeholder="例如 18ml" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="生产时间" />
+                    <input name="production_date_text" defaultValue={submissionValues.productionDateText} placeholder="例如 2026-03 / 2026 Q1 / Batch 2403" className={reviewInputClassName} />
                   </div>
                 </div>
               </div>
@@ -673,44 +704,40 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
-                  <p className="text-sm text-muted">
-                    重点确认数量、市场和仓库位置，这些字段会直接影响转草稿结果。
-                  </p>
-                </div>
+                <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="单价（USD）" />
-                    <input name="unit_price_text" defaultValue={submissionValues.unitPriceText} placeholder="例如 3.20" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="unit_price_text" defaultValue={submissionValues.unitPriceText} placeholder="例如 3.20" className={reviewInputClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.availableQtyText}
                     className={getReviewFieldWrapperClass(highlightedFields.has('availableQtyText'))}
                   >
                     <SubmissionFieldLabel label="可售数量" required />
-                    <SubmissionFieldHint>请填写当前最明确的可售库存数量。</SubmissionFieldHint>
-                    <input name="available_qty_text" defaultValue={submissionValues.availableQtyText} required placeholder="例如 5000" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="available_qty_text" defaultValue={submissionValues.availableQtyText} required placeholder="例如 5000" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="MOQ" />
-                    <input name="moq_text" defaultValue={submissionValues.moqText} placeholder="例如 500" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="moq_text" defaultValue={submissionValues.moqText} placeholder="例如 500" className={reviewInputClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.targetMarket}
                     className={getReviewFieldWrapperClass(highlightedFields.has('targetMarket'))}
                   >
                     <SubmissionFieldLabel label="目标市场" required />
-                    <SubmissionFieldHint>尽量只保留一个主要市场。</SubmissionFieldHint>
-                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} required placeholder="例如 Middle East" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} required placeholder="例如 Global / Middle East" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="市场限制说明" />
+                    <textarea name="market_access_note" defaultValue={submissionValues.marketAccessNote} placeholder="例如 Except UAE / Not for Saudi Arabia" className={reviewTextareaClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.warehouseLocation}
                     className={`md:col-span-2 ${getReviewFieldWrapperClass(highlightedFields.has('warehouseLocation'))}`}
                   >
                     <SubmissionFieldLabel label="仓库位置" required />
-                    <SubmissionFieldHint>请填写明确的城市/国家或仓库地点。</SubmissionFieldHint>
-                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} required placeholder="例如 Dubai, UAE" className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm md:col-span-2" />
+                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} required placeholder="例如 Dubai, UAE" className={reviewInputClassName} />
                   </div>
                 </div>
               </div>
@@ -718,64 +745,67 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <h2 className="text-xl font-bold text-foreground">口味、备注与图片</h2>
-                  <p className="text-sm text-muted">
-                    原始业务上下文可以保留，系统会在保存时自动清理分隔符噪音。
-                  </p>
-                </div>
-                <SubmissionGuidePanel title="支持格式">
-                  <p>`Flavor List` 支持逗号、换行、分号和项目列表。</p>
-                  <p>`Flavor Breakdown` 和 `Stock Notes` 在清洗后会按一行一个条目保留。</p>
-                  <p>图片链接会被标准化成每行一个链接。</p>
-                </SubmissionGuidePanel>
+                <h2 className="text-xl font-bold text-foreground">口味、备注与图片</h2>
                 <div className="grid gap-4">
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="口味列表" />
-                    <SubmissionFieldHint>这里只保留概览型口味，分隔符会自动标准化。</SubmissionFieldHint>
-                    <textarea name="flavor_list" defaultValue={submissionValues.flavorList} placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className="w-full min-h-32 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="flavor_list" defaultValue={submissionValues.flavorList} placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="口味明细" />
-                    <SubmissionFieldHint>如果供应商提供了按口味拆分的数量行，可直接粘贴。</SubmissionFieldHint>
-                    <textarea name="flavor_breakdown" defaultValue={submissionValues.flavorBreakdown} placeholder="例如 Blue Razz Ice - 300 pcs" className="w-full min-h-40 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="flavor_breakdown" defaultValue={submissionValues.flavorBreakdown} placeholder="例如 Blue Razz Ice - 300 pcs" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="库存备注" />
-                    <SubmissionFieldHint>用于记录现货、混装箱、交期和版本差异等信息。</SubmissionFieldHint>
-                    <textarea name="stock_notes" defaultValue={submissionValues.stockNotes} placeholder="例如 ready stock, sealed carton" className="w-full min-h-40 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="stock_notes" defaultValue={submissionValues.stockNotes} placeholder="例如 ready stock, sealed carton" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="包装备注" />
-                    <textarea name="packaging_notes" defaultValue={submissionValues.packagingNotes} placeholder="例如 10 pcs/box, 200 pcs/carton" className="w-full min-h-32 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="packaging_notes" defaultValue={submissionValues.packagingNotes} placeholder="例如 10 pcs/box, 200 pcs/carton" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="补充备注" />
-                    <textarea name="extra_notes" defaultValue={submissionValues.extraNotes} placeholder="例如 clearance batch, no date on device" className="w-full min-h-32 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="extra_notes" defaultValue={submissionValues.extraNotes} placeholder="例如 clearance batch, no date on device" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="图片链接" />
-                    <textarea name="image_links" defaultValue={submissionValues.imageLinks} placeholder="每行一个链接，或使用逗号分隔" className="w-full min-h-32 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="image_links" defaultValue={submissionValues.imageLinks} placeholder="每行一个链接，或使用逗号分隔" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="内部备注" />
-                    <SubmissionFieldHint>这里只写后台审核备注，不写对外文案。</SubmissionFieldHint>
-                    <textarea name="internal_notes" defaultValue={submissionValues.internalNotes} placeholder="例如 confirm brand naming before conversion" className="w-full min-h-40 resize-y rounded-xl border border-border bg-background px-4 py-3 text-sm" />
+                    <textarea name="internal_notes" defaultValue={submissionValues.internalNotes} placeholder="例如 confirm brand naming before conversion" className={reviewTextareaClassName} />
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <button className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background">
-                保存审核
-              </button>
-              <button
-                formAction={convertSubmissionAction}
-                className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground hover:bg-background"
-              >
-                转为库存草稿
-              </button>
+              {hasConvertedDraft ? (
+                <Link
+                  href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)}
+                  className="inline-flex items-center justify-center rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background"
+                >
+                  打开库存草稿
+                </Link>
+              ) : aiAssistReady ? (
+                <button
+                  formAction={generateDraftFromSubmissionAction}
+                  className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background"
+                >
+                  LLM 完善并生成草稿
+                </button>
+              ) : (
+                <button
+                  className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background"
+                >
+                  保存审核
+                </button>
+              )}
+              {(hasConvertedDraft || aiAssistReady) && (
+                <button className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-foreground hover:bg-background">
+                  保存审核
+                </button>
+              )}
             </div>
 
             <datalist id="brand-options">
@@ -792,28 +822,27 @@ export default async function EditSubmissionPage({
 
           <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
             <div className="rounded-3xl border border-border bg-surface p-6">
-              <h2 className="text-xl font-bold text-foreground">处理概览</h2>
+              <h2 className="text-xl font-bold text-foreground">处理摘要</h2>
               <div className="mt-4 space-y-4 text-sm text-muted">
                 <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div>状态：<span className="font-medium uppercase text-foreground">{submissionValues.submissionStatus}</span></div>
-                  <div>当前下一步：<span className="text-foreground">{reviewNextStep}</span></div>
-                  <div>更新时间：{new Date(item.updated_at).toLocaleString()}</div>
-                  <div>创建时间：{new Date(item.created_at).toLocaleString()}</div>
+                  <div>当前状态：<span className="font-medium text-foreground">{formatSubmissionStatusLabel(submissionValues.submissionStatus)}</span></div>
+                  <div>当前主动作：<span className="font-medium text-foreground">{primaryActionLabel}</span></div>
+                  <div>最后更新：{new Date(item.updated_at).toLocaleString()}</div>
                 </div>
 
                 {item.converted_inventory_id && (
                   <div className="rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-4 py-3 space-y-2">
-                    <div>已转换草稿 ID：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
-                    <Link href={`/admin/edit/${item.converted_inventory_id}`} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
+                    <div>已关联草稿：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
+                    <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
                       打开草稿编辑 →
                     </Link>
                   </div>
                 )}
 
                 <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div className="font-medium text-foreground">最低必填项</div>
+                  <div className="font-medium text-foreground">当前阻塞</div>
                   {requiredFieldCount === 0 ? (
-                    <div className="text-teal-DEFAULT">已满足转草稿的最低审核条件。</div>
+                    <div className="text-teal-DEFAULT">无，可继续下一步。</div>
                   ) : (
                     <ul className="list-disc space-y-1 pl-5">
                       {requiredFieldIssues.map((field) => (
@@ -825,56 +854,29 @@ export default async function EditSubmissionPage({
                       ))}
                     </ul>
                   )}
-                  <div>转换只会生成 `draft`，真正发布仍在后续库存流程里处理。</div>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-3xl border border-border bg-surface p-6">
-              <h2 className="text-xl font-bold text-foreground">AI 建议</h2>
+            <details className="rounded-3xl border border-border bg-surface p-6">
+              <summary className="cursor-pointer list-none text-xl font-bold text-foreground">
+                AI 参考
+              </summary>
               <div className="mt-4 space-y-4 text-sm text-muted">
                 <div className={aiAssistReady ? 'text-teal-DEFAULT' : 'text-status-warning'}>
                   {aiSummaryText}
                 </div>
 
-                <div className="flex flex-col gap-3">
-                  <button
-                    formAction={generateAiSuggestionAction}
-                    disabled={!aiAssistReady}
-                    className="rounded-xl border border-border px-4 py-3 text-sm font-semibold text-foreground hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    生成 AI 建议
-                  </button>
-                </div>
-
-                {!aiAssistReady && (
-                  <ul className="list-disc space-y-1 pl-5">
-                    {requiredFieldIssues.map((field) => (
-                      <li key={field}>
-                        <a href={`#${reviewFieldAnchorIds[field]}`} className="hover:text-foreground hover:underline">
-                          {formatSupplierSubmissionFieldLabel(field)}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
                 <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div className="font-medium text-foreground">当前建议草稿</div>
-                  <div>建议标题：<span className="text-foreground">{draftSeedPreview.title || '待补齐必填项'}</span></div>
-                  <div>建议产品类型：<span className="text-foreground">{draftSeedPreview.productType || '待补齐必填项'}</span></div>
-                  <div>建议市场：<span className="text-foreground">{draftSeedPreview.market || '待补齐必填项'}</span></div>
-                  <div>建议数量：<span className="text-foreground">{draftSeedPreview.quantity > 0 ? draftSeedPreview.quantity : '待补齐必填项'}</span></div>
-                  <div className="space-y-1">
-                    <div className="font-medium text-foreground">描述草稿种子</div>
-                    <div className="whitespace-pre-wrap text-xs leading-6">
-                      {draftSeedPreview.description || '请补充更多业务备注，以生成更完整的描述草稿种子。'}
-                    </div>
-                  </div>
+                  <div className="font-medium text-foreground">草稿建议</div>
+                  <div>标题：<span className="text-foreground">{draftSeedPreview.title || '待补齐必填项'}</span></div>
+                  <div>产品类型：<span className="text-foreground">{draftSeedPreview.productType || '待补齐必填项'}</span></div>
+                  <div>目标市场：<span className="text-foreground">{draftSeedPreview.market || '待补齐必填项'}</span></div>
+                  <div>库存数量：<span className="text-foreground">{draftSeedPreview.quantity > 0 ? draftSeedPreview.quantity : '待补齐必填项'}</span></div>
                 </div>
 
                 <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div className="font-medium text-foreground">最新建议信号</div>
+                  <div className="font-medium text-foreground">AI 信号</div>
                   <div>缺失字段：<span className="text-foreground">{aiDraftPackagePreview.missingFields.length > 0 ? aiDraftPackagePreview.missingFields.join(' | ') : '无'}</span></div>
                   <div>风险标记：<span className="text-foreground">{aiDraftPackagePreview.riskFlags.length > 0 ? aiDraftPackagePreview.riskFlags.map((flag: InventoryAiDraftPackage['riskFlags'][number]) => `${flag.severity}: ${flag.message}`).join(' | ') : '无'}</span></div>
                   <div>人工复核重点：<span className="text-foreground">{aiDraftPackagePreview.humanReviewFocus.length > 0 ? aiDraftPackagePreview.humanReviewFocus.map((item: InventoryAiDraftPackage['humanReviewFocus'][number]) => `${item.field}: ${item.reason}`).join(' | ') : '无'}</span></div>
@@ -882,27 +884,19 @@ export default async function EditSubmissionPage({
 
                 <details className="rounded-2xl border border-border/70 bg-background px-4 py-3">
                   <summary className="cursor-pointer list-none font-medium text-foreground">
-                    AI 草稿包预览
+                    AI 草稿包
                   </summary>
-                  <div className="mt-2 text-xs text-muted">保存审核后可刷新这里的预览。</div>
                   <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-all text-xs leading-6 text-muted">
                     {JSON.stringify(aiDraftPackagePreview, null, 2)}
                   </pre>
                 </details>
-
-                <div className="rounded-2xl border border-status-warning/30 bg-status-warning/10 px-4 py-3 text-xs leading-6 text-foreground">
-                  审核页只保留事实性信息，AI 建议只作为草稿编辑辅助，不直接覆盖源字段。
-                </div>
               </div>
-            </div>
+            </details>
 
             <details className="rounded-3xl border border-border bg-surface p-6">
               <summary className="cursor-pointer list-none text-xl font-bold text-foreground">
                 原始提报快照
               </summary>
-              <div className="mt-2 text-sm text-muted">
-                仅在需要核对供应商原始描述时展开。
-              </div>
               <pre className="mt-4 whitespace-pre-wrap text-sm leading-6 text-muted">
                 {item.raw_text_snapshot || buildSubmissionRawText(submissionValues)}
               </pre>

@@ -13,7 +13,7 @@ export default function PrivacyPage() {
 
       <section className="bg-surface border border-border rounded-2xl p-8 space-y-4">
         <h2 className="text-xl font-bold">What We Collect</h2>
-        <p className="text-muted">We may collect source page information, contact channel clicks, browser session data for temporary price unlocks, referer data, and general technical logs needed to operate the platform.</p>
+        <p className="text-muted">We may collect source page information, contact channel clicks, referer data, and general technical logs needed to operate the platform.</p>
       </section>
 
       <section className="bg-surface border border-border rounded-2xl p-8 space-y-4">
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
 
       <section className="bg-surface border border-border rounded-2xl p-8 space-y-4">
         <h2 className="text-xl font-bold">Cookies and Session Data</h2>
-        <p className="text-muted">We use limited session cookies to unlock price views after a contact request and to maintain basic administrative sessions for internal operations.</p>
+        <p className="text-muted">We use limited session cookies to maintain basic administrative sessions for internal operations.</p>
       </section>
     </main>
   )

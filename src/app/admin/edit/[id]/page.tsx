@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 
 import {
   contactVisibilityOptions,
+  formatInventoryStatusLabel,
   formatInventoryQualityMessage,
   getInventoryQualityReport,
   type InventoryAiDraftPackage,
@@ -21,19 +22,21 @@ import {
   getBackofficeRole,
   isAdminRole,
   isBackofficeAuthenticated,
+  normalizeBackofficeReturnTo,
 } from '@/lib/unlock'
 import DeleteButton from './DeleteButton'
 
 export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
-  'inventory-updated': 'Inventory saved successfully.',
+  'inventory-updated': '库存草稿已保存。',
+  'draft-created-from-submission': '已完成 LLM 整理，当前进入发布前确认。',
 }
 
 const errorMessages: Record<string, string> = {
-  'missing-service-role-key': 'SUPABASE_SERVICE_ROLE_KEY is missing, so write actions are disabled.',
-  'missing-required-fields': 'Fill in the required fields before saving.',
-  'publish-blocked': 'This inventory cannot move to active yet. Resolve the blocking issues first.',
+  'missing-service-role-key': '缺少 SUPABASE_SERVICE_ROLE_KEY，当前无法执行写入操作。',
+  'missing-required-fields': '请先补齐必填字段再保存。',
+  'publish-blocked': '当前记录还不能切换为 active，请先处理发布阻塞项。',
   'insufficient-role': '当前角色无权执行该动作。',
 }
 
@@ -62,6 +65,17 @@ function buildIssueRedirect(path: string, issues: string[]) {
   }
 
   return `${path}?${searchParams.toString()}`
+}
+
+function appendReturnTo(path: string, returnTo?: string | null) {
+  const normalizedReturnTo = normalizeBackofficeReturnTo(returnTo)
+
+  if (!normalizedReturnTo) {
+    return path
+  }
+
+  const separator = path.includes('?') ? '&' : '?'
+  return `${path}${separator}return_to=${encodeURIComponent(normalizedReturnTo)}`
 }
 
 function revalidateInventoryRoutes(currentSlug: string, nextSlug: string) {
@@ -117,6 +131,7 @@ export default async function EditInventoryPage({
   const resolvedSearchParams = await searchParams
   const success = getSingleParam(resolvedSearchParams.success)
   const error = getSingleParam(resolvedSearchParams.error)
+  const returnTo = normalizeBackofficeReturnTo(getSingleParam(resolvedSearchParams.return_to))
   const issues = (getSingleParam(resolvedSearchParams.issues) ?? '')
     .split(',')
     .map((item) => item.trim())
@@ -192,7 +207,7 @@ export default async function EditInventoryPage({
 
     const adminClient = createAdminClient()
     if (!adminClient) {
-      redirect(`/admin/edit/${resolvedParams.id}?error=missing-service-role-key`)
+      redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=missing-service-role-key`, returnTo))
     }
 
     const title = String(formData.get('title') || '').trim()
@@ -208,6 +223,7 @@ export default async function EditInventoryPage({
     const warehouseLocation = String(formData.get('warehouse_location') || '').trim()
     const description = String(formData.get('description') || '').trim()
     const imageUrl = String(formData.get('image_url') || '').trim()
+    const productionDateText = String(formData.get('production_date_text') || '').trim()
     const contactVisibility = getSelectedValue(
       String(formData.get('contact_visibility') || 'contact_required').trim(),
       contactVisibilityOptions,
@@ -220,7 +236,7 @@ export default async function EditInventoryPage({
     )
     // 中文注释：Staff 允许保存内容，但不允许借由表单提交切换 inventory 状态。
     if (!actionIsAdmin && requestedStatus !== item.status) {
-      redirect(`/admin/edit/${resolvedParams.id}?error=insufficient-role`)
+      redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=insufficient-role`, returnTo))
     }
     const status = actionIsAdmin ? requestedStatus : item.status
     const slug = await buildUniqueInventorySlug(
@@ -230,7 +246,7 @@ export default async function EditInventoryPage({
     )
 
     if (!title || !brand || !productType || price <= 0 || quantity <= 0 || !market || !warehouseLocation || !slug) {
-      redirect(`/admin/edit/${resolvedParams.id}?error=missing-required-fields`)
+      redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=missing-required-fields`, returnTo))
     }
 
     const nextQualityReport = getInventoryQualityReport(
@@ -256,7 +272,10 @@ export default async function EditInventoryPage({
     )
 
     if (status === 'active' && nextQualityReport.blockingIssues.length > 0) {
-      redirect(buildIssueRedirect(`/admin/edit/${resolvedParams.id}`, nextQualityReport.blockingIssues))
+      redirect(appendReturnTo(
+        buildIssueRedirect(`/admin/edit/${resolvedParams.id}`, nextQualityReport.blockingIssues),
+        returnTo
+      ))
     }
 
     await adminClient.from('inventory').update({
@@ -275,6 +294,7 @@ export default async function EditInventoryPage({
       flavor: String(formData.get('flavor') || '').trim() || null,
       puff: Number(formData.get('puff') || 0) || null,
       e_liquid: String(formData.get('e_liquid') || '').trim() || null,
+      production_date_text: productionDateText || null,
       contact_visibility: contactVisibility,
       status,
       is_featured: formData.get('is_featured') === 'on',
@@ -282,7 +302,7 @@ export default async function EditInventoryPage({
     }).eq('id', resolvedParams.id)
 
     revalidateInventoryRoutes(item.slug, slug)
-    redirect('/admin?success=inventory-updated')
+    redirect(appendReturnTo('/admin/edit/' + resolvedParams.id + '?success=inventory-updated', returnTo))
   }
 
   async function deleteInventoryAction() {
@@ -294,18 +314,18 @@ export default async function EditInventoryPage({
       redirect('/admin')
     }
     if (!isAdminRole(actionSessionValue)) {
-      redirect(`/admin/edit/${resolvedParams.id}?error=insufficient-role`)
+      redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=insufficient-role`, returnTo))
     }
 
     const adminClient = createAdminClient()
     if (!adminClient) {
-      redirect(`/admin/edit/${resolvedParams.id}?error=missing-service-role-key`)
+      redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=missing-service-role-key`, returnTo))
     }
 
     await adminClient.from('inventory').delete().eq('id', resolvedParams.id)
 
     revalidateInventoryRoutes(item.slug, item.slug)
-    redirect('/admin?success=inventory-deleted')
+    redirect(backHref)
   }
 
   const successMessage = success ? successMessages[success] : null
@@ -313,72 +333,127 @@ export default async function EditInventoryPage({
   const currentProductTypeOptions = productTypeOptions.includes(item.product_type)
     ? productTypeOptions
     : [item.product_type, ...productTypeOptions]
+  const hasBlockingIssues = qualityReport.blockingIssues.length > 0
+  const hasWarnings = qualityReport.warnings.length > 0
+  const readinessLabel = hasBlockingIssues ? `阻塞 ${qualityReport.blockingIssues.length} 项` : '可进入发布判断'
+  const sourceSubmissionLabel = linkedSubmission ? linkedSubmission.supplier_name || linkedSubmission.id : '手动创建'
+  const publishDecisionText = hasBlockingIssues
+    ? '当前不能发布，请先处理阻塞项。'
+    : isAdminUser
+      ? '已满足发布检查，可改成 active 后保存。'
+      : '已满足发布检查，需由 Admin 切换为 active。'
+  const backHref = returnTo ?? '/admin'
+  const backLabel = returnTo?.startsWith('/admin/submissions/')
+    ? '来源审核'
+    : returnTo?.startsWith('/admin/submissions')
+      ? '审核队列'
+      : '后台总控台'
+  const currentEditHref = appendReturnTo(`/admin/edit/${resolvedParams.id}`, returnTo)
 
   return (
-    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-8">
-      <div className="flex items-center gap-4 text-sm text-muted">
-        <Link href="/admin" className="hover:text-foreground transition-colors">← 返回后台总控台</Link>
-      </div>
-
-      <div className="flex justify-between items-center gap-4">
-        <div className="space-y-2">
-          <div className="inline-flex rounded-full border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-teal-DEFAULT">
-            {roleBadgeLabel}
+    <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl space-y-8">
+        <div className="space-y-4 rounded-3xl border border-border bg-surface p-6 sm:p-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-muted">
+                <Link href={backHref} className="font-medium text-teal-DEFAULT hover:underline">
+                  {backLabel}
+                </Link>
+                <span>/</span>
+                <span className="text-foreground">发布前确认</span>
+              </div>
+              <div className="inline-flex rounded-full border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-teal-DEFAULT">
+                {roleBadgeLabel}
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-foreground">发布前确认</h1>
+                <p className="mt-1 text-sm text-muted">
+                  这里只处理最终发布值，重点确认这条草稿现在能不能进入 `active`。
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col items-start gap-3 lg:items-end">
+              <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 text-sm text-muted">
+                <div className="font-medium text-foreground">主动作</div>
+                <div className="mt-1">保存修改</div>
+              </div>
+              {isAdminUser ? (
+                <form action={deleteInventoryAction}>
+                  <DeleteButton />
+                </form>
+              ) : (
+                <div className="rounded-xl border border-border bg-background px-4 py-2 text-sm text-muted">
+                  仅 Admin 可删除
+                </div>
+              )}
+            </div>
           </div>
-          <h1 className="text-3xl font-bold">编辑库存草稿</h1>
-          <p className="text-muted mt-1">
-            ID: {item.id}
-            {isAdminUser
-              ? ' · 可执行完整状态切换与删除动作'
-              : ' · 当前角色可保存内容，但不能切换状态或删除条目'}
-          </p>
+
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">当前状态</div>
+              <div className="mt-2 text-sm font-medium text-foreground">{formatInventoryStatusLabel(item.status)}</div>
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">来源提报</div>
+              <div className="mt-2 text-sm text-foreground">{sourceSubmissionLabel}</div>
+              {linkedSubmission && (
+                <Link
+                  href={appendReturnTo(`/admin/submissions/${linkedSubmission.id}`, currentEditHref)}
+                  className="mt-2 inline-flex text-xs font-medium text-teal-DEFAULT hover:underline"
+                >
+                  打开来源审核
+                </Link>
+              )}
+            </div>
+            <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3">
+              <div className="text-xs font-medium uppercase tracking-[0.2em] text-muted">发布准备度</div>
+              <div className={`mt-2 text-sm font-medium ${hasBlockingIssues ? 'text-status-danger' : 'text-teal-DEFAULT'}`}>
+                {readinessLabel}
+              </div>
+              <div className="mt-1 text-xs text-muted">
+                {hasBlockingIssues ? '先处理阻塞项，再考虑切换状态。' : '当前已达到发布检查门槛。'}
+              </div>
+            </div>
+          </div>
         </div>
-        {isAdminUser ? (
-          <form action={deleteInventoryAction}>
-            <DeleteButton />
-          </form>
-        ) : (
-          <div className="rounded-lg border border-border bg-background px-4 py-2 text-sm text-muted">
-            `Staff` 不可删除库存
+
+        {successMessage && (
+          <div className="rounded-2xl border border-teal-DEFAULT/40 bg-teal-DEFAULT/10 p-4 text-sm text-foreground">
+            {successMessage}
           </div>
         )}
-      </div>
 
-      {successMessage && (
-        <div className="rounded-2xl border border-teal-DEFAULT/40 bg-teal-DEFAULT/10 p-4 text-sm text-foreground">
-          {successMessage}
-        </div>
-      )}
-
-      {errorMessage && (
-        <div className="rounded-2xl border border-status-danger/40 bg-status-danger/10 p-4 text-sm text-foreground space-y-3">
-          <div>{errorMessage}</div>
-          {issues.length > 0 && (
-            <ul className="list-disc pl-5 space-y-1 text-muted">
-              {issues.map((issue) => (
-                <li key={issue}>{formatInventoryQualityMessage(issue)}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-
-      <section className="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-6">
-        <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
-          <div className="space-y-1">
-            <h2 className="text-xl font-bold">草稿编辑</h2>
-            <p className="text-muted mt-1">ID: {item.id}</p>
+        {errorMessage && (
+          <div className="rounded-2xl border border-status-danger/40 bg-status-danger/10 p-4 text-sm text-foreground space-y-3">
+            <div>{errorMessage}</div>
+            {issues.length > 0 && (
+              <ul className="list-disc pl-5 space-y-1 text-muted">
+                {issues.map((issue) => (
+                  <li key={issue}>{formatInventoryQualityMessage(issue)}</li>
+                ))}
+              </ul>
+            )}
           </div>
+        )}
 
-          <form action={updateInventoryAction} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">标题</label>
-              <input name="title" defaultValue={item.title} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+        <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="space-y-5 rounded-2xl border border-border bg-surface p-6">
+            <div className="space-y-1">
+              <h2 className="text-xl font-bold text-foreground">发布内容</h2>
+              <p className="text-sm text-muted">只保留最终发布值，来源原文和 AI 上下文在右侧查看。</p>
             </div>
-            <div className="md:col-span-2">
-              <label className="text-sm text-muted mb-1 block">Slug（URL）</label>
-              <input name="slug" defaultValue={item.slug} required className="w-full rounded-lg border border-border bg-background px-4 py-3 font-mono text-sm" />
-            </div>
+
+            <form action={updateInventoryAction} className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm text-muted">标题</label>
+                <input name="title" defaultValue={item.title} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-sm text-muted">Slug（URL）</label>
+                <input name="slug" defaultValue={item.slug} required className="w-full rounded-lg border border-border bg-background px-4 py-3 font-mono text-sm" />
+              </div>
 
             <div>
               <label className="text-sm text-muted mb-1 block">品牌</label>
@@ -419,6 +494,10 @@ export default async function EditInventoryPage({
               <label className="text-sm text-muted mb-1 block">烟油容量</label>
               <input name="e_liquid" defaultValue={item.e_liquid || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
             </div>
+            <div className="md:col-span-2">
+              <label className="text-sm text-muted mb-1 block">生产时间</label>
+              <input name="production_date_text" defaultValue={item.production_date_text || ''} placeholder="例如 2026-03 / 2026 Q1 / Batch 2403" className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+            </div>
 
             <div className="md:col-span-2">
               <label className="text-sm text-muted mb-1 block">口味（逗号分隔）</label>
@@ -458,17 +537,17 @@ export default async function EditInventoryPage({
                 {isAdminUser ? (
                   <select name="status" defaultValue={item.status} className="w-full rounded-lg border border-border bg-background px-4 py-3">
                     {inventoryStatusOptions.map((option) => (
-                      <option key={option} value={option}>{option}</option>
+                      <option key={option} value={option}>{formatInventoryStatusLabel(option)}</option>
                     ))}
                   </select>
                 ) : (
                   <div className="space-y-2">
                     <input type="hidden" name="status" value={item.status} />
-                    <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium uppercase tracking-wide text-foreground">
-                      {item.status}
+                    <div className="rounded-lg border border-border bg-background px-4 py-3 text-sm font-medium text-foreground">
+                      {formatInventoryStatusLabel(item.status)}
                     </div>
                     <p className="text-xs text-muted">
-                      `Staff` 保存时会维持当前状态；如需切换为 `active`、`reserved` 或 `sold`，请由 `Admin` 处理。
+                      `Staff` 保存时会维持当前状态；如需切换库存状态，请由 `Admin` 处理。
                     </p>
                   </div>
                 )}
@@ -502,31 +581,64 @@ export default async function EditInventoryPage({
           </form>
         </div>
 
-        <aside className="bg-surface border border-border rounded-2xl p-6 space-y-4 h-fit">
-          <h2 className="text-xl font-bold">发布准备度</h2>
-          <div className="rounded-xl border border-border bg-background px-4 py-3">
-            <div className="text-sm text-muted">当前状态</div>
-            <div className="mt-1 text-lg font-semibold uppercase tracking-wide">{item.status}</div>
-          </div>
-          <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-2">
-            <div className="text-sm font-medium">
-              {qualityReport.blockingIssues.length > 0 ? '发布阻塞项' : '当前无发布阻塞项'}
+        <aside className="h-fit space-y-4 rounded-2xl border border-border bg-surface p-6">
+          <div className="space-y-3 rounded-2xl border border-border bg-background px-4 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-sm font-medium text-foreground">发布判断</div>
+                <div className="mt-1 text-xs text-muted">先看是否能发布，再处理补充动作。</div>
+              </div>
+              <div className={`rounded-full px-3 py-1 text-xs font-semibold ${hasBlockingIssues ? 'bg-status-danger/10 text-status-danger' : 'bg-teal-DEFAULT/10 text-teal-DEFAULT'}`}>
+                {hasBlockingIssues ? '不可发布' : '可发布'}
+              </div>
             </div>
-            {qualityReport.blockingIssues.length > 0 ? (
+            <div className="text-sm text-foreground">{publishDecisionText}</div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-xl border border-border/70 px-3 py-3">
+                <div className="text-xs text-muted">当前状态</div>
+                <div className="mt-1 text-sm font-semibold text-foreground">{formatInventoryStatusLabel(item.status)}</div>
+              </div>
+              <div className="rounded-xl border border-border/70 px-3 py-3">
+                <div className="text-xs text-muted">阻塞项</div>
+                <div className={`mt-1 text-sm font-semibold ${hasBlockingIssues ? 'text-status-danger' : 'text-teal-DEFAULT'}`}>
+                  {qualityReport.blockingIssues.length}
+                </div>
+              </div>
+              <div className="rounded-xl border border-border/70 px-3 py-3">
+                <div className="text-xs text-muted">警告项</div>
+                <div className={`mt-1 text-sm font-semibold ${hasWarnings ? 'text-status-warning' : 'text-foreground'}`}>
+                  {qualityReport.warnings.length}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-medium text-foreground">发布阻塞项</div>
+              <div className={`text-xs ${hasBlockingIssues ? 'text-status-danger' : 'text-teal-DEFAULT'}`}>
+                {hasBlockingIssues ? '需先处理' : '已通过'}
+              </div>
+            </div>
+            {hasBlockingIssues ? (
               <ul className="list-disc pl-5 space-y-1 text-sm text-status-danger">
                 {qualityReport.blockingIssues.map((issue) => (
                   <li key={issue}>{formatInventoryQualityMessage(issue)}</li>
                 ))}
               </ul>
             ) : (
-              <div className="text-sm text-teal-DEFAULT">
-                {isAdminUser ? '准备好后，这条记录可以切换为 active。' : '当前质量检查已通过；如需切换为 active，请交由 Admin 执行。'}
-              </div>
+              <div className="text-sm text-muted">当前没有发布阻塞项。</div>
             )}
           </div>
+
           <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-2">
-            <div className="text-sm font-medium">警告项</div>
-            {qualityReport.warnings.length > 0 ? (
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-sm font-medium text-foreground">警告项</div>
+              <div className={`text-xs ${hasWarnings ? 'text-status-warning' : 'text-muted'}`}>
+                {hasWarnings ? '建议复核' : '无'}
+              </div>
+            </div>
+            {hasWarnings ? (
               <ul className="list-disc pl-5 space-y-1 text-sm text-status-warning">
                 {qualityReport.warnings.map((issue) => (
                   <li key={issue}>{formatInventoryQualityMessage(issue)}</li>
@@ -536,6 +648,7 @@ export default async function EditInventoryPage({
               <div className="text-sm text-muted">当前没有警告项。</div>
             )}
           </div>
+
           {linkedSubmission && (
             <div className="rounded-xl border border-border bg-background px-4 py-3 space-y-3">
               <div className="flex items-center justify-between gap-3">
@@ -553,7 +666,7 @@ export default async function EditInventoryPage({
                 <div>状态：<span className="text-foreground uppercase">{linkedSubmission.submission_status}</span></div>
               </div>
               <div className="border-t border-border pt-3 space-y-2 text-sm text-muted">
-                <div className="font-medium text-foreground">AI 审核上下文</div>
+                <div className="font-medium text-foreground">规则整理上下文</div>
                 <div>
                   缺失字段：{' '}
                   <span className="text-foreground">
@@ -587,6 +700,7 @@ export default async function EditInventoryPage({
           )}
         </aside>
       </section>
+      </div>
     </main>
   )
 }

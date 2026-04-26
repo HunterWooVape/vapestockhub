@@ -7,7 +7,7 @@ import { getTrackedContactHref } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Global Wholesale Vape Inventory | VapeStockHub',
-  description: 'Browse verified active wholesale vape stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to unlock pricing and availability.',
+  description: 'Browse verified active wholesale vape stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to confirm pricing and availability.',
 }
 
 export default async function Home() {
@@ -46,7 +46,7 @@ export default async function Home() {
             Global <span className="text-teal-DEFAULT">Wholesale Vape Inventory</span>
           </h1>
           <p className="text-xl text-muted">
-            Browse verified active stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to unlock pricing and availability.
+            Browse verified active stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to confirm pricing and availability.
           </p>
           <div className="flex justify-center gap-4 pt-4">
             <Link href="/inventory" className="px-6 py-3 rounded-lg bg-teal-DEFAULT text-background font-semibold hover:bg-teal-hover transition-colors">
@@ -115,7 +115,7 @@ export default async function Home() {
           
           {latestItems.length === 0 && (
             <div className="col-span-3 text-center py-12 text-muted border border-dashed border-border rounded-xl">
-              No active inventory found. Please run the SQL migration to add test data.
+              No active inventory is available right now. Please check back later.
             </div>
           )}
         </div>

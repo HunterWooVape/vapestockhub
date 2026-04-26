@@ -2,6 +2,7 @@ export const placeholderInventoryImage = '/images/inventory-placeholder.svg'
 
 export const productTypeOptions = [
   'Disposable Vape',
+  'Vape Kits',
   'Pod System',
   'Pod',
   'E-liquid',
@@ -17,6 +18,30 @@ export const inventoryStatusOptions = [
   'sold',
   'expired',
 ] as const
+
+export const inventoryStatusLabels = {
+  draft: '草稿',
+  active: '已发布',
+  reserved: '已锁货',
+  sold: '已售出',
+  expired: '已过期',
+} as const
+
+export const inventoryStatusActionLabels = {
+  draft: '退回草稿',
+  active: '发布上线',
+  reserved: '标记锁货',
+  sold: '标记已售',
+  expired: '标记过期',
+} as const
+
+export function formatInventoryStatusLabel(status: (typeof inventoryStatusOptions)[number]) {
+  return inventoryStatusLabels[status]
+}
+
+export function formatInventoryStatusActionLabel(status: (typeof inventoryStatusOptions)[number]) {
+  return inventoryStatusActionLabels[status]
+}
 
 export const contactVisibilityOptions = [
   'contact_required',
@@ -65,6 +90,7 @@ export type InventoryFormValues = {
   nicotine: string
   puff: number | null
   eLiquid: string
+  productionDateText: string
   isFeatured: boolean
   isUrgentClearance: boolean
   status: typeof inventoryStatusOptions[number]
@@ -93,6 +119,7 @@ export const aiDraftReviewFieldOptions = [
   'moq',
   'market',
   'warehouse_location',
+  'production_date_text',
   'flavor_breakdown',
   'description',
   'images',
@@ -124,6 +151,7 @@ export type InventoryAiDraftFieldSet = {
   nicotine: string
   puff: string
   e_liquid: string
+  production_date_text: string
   contact_visibility: typeof contactVisibilityOptions[number]
   images: string[]
   flavor_tags: string[]
@@ -320,6 +348,7 @@ export function createEmptyInventoryAiDraftPackage(
       nicotine: '',
       puff: '',
       e_liquid: '',
+      production_date_text: '',
       contact_visibility: 'contact_required',
       images: [],
       flavor_tags: [],
@@ -503,6 +532,7 @@ export function parseInventoryAiDraftPackage(input: string):
       nicotine: getStringValue(normalizedFields.nicotine),
       puff: getStringValue(normalizedFields.puff),
       e_liquid: getStringValue(normalizedFields.e_liquid),
+      production_date_text: getStringValue(normalizedFields.production_date_text),
       contact_visibility: contactVisibility,
       images: getStringArrayValue(normalizedFields.images),
       flavor_tags: getStringArrayValue(normalizedFields.flavor_tags),
@@ -594,6 +624,7 @@ export function convertAiDraftPackageToInventoryDraft(
     nicotine: draftPackage.normalizedFields.nicotine.trim(),
     puff: Number(draftPackage.normalizedFields.puff) || null,
     eLiquid: draftPackage.normalizedFields.e_liquid.trim(),
+    productionDateText: draftPackage.normalizedFields.production_date_text.trim(),
     isFeatured: false,
     isUrgentClearance: false,
     status: 'draft',

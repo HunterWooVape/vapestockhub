@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import ContactButtons from '@/components/contact/ContactButtons'
 import { getInventoryImageSrc, InventoryRecord, toSlug } from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
-import { isPriceUnlocked, unlockedItemsCookieName } from '@/lib/unlock'
-import { cookies } from 'next/headers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
@@ -38,6 +36,10 @@ function buildInventoryMetadataDescription(item: InventoryRecord) {
     summaryParts.splice(2, 0, `${item.puff.toLocaleString()} puffs`)
   }
 
+  if (item.production_date_text) {
+    summaryParts.push(`production ${item.production_date_text}`)
+  }
+
   return `${summaryParts.join(', ')}.`
 }
 
@@ -65,7 +67,6 @@ export default async function InventoryDetailPage({
   params: Promise<{ slug: string }>
 }) {
   const resolvedParams = await params
-  const cookieStore = await cookies()
   const item = await getInventoryItem(resolvedParams.slug)
 
   if (!item) {
@@ -75,8 +76,6 @@ export default async function InventoryDetailPage({
   const supabase = await createClient()
 
   const unlocked = item.contact_visibility === 'public'
-    ? true
-    : isPriceUnlocked(cookieStore.get(unlockedItemsCookieName)?.value, item.slug)
 
   const isHot = item.is_featured || item.quantity < 5000
   const flavorList = item.flavor ? item.flavor.split(',').map((f: string) => f.trim()).filter(Boolean) : []
@@ -168,6 +167,12 @@ export default async function InventoryDetailPage({
                   <div className="font-semibold">{item.e_liquid}</div>
                 </div>
               )}
+              {item.production_date_text && (
+                <div>
+                  <div className="text-sm text-muted mb-1">Production Date</div>
+                  <div className="font-semibold">{item.production_date_text}</div>
+                </div>
+              )}
             </div>
 
             {flavorList.length > 0 && (
@@ -248,13 +253,13 @@ export default async function InventoryDetailPage({
                   sourcePageType="inventory"
                   sourcePageSlug={item.slug}
                   itemSlug={item.slug}
-                  primaryLabel={unlocked ? 'Request Availability via Telegram' : 'Unlock Price via Telegram'}
+                  primaryLabel={unlocked ? 'Request Availability via Telegram' : 'Contact for Price via Telegram'}
                   message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Market: ${item.market}). Could you share the wholesale price and availability?`}
                 />
 
                 {!unlocked && (
                   <p className="text-xs text-center text-muted">
-                    We unlock pricing after your inquiry so active stock and current terms can be confirmed together.
+                    Pricing is shared during direct contact so current stock and terms can be confirmed together.
                   </p>
                 )}
 

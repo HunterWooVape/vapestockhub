@@ -9,6 +9,7 @@ export type InventoryRecord = {
   nicotine: string | null
   puff: number | null
   e_liquid: string | null
+  production_date_text: string | null
   price: number
   quantity: number
   moq: number

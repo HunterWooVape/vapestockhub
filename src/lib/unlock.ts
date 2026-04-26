@@ -1,6 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
-export const unlockedItemsCookieName = 'vsh_unlocked_items'
 export const adminSessionCookieName = 'vsh_admin_session'
 export const backofficeRoles = ['admin', 'staff'] as const
 const backofficeSessionVersion = 'v1'
@@ -90,6 +89,41 @@ export function serializeBackofficeSession(role: BackofficeRole) {
   return `${payload}:${signature}`
 }
 
+export function normalizeBackofficeReturnTo(value?: string | null) {
+  const trimmedValue = value?.trim()
+
+  if (!trimmedValue || !trimmedValue.startsWith('/') || trimmedValue.startsWith('//')) {
+    return null
+  }
+
+  try {
+    // 只允许站内相对路径，避免开放跳转。
+    const parsedUrl = new URL(trimmedValue, 'http://backoffice.local')
+
+    if (parsedUrl.origin !== 'http://backoffice.local') {
+      return null
+    }
+
+    return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`
+  } catch {
+    return null
+  }
+}
+
+export function buildBackofficeLoginRedirect(returnTo?: string | null) {
+  const normalizedReturnTo = normalizeBackofficeReturnTo(returnTo)
+
+  if (!normalizedReturnTo || normalizedReturnTo === '/admin') {
+    return '/admin'
+  }
+
+  const searchParams = new URLSearchParams({
+    return_to: normalizedReturnTo,
+  })
+
+  return `/admin?${searchParams.toString()}`
+}
+
 export function isBackofficeAuthenticated(value?: string | null) {
   return parseBackofficeSession(value).isAuthenticated
 }
@@ -104,23 +138,4 @@ export function isAdminRole(value?: string | null) {
 
 export function isStaffRole(value?: string | null) {
   return getBackofficeRole(value) === 'staff'
-}
-
-export function parseUnlockedItems(value?: string | null) {
-  if (!value) {
-    return []
-  }
-
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
-}
-
-export function serializeUnlockedItems(items: string[]) {
-  return Array.from(new Set(items)).join(',')
-}
-
-export function isPriceUnlocked(value: string | null | undefined, slug: string) {
-  return parseUnlockedItems(value).includes(slug)
 }

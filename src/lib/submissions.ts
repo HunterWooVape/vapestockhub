@@ -1,4 +1,4 @@
-import { createEmptyInventoryAiDraftPackage, placeholderInventoryImage } from '@/lib/admin-inventory'
+import { createEmptyInventoryAiDraftPackage } from '@/lib/admin-inventory'
 
 export const supplierSubmissionStatusOptions = [
   'new',
@@ -31,10 +31,12 @@ export type SupplierSubmissionValues = {
   availableQtyText: string
   moqText: string
   targetMarket: string
+  marketAccessNote: string
   warehouseLocation: string
   puffText: string
   nicotineText: string
   eLiquidText: string
+  productionDateText: string
   flavorList: string
   flavorBreakdown: string
   imageLinks: string
@@ -58,17 +60,29 @@ export const supplierSubmissionRequiredFields = [
 export type SupplierSubmissionRequiredField = typeof supplierSubmissionRequiredFields[number]
 
 const supplierSubmissionFieldLabels: Record<SupplierSubmissionRequiredField, string> = {
-  supplierName: 'Supplier Name',
-  brand: 'Brand',
-  modelName: 'Model / Product Name',
-  productType: 'Product Type',
-  availableQtyText: 'Available Qty',
-  targetMarket: 'Target Market',
-  warehouseLocation: 'Warehouse Location',
+  supplierName: '供应商名称',
+  brand: '品牌',
+  modelName: '型号 / 产品名',
+  productType: '产品类型',
+  availableQtyText: '可售数量',
+  targetMarket: '目标市场',
+  warehouseLocation: '仓库位置',
 }
 
 export function formatSupplierSubmissionFieldLabel(field: SupplierSubmissionRequiredField) {
   return supplierSubmissionFieldLabels[field]
+}
+
+const supplierSubmissionSourceLabels: Record<SupplierSubmissionSource, string> = {
+  supplier_form: '供应商表单',
+  internal_form: '内部录入',
+  chat: '聊天记录',
+  excel: 'Excel 清单',
+  other: '其他来源',
+}
+
+export function formatSupplierSubmissionSourceLabel(source: SupplierSubmissionSource) {
+  return supplierSubmissionSourceLabels[source]
 }
 
 export function getSupplierSubmissionMissingRequiredFields(values: SupplierSubmissionValues) {
@@ -148,10 +162,12 @@ export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValu
     availableQtyText: values.availableQtyText.trim(),
     moqText: values.moqText.trim(),
     targetMarket: values.targetMarket.trim(),
+    marketAccessNote: normalizeSubmissionMultilineText(values.marketAccessNote),
     warehouseLocation: values.warehouseLocation.trim(),
     puffText: values.puffText.trim(),
     nicotineText: values.nicotineText.trim(),
     eLiquidText: values.eLiquidText.trim(),
+    productionDateText: normalizeSubmissionMultilineText(values.productionDateText),
     flavorList: splitSubmissionFlavorTags(values.flavorList).join(', '),
     flavorBreakdown: normalizeSubmissionMultilineText(values.flavorBreakdown),
     imageLinks: getSubmissionImageList(values.imageLinks).join('\n'),
@@ -178,9 +194,15 @@ export function buildSubmissionTitle(values: Pick<SupplierSubmissionValues, 'bra
 
 export function buildSubmissionDescription(values: Pick<
   SupplierSubmissionValues,
-  'stockNotes' | 'flavorBreakdown' | 'packagingNotes' | 'extraNotes'
+  'stockNotes' | 'flavorBreakdown' | 'packagingNotes' | 'extraNotes' | 'marketAccessNote'
 >) {
-  return [values.stockNotes, values.flavorBreakdown, values.packagingNotes, values.extraNotes]
+  return [
+    values.stockNotes,
+    values.marketAccessNote ? `Market Access Note:\n${values.marketAccessNote}` : '',
+    values.flavorBreakdown,
+    values.packagingNotes,
+    values.extraNotes,
+  ]
     .map((item) => item.trim())
     .filter(Boolean)
     .join('\n\n')
@@ -201,10 +223,12 @@ export function buildSubmissionRawText(values: SupplierSubmissionValues) {
     `Available Qty: ${normalizedValues.availableQtyText}`,
     normalizedValues.moqText ? `MOQ: ${normalizedValues.moqText}` : '',
     `Target Market: ${normalizedValues.targetMarket}`,
+    normalizedValues.marketAccessNote ? `Market Access Note:\n${normalizedValues.marketAccessNote}` : '',
     `Warehouse Location: ${normalizedValues.warehouseLocation}`,
     normalizedValues.puffText ? `Puff Count: ${normalizedValues.puffText}` : '',
     normalizedValues.nicotineText ? `Nicotine Strength: ${normalizedValues.nicotineText}` : '',
     normalizedValues.eLiquidText ? `E-liquid Capacity: ${normalizedValues.eLiquidText}` : '',
+    normalizedValues.productionDateText ? `Production Date: ${normalizedValues.productionDateText}` : '',
     normalizedValues.flavorList ? `Flavor List: ${normalizedValues.flavorList}` : '',
     normalizedValues.flavorBreakdown ? `Flavor Breakdown:\n${normalizedValues.flavorBreakdown}` : '',
     normalizedValues.imageLinks ? `Image Links:\n${normalizedValues.imageLinks}` : '',
@@ -233,11 +257,12 @@ export function convertSubmissionToDraftSeed(values: SupplierSubmissionValues) {
     market: normalizedValues.targetMarket,
     warehouseLocation: normalizedValues.warehouseLocation,
     description,
-    imageUrl: imageList[0] ?? placeholderInventoryImage,
+    imageUrl: imageList[0] ?? '',
     flavor: normalizedValues.flavorList,
     nicotine: normalizedValues.nicotineText,
     puff: parseSubmissionInteger(normalizedValues.puffText),
     eLiquid: normalizedValues.eLiquidText,
+    productionDateText: normalizedValues.productionDateText,
   }
 }
 
@@ -262,6 +287,7 @@ export function buildAiDraftPackageSeedFromSubmission(values: SupplierSubmission
   draftPackage.normalizedFields.nicotine = normalizedValues.nicotineText
   draftPackage.normalizedFields.puff = normalizedValues.puffText
   draftPackage.normalizedFields.e_liquid = normalizedValues.eLiquidText
+  draftPackage.normalizedFields.production_date_text = normalizedValues.productionDateText
   draftPackage.normalizedFields.images = imageList
   draftPackage.normalizedFields.flavor_tags = splitSubmissionFlavorTags(normalizedValues.flavorList)
   draftPackage.normalizedFields.flavor_breakdown = normalizedValues.flavorBreakdown

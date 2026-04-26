@@ -1,5 +1,10 @@
 # VapeStockHub 后台最小角色与入口限制执行清单
 
+> 状态说明：
+> - 本文件继续保留，但其中关于 `submit-stock` 独立 access code 的现状描述已过时
+> - 当前入口策略以 `BACKOFFICE_WORKFLOW_REFACTOR_V1.md` 为准，即 `submit-stock` 统一纳入后台登录体系
+> - 后续角色与入口调整顺序以 `BACKOFFICE_REFACTOR_EXECUTION_PLAN.md` 为准
+
 ## 1. 目的
 
 本文件用于承接后台重构蓝图中的第 4 段：

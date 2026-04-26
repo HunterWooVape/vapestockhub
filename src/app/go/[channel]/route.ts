@@ -2,12 +2,6 @@ import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 
 import { getTelegramUrl, getWhatsAppUrl } from '@/lib/site'
-import {
-  isPriceUnlocked,
-  parseUnlockedItems,
-  serializeUnlockedItems,
-  unlockedItemsCookieName,
-} from '@/lib/unlock'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,21 +37,5 @@ export async function GET(
     user_agent: request.headers.get('user-agent'),
   })
 
-  const response = NextResponse.redirect(targetUrl)
-
-  if (itemSlug) {
-    const currentValue = request.cookies.get(unlockedItemsCookieName)?.value
-
-    if (!isPriceUnlocked(currentValue, itemSlug)) {
-      const updatedItems = [...parseUnlockedItems(currentValue), itemSlug]
-      response.cookies.set(unlockedItemsCookieName, serializeUnlockedItems(updatedItems), {
-        maxAge: 60 * 30,
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-      })
-    }
-  }
-
-  return response
+  return NextResponse.redirect(targetUrl)
 }
