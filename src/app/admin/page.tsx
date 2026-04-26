@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { BackofficeFlowBar } from '@/components/submissions/backoffice-flow-bar'
 import {
   formatInventoryStatusActionLabel,
+  formatInventoryStatusLabel,
   formatInventoryQualityMessage,
   getInventoryQualityReport,
   inventoryStatusOptions,
@@ -143,16 +144,6 @@ function getSelectedValue<T extends readonly string[]>(
   return options.includes(value as T[number]) ? (value as T[number]) : fallback
 }
 
-function buildIssueRedirect(path: string, issues: string[]) {
-  const searchParams = new URLSearchParams({ error: 'publish-blocked' })
-
-  if (issues.length > 0) {
-    searchParams.set('issues', issues.join(','))
-  }
-
-  return `${path}?${searchParams.toString()}`
-}
-
 function buildAdminPageRedirect(params: Record<string, string | null | undefined>) {
   const searchParams = new URLSearchParams()
 
@@ -164,6 +155,16 @@ function buildAdminPageRedirect(params: Record<string, string | null | undefined
 
   const queryString = searchParams.toString()
   return queryString ? `/admin?${queryString}` : '/admin'
+}
+
+function buildInventoryFilterHref(
+  inventoryStatus: (typeof inventoryStatusOptions)[number],
+  page?: number
+) {
+  return buildAdminPageRedirect({
+    inventory_status: inventoryStatus === 'draft' ? null : inventoryStatus,
+    page: page && page > 1 ? String(page) : null,
+  })
 }
 
 function revalidateInventoryRoutes(slug?: string) {
@@ -193,6 +194,11 @@ export default async function AdminPage({
   const page = getPageNumber(params.page)
   const success = getSingleParam(params.success)
   const error = getSingleParam(params.error)
+  const inventoryStatusFilter = getSelectedValue(
+    getSingleParam(params.inventory_status) ?? 'draft',
+    inventoryStatusOptions,
+    'draft'
+  )
   const returnTo = normalizeBackofficeReturnTo(getSingleParam(params.return_to))
   const issues = (getSingleParam(params.issues) ?? '')
     .split(',')
@@ -222,7 +228,7 @@ export default async function AdminPage({
         'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, price, quantity, moq, warehouse_location, description, images, flavor',
         { count: 'exact' }
       )
-      .eq('status', 'draft')
+      .eq('status', inventoryStatusFilter)
       .order('created_at', { ascending: false })
       .range(from, to),
     supabase.from('inventory').select('brand, market'),
@@ -323,9 +329,19 @@ export default async function AdminPage({
       inventoryStatusOptions,
       'draft'
     )
+    const currentPage = getPageNumber(formData.get('page')?.toString())
+    const currentInventoryStatusFilter = getSelectedValue(
+      String(formData.get('inventory_status') || 'draft').trim(),
+      inventoryStatusOptions,
+      'draft'
+    )
 
     if (!inventoryStatusOptions.includes(status)) {
-      redirect('/admin?error=invalid-status')
+      redirect(buildAdminPageRedirect({
+        error: 'invalid-status',
+        inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
+        page: currentPage > 1 ? String(currentPage) : null,
+      }))
     }
 
     const { data: item } = await adminClient
@@ -358,14 +374,23 @@ export default async function AdminPage({
       )
 
       if (report.blockingIssues.length > 0) {
-        redirect(buildIssueRedirect('/admin', report.blockingIssues))
+        redirect(buildAdminPageRedirect({
+          error: 'publish-blocked',
+          issues: report.blockingIssues.join(','),
+          inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
+          page: currentPage > 1 ? String(currentPage) : null,
+        }))
       }
     }
 
     await adminClient.from('inventory').update({ status }).eq('id', id)
 
     revalidateInventoryRoutes(item?.slug)
-    redirect('/admin?success=status-updated')
+    redirect(buildAdminPageRedirect({
+      success: 'status-updated',
+      inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
+      page: currentPage > 1 ? String(currentPage) : null,
+    }))
   }
 
   const successMessage = success ? successMessages[success] : null
@@ -454,6 +479,17 @@ export default async function AdminPage({
   const roleSummary = isAdminUser
     ? 'Admin 负责审核推进、草稿终审和发布判断。'
     : 'Staff 负责内部录入、审核处理和草稿衔接。'
+  const inventorySectionTitle = inventoryStatusFilter === 'draft'
+    ? '待发布草稿'
+    : `${formatInventoryStatusLabel(inventoryStatusFilter)}库存`
+  const inventorySectionDescription = inventoryStatusFilter === 'draft'
+    ? '先清发布阻塞，再决定是否直接上线。'
+    : inventoryStatusFilter === 'active'
+      ? '已发布库存可在这里回改内容或继续维护状态。'
+      : '查看当前状态库存，并进入编辑页继续处理。'
+  const inventoryCountLabel = inventoryStatusFilter === 'draft'
+    ? `草稿数：${totalItems}`
+    : `${formatInventoryStatusLabel(inventoryStatusFilter)}数：${totalItems}`
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
@@ -603,20 +639,50 @@ export default async function AdminPage({
           <div id="recent-inventory" className="bg-surface border border-border rounded-2xl p-6 space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h2 className="text-xl font-bold">待发布草稿</h2>
-                <p className="mt-1 text-sm text-muted">先清发布阻塞，再决定是否直接上线。</p>
+                <h2 className="text-xl font-bold">{inventorySectionTitle}</h2>
+                <p className="mt-1 text-sm text-muted">{inventorySectionDescription}</p>
               </div>
-              <span className="text-sm text-muted">草稿数：{totalItems}</span>
+              <span className="text-sm text-muted">{inventoryCountLabel}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {inventoryStatusOptions.map((status) => {
+                const isCurrentStatus = status === inventoryStatusFilter
+
+                return (
+                  <Link
+                    key={status}
+                    href={buildInventoryFilterHref(status)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                      isCurrentStatus
+                        ? 'border-teal-DEFAULT/40 bg-teal-DEFAULT/10 text-teal-DEFAULT'
+                        : 'border-border bg-background text-muted hover:text-foreground'
+                    }`}
+                  >
+                    {formatInventoryStatusLabel(status)}
+                  </Link>
+                )
+              })}
             </div>
             <div className="space-y-4">
               {inventoryRows.length === 0 ? (
                 <div className="rounded-xl border border-border/70 bg-background px-4 py-5 text-sm text-muted">
-                  <div>当前没有待发布草稿。</div>
-                  <div className="mt-2">审核队列转出草稿后，会自动回到这里继续发布检查。</div>
+                  <div>
+                    {inventoryStatusFilter === 'draft'
+                      ? '当前没有待发布草稿。'
+                      : `当前没有${formatInventoryStatusLabel(inventoryStatusFilter)}库存。`}
+                  </div>
+                  <div className="mt-2">
+                    {inventoryStatusFilter === 'draft'
+                      ? '审核队列转出草稿后，会自动回到这里继续发布检查。'
+                      : '切换其他状态筛选，或等待新的库存进入该状态。'}
+                  </div>
                 </div>
               ) : (
                 inventoryRows.map((item) => {
                   const priorityMeta = getDraftPriorityMeta(item)
+                  const adminReturnHref = encodeURIComponent(
+                    buildInventoryFilterHref(inventoryStatusFilter, page)
+                  )
 
                   return (
                     <div key={item.id} className="rounded-xl border border-border p-4 space-y-4">
@@ -626,37 +692,63 @@ export default async function AdminPage({
                           <div className="text-sm text-muted">{item.brand} · {item.market}</div>
                         </div>
                         <div className="text-right text-sm">
-                          <div className="font-medium tracking-wide text-muted">待发布</div>
-                        </div>
-                      </div>
-                      <div className="rounded-xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-xs text-muted">处理优先级</span>
-                          <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${priorityMeta.className}`}>
-                            {priorityMeta.label}
-                          </span>
-                        </div>
-                        <div className="text-xs text-muted">{priorityMeta.hint}</div>
-                        {item.qualityReport.blockingIssues.length > 0 ? (
-                          <div className="text-sm text-status-danger">
-                            下一步：先处理 {item.qualityReport.blockingIssues.length} 个发布阻塞项
+                          <div className="font-medium tracking-wide text-muted">
+                            {formatInventoryStatusLabel(item.status)}
                           </div>
-                        ) : (
-                          <div className="text-sm text-teal-DEFAULT">下一步：可以直接发布</div>
-                        )}
+                        </div>
                       </div>
+                      {inventoryStatusFilter === 'draft' ? (
+                        <div className="rounded-xl border border-border/70 bg-background px-4 py-3 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted">处理优先级</span>
+                            <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${priorityMeta.className}`}>
+                              {priorityMeta.label}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted">{priorityMeta.hint}</div>
+                          {item.qualityReport.blockingIssues.length > 0 ? (
+                            <div className="text-sm text-status-danger">
+                              下一步：先处理 {item.qualityReport.blockingIssues.length} 个发布阻塞项
+                            </div>
+                          ) : (
+                            <div className="text-sm text-teal-DEFAULT">下一步：可以直接发布</div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-border/70 bg-background px-4 py-3 space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-xs text-muted">当前状态</span>
+                            <span className="inline-flex rounded-full border border-border px-2.5 py-1 text-xs font-medium text-foreground">
+                              {formatInventoryStatusLabel(item.status)}
+                            </span>
+                          </div>
+                          {item.qualityReport.blockingIssues.length > 0 ? (
+                            <div className="text-sm text-status-warning">
+                              当前记录存在 {item.qualityReport.blockingIssues.length} 个发布质量阻塞项，建议进入编辑页回改。
+                            </div>
+                          ) : (
+                            <div className="text-sm text-muted">当前记录结构正常，可直接进入编辑页维护内容或调整状态。</div>
+                          )}
+                        </div>
+                      )}
                       <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-                        <Link href={`/admin/edit/${item.id}?return_to=%2Fadmin`} className="text-sm text-teal-DEFAULT hover:underline font-medium">
-                          去发布检查 →
+                        <Link href={`/admin/edit/${item.id}?return_to=${adminReturnHref}`} className="text-sm text-teal-DEFAULT hover:underline font-medium">
+                          {inventoryStatusFilter === 'draft' ? '去发布检查 →' : '去编辑库存 →'}
                         </Link>
-                        {isAdminUser ? (
+                        {isAdminUser && inventoryStatusFilter === 'draft' ? (
                           <form action={updateStatusAction} className="flex flex-wrap gap-2 xl:justify-end">
                             <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="page" value={String(page)} />
+                            <input type="hidden" name="inventory_status" value={inventoryStatusFilter} />
                             <button name="status" value="active" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-background transition-colors">{formatInventoryStatusActionLabel('active')}</button>
                           </form>
                         ) : (
                           <div className="text-xs text-muted">
-                            `Staff` 角色请进入草稿页继续处理内容。
+                            {isAdminUser
+                              ? '可进入编辑页维护内容或调整状态。'
+                              : inventoryStatusFilter === 'draft'
+                                ? '`Staff` 角色请进入草稿页继续处理内容。'
+                                : '`Staff` 角色请进入编辑页查看并处理内容。'}
                           </div>
                         )}
                       </div>
@@ -670,7 +762,7 @@ export default async function AdminPage({
               <div className="flex justify-center items-center gap-4 pt-6 border-t border-border">
                 {page > 1 && (
                   <Link
-                    href={`/admin?page=${page - 1}`}
+                    href={buildInventoryFilterHref(inventoryStatusFilter, page - 1)}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-background transition-colors text-sm"
                   >
                     上一页
@@ -681,7 +773,7 @@ export default async function AdminPage({
                 </span>
                 {page < totalPages && (
                   <Link
-                    href={`/admin?page=${page + 1}`}
+                    href={buildInventoryFilterHref(inventoryStatusFilter, page + 1)}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-background transition-colors text-sm"
                   >
                     下一页

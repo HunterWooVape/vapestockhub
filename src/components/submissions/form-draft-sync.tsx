@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 type SubmissionFormDraftSyncProps = {
@@ -9,6 +9,8 @@ type SubmissionFormDraftSyncProps = {
 }
 
 type SupportedFieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+
+type DraftChoice = 'restore' | 'clear' | 'new-blank'
 
 function isSupportedField(element: Element): element is SupportedFieldElement {
   return (
@@ -23,50 +25,59 @@ export function SubmissionFormDraftSync({
   storageKey,
 }: SubmissionFormDraftSyncProps) {
   const searchParams = useSearchParams()
+  const [isReady, setIsReady] = useState(false)
+  const [showDraftChoice, setShowDraftChoice] = useState(false)
+  const [storedDraftValues, setStoredDraftValues] = useState<Record<string, string> | null>(null)
+  const [persistImmediately, setPersistImmediately] = useState(true)
+
+  const shouldSkipRestore = useMemo(() => Boolean(searchParams.get('success')), [searchParams])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return
     }
 
-    const shouldSkipRestore = Boolean(searchParams.get('success'))
-
     if (shouldSkipRestore) {
       window.sessionStorage.removeItem(storageKey)
-    }
-
-    const form = document.getElementById(formId)
-    if (!(form instanceof HTMLFormElement)) {
+      setStoredDraftValues(null)
+      setShowDraftChoice(false)
+      setPersistImmediately(true)
+      setIsReady(true)
       return
     }
 
     const storedDraft = window.sessionStorage.getItem(storageKey)
 
-    if (storedDraft && !shouldSkipRestore) {
-      try {
-        const draftValues = JSON.parse(storedDraft) as Record<string, string>
-        const fields = Array.from(form.elements)
+    if (!storedDraft) {
+      setStoredDraftValues(null)
+      setShowDraftChoice(false)
+      setPersistImmediately(true)
+      setIsReady(true)
+      return
+    }
 
-        // 中文注释：只恢复具名字段，避免覆盖按钮等非业务控件。
-        fields.forEach((field) => {
-          if (!isSupportedField(field) || !field.name) {
-            return
-          }
+    try {
+      const parsedDraft = JSON.parse(storedDraft) as Record<string, string>
+      setStoredDraftValues(parsedDraft)
+      setShowDraftChoice(true)
+      setIsReady(false)
+    } catch {
+      window.sessionStorage.removeItem(storageKey)
+      setStoredDraftValues(null)
+      setShowDraftChoice(false)
+      setPersistImmediately(true)
+      setIsReady(true)
+    }
+  }, [shouldSkipRestore, storageKey])
 
-          if (field.name === 'access_code') {
-            return
-          }
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
 
-          const nextValue = draftValues[field.name]
-          if (typeof nextValue !== 'string') {
-            return
-          }
-
-          field.value = nextValue
-        })
-      } catch {
-        window.sessionStorage.removeItem(storageKey)
-      }
+    const form = document.getElementById(formId)
+    if (!(form instanceof HTMLFormElement) || !isReady) {
+      return
     }
 
     const persistDraft = () => {
@@ -86,7 +97,10 @@ export function SubmissionFormDraftSync({
       window.sessionStorage.setItem(storageKey, JSON.stringify(nextDraft))
     }
 
-    persistDraft()
+    if (persistImmediately) {
+      persistDraft()
+    }
+
     form.addEventListener('input', persistDraft)
     form.addEventListener('change', persistDraft)
 
@@ -94,7 +108,116 @@ export function SubmissionFormDraftSync({
       form.removeEventListener('input', persistDraft)
       form.removeEventListener('change', persistDraft)
     }
-  }, [formId, searchParams, storageKey])
+  }, [formId, isReady, persistImmediately, storageKey])
 
-  return null
+  const applyDraftToForm = () => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const form = document.getElementById(formId)
+    if (!(form instanceof HTMLFormElement) || !storedDraftValues) {
+      return
+    }
+
+    const fields = Array.from(form.elements)
+
+    // 中文注释：只恢复具名字段，避免覆盖按钮等非业务控件。
+    fields.forEach((field) => {
+      if (!isSupportedField(field) || !field.name) {
+        return
+      }
+
+      if (field.name === 'access_code') {
+        return
+      }
+
+      const nextValue = storedDraftValues[field.name]
+      if (typeof nextValue !== 'string') {
+        return
+      }
+
+      field.value = nextValue
+    })
+  }
+
+  const resetFormToDefaultValues = () => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const form = document.getElementById(formId)
+    if (!(form instanceof HTMLFormElement)) {
+      return
+    }
+
+    form.reset()
+  }
+
+  const handleDraftChoice = (choice: DraftChoice) => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (choice === 'restore') {
+      applyDraftToForm()
+      setPersistImmediately(true)
+      setShowDraftChoice(false)
+      setIsReady(true)
+      return
+    }
+
+    window.sessionStorage.removeItem(storageKey)
+    resetFormToDefaultValues()
+    setStoredDraftValues(null)
+    setShowDraftChoice(false)
+    setPersistImmediately(choice === 'new-blank')
+    setIsReady(true)
+  }
+
+  return (
+    <>
+      {showDraftChoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 px-4">
+          <div className="w-full max-w-xl rounded-3xl border border-border bg-surface p-6 shadow-2xl">
+            <div className="space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-[0.24em] text-teal-DEFAULT">
+                检测到本地草稿
+              </div>
+              <h3 className="text-2xl font-bold text-foreground">要继续上次录入，还是从空白开始？</h3>
+              <p className="text-sm leading-6 text-muted">
+                当前浏览器里还有一份未提交的本地草稿。请选择恢复、彻底清空，或直接新建一份空白草稿。
+              </p>
+            </div>
+            <div className="mt-6 grid gap-3">
+              <button
+                type="button"
+                onClick={() => handleDraftChoice('restore')}
+                className="rounded-2xl border border-teal-DEFAULT/40 bg-teal-DEFAULT/10 px-4 py-4 text-left transition-colors hover:bg-teal-DEFAULT/15"
+              >
+                <div className="text-sm font-semibold text-foreground">恢复上次草稿</div>
+                <div className="mt-1 text-sm text-muted">把本地未提交内容回填到表单，继续编辑。</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDraftChoice('clear')}
+                className="rounded-2xl border border-border bg-background px-4 py-4 text-left transition-colors hover:border-status-warning/40 hover:bg-status-warning/10"
+              >
+                <div className="text-sm font-semibold text-foreground">清空旧草稿</div>
+                <div className="mt-1 text-sm text-muted">删除当前本地草稿，不立即生成新的空白草稿记录。</div>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDraftChoice('new-blank')}
+                className="rounded-2xl border border-border bg-background px-4 py-4 text-left transition-colors hover:border-border/80 hover:bg-surface"
+              >
+                <div className="text-sm font-semibold text-foreground">新建空白草稿</div>
+                <div className="mt-1 text-sm text-muted">丢弃旧内容，并从当前空白表单开始重新自动保存。</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }

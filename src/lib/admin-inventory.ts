@@ -50,6 +50,7 @@ export const contactVisibilityOptions = [
 
 const promotionalTitlePattern =
   /\b(best|cheap|cheapest|hot sale|hottest|premium deal|must buy|limited offer|top quality)\b/i
+const genericBrandTermPattern = /\b(e-?liquid|vapes?|disposables?|pods?|devices?|kits?)\b/gi
 
 export const inventoryQualityMessages = {
   'title-required': 'Title is required before publishing.',
@@ -68,6 +69,7 @@ export const inventoryQualityMessages = {
   'flavor-missing': 'Flavor is empty. Add flavor tags if they are available.',
   'moq-exceeds-quantity': 'MOQ is higher than quantity and may confuse buyers.',
   'brand-not-standard': 'Brand does not match an existing standard value yet.',
+  'brand-contains-generic-terms': 'Brand includes generic product words like "vape" or "disposable". Keep only the real trademark in the brand field.',
   'market-not-standard': 'Market does not match an existing standard value yet.',
 } as const
 
@@ -212,6 +214,141 @@ export function normalizeKnownValue(value: string, knownValues: string[]) {
   return matchedValue ?? normalizedValue
 }
 
+function normalizeGenericBrandTerm(term: string) {
+  const lowerTerm = term.toLowerCase()
+
+  if (lowerTerm === 'eliquid') {
+    return 'e-liquid'
+  }
+
+  return lowerTerm
+}
+
+// 中文注释：品牌字段只保留真实商标名，这里轻量识别常见通用品类词，供后台提醒人工复核。
+export function getBrandNamingRiskTerms(value: string) {
+  const normalizedValue = value.trim()
+
+  if (!normalizedValue) {
+    return [] as string[]
+  }
+
+  return Array.from(
+    new Set(
+      Array.from(normalizedValue.matchAll(genericBrandTermPattern)).map((match) =>
+        normalizeGenericBrandTerm(match[0])
+      )
+    )
+  )
+}
+
+const warehouseLocationAbbreviations = new Set([
+  'UAE',
+  'USA',
+  'US',
+  'UK',
+  'EU',
+  'KSA',
+  'HK',
+  'CN',
+  'QC',
+  'WH',
+  'FTZ',
+  'GMT',
+])
+
+function formatCompactNumber(value: string) {
+  const parsedValue = Number.parseFloat(value)
+
+  if (!Number.isFinite(parsedValue)) {
+    return value
+  }
+
+  return String(parsedValue)
+}
+
+function toTitleCaseWord(value: string) {
+  if (!/^[A-Za-z]+$/.test(value)) {
+    return value
+  }
+
+  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+}
+
+// 中文注释：仓库位置统一做轻量标准化，既保留原地名语义，也减少大小写和空格噪音。
+export function normalizeWarehouseLocation(value: string) {
+  const normalizedValue = value.trim().replace(/\s+/g, ' ')
+
+  if (!normalizedValue) {
+    return ''
+  }
+
+  return normalizedValue
+    .split(/(\s+|,|\/|-|\(|\))/)
+    .map((segment) => {
+      if (!segment || /^(?:\s+|,|\/|-|\(|\))$/.test(segment)) {
+        return segment
+      }
+
+      const upperSegment = segment.toUpperCase().replace(/\./g, '')
+      if (warehouseLocationAbbreviations.has(upperSegment)) {
+        return upperSegment
+      }
+
+      return toTitleCaseWord(segment)
+    })
+    .join('')
+}
+
+// 中文注释：Nicotine 纯数字默认补成百分比，其它常见单位只做轻量格式统一。
+export function normalizeNicotineValue(value: string) {
+  const normalizedValue = value.trim().replace(/\s+/g, ' ')
+
+  if (!normalizedValue) {
+    return ''
+  }
+
+  if (/^\d+(?:\.\d+)?$/.test(normalizedValue)) {
+    return `${formatCompactNumber(normalizedValue)}%`
+  }
+
+  const percentMatch = normalizedValue.match(/^(\d+(?:\.\d+)?)\s*%$/)
+  if (percentMatch) {
+    return `${formatCompactNumber(percentMatch[1])}%`
+  }
+
+  const mgPerMlMatch = normalizedValue.match(/^(\d+(?:\.\d+)?)\s*mg\s*\/\s*ml$/i)
+  if (mgPerMlMatch) {
+    return `${formatCompactNumber(mgPerMlMatch[1])}mg/ml`
+  }
+
+  const mgMatch = normalizedValue.match(/^(\d+(?:\.\d+)?)\s*mg$/i)
+  if (mgMatch) {
+    return `${formatCompactNumber(mgMatch[1])}mg`
+  }
+
+  return normalizedValue
+}
+
+// 中文注释：烟油容量纯数字默认补 ml，已有 ml 只统一紧凑写法。
+export function normalizeELiquidValue(value: string) {
+  const normalizedValue = value.trim().replace(/\s+/g, ' ')
+
+  if (!normalizedValue) {
+    return ''
+  }
+
+  if (/^\d+(?:\.\d+)?$/.test(normalizedValue)) {
+    return `${formatCompactNumber(normalizedValue)}ml`
+  }
+
+  const mlMatch = normalizedValue.match(/^(\d+(?:\.\d+)?)\s*ml$/i)
+  if (mlMatch) {
+    return `${formatCompactNumber(mlMatch[1])}ml`
+  }
+
+  return normalizedValue
+}
+
 export function getInventoryQualityReport(
   values: Pick<
     InventoryFormValues,
@@ -245,6 +382,10 @@ export function getInventoryQualityReport(
 
   if (!values.brand.trim()) {
     blockingIssues.push('brand-required')
+  }
+
+  if (getBrandNamingRiskTerms(values.brand).length > 0) {
+    warnings.push('brand-contains-generic-terms')
   }
 
   if (!values.productType.trim()) {
@@ -616,14 +757,14 @@ export function convertAiDraftPackageToInventoryDraft(
     quantity: Number(draftPackage.normalizedFields.quantity) || 0,
     moq: Number(draftPackage.normalizedFields.moq) || 1,
     market: draftPackage.normalizedFields.market.trim(),
-    warehouseLocation: draftPackage.normalizedFields.warehouse_location.trim(),
+    warehouseLocation: normalizeWarehouseLocation(draftPackage.normalizedFields.warehouse_location),
     description: buildInventoryDescriptionFromDraftPackage(draftPackage),
     imageUrl: draftPackage.normalizedFields.images[0] ?? '',
     contactVisibility: draftPackage.normalizedFields.contact_visibility,
     flavor: draftPackage.normalizedFields.flavor_tags.join(', '),
-    nicotine: draftPackage.normalizedFields.nicotine.trim(),
+    nicotine: normalizeNicotineValue(draftPackage.normalizedFields.nicotine),
     puff: Number(draftPackage.normalizedFields.puff) || null,
-    eLiquid: draftPackage.normalizedFields.e_liquid.trim(),
+    eLiquid: normalizeELiquidValue(draftPackage.normalizedFields.e_liquid),
     productionDateText: draftPackage.normalizedFields.production_date_text.trim(),
     isFeatured: false,
     isUrgentClearance: false,

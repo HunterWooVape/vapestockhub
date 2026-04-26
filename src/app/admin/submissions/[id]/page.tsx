@@ -7,6 +7,7 @@ import {
   BackofficeFlowBar,
 } from '@/components/submissions/backoffice-flow-bar'
 import {
+  SubmissionFieldHint,
   SubmissionFieldLabel,
 } from '@/components/submissions/field-meta'
 import {
@@ -25,6 +26,7 @@ import {
   type SupplierSubmissionValues,
 } from '@/lib/submissions'
 import {
+  getBrandNamingRiskTerms,
   type InventoryAiDraftPackage,
   productTypeOptions,
 } from '@/lib/admin-inventory'
@@ -299,6 +301,10 @@ export default async function EditSubmissionPage({
       ? 'LLM 完善并生成草稿'
       : '保存审核'
   const statusSummaryText = formatSubmissionStatusLabel(submissionValues.submissionStatus)
+  const brandNamingRiskTerms = getBrandNamingRiskTerms(submissionValues.brand)
+  const brandNamingRiskHint = brandNamingRiskTerms.length > 0
+    ? `当前品牌包含通用词：${brandNamingRiskTerms.join('、')}。请只保留真实品牌名，不要把品类词带进品牌字段。`
+    : null
   const blockingSummaryText = hasConvertedDraft
     ? '这条录入已经转成草稿。'
     : requiredFieldCount === 0
@@ -685,6 +691,11 @@ export default async function EditSubmissionPage({
                 </div>
               </div>
             )}
+            {brandNamingRiskHint && (
+              <div className="rounded-2xl border border-status-warning/40 bg-status-warning/10 p-4 text-sm text-foreground">
+                {brandNamingRiskHint}
+              </div>
+            )}
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
@@ -734,7 +745,13 @@ export default async function EditSubmissionPage({
                     className={getReviewFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
+                    <SubmissionFieldHint>只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</SubmissionFieldHint>
                     <input name="brand" list="brand-options" defaultValue={submissionValues.brand} required placeholder="例如 Vozol" className={reviewInputClassName} />
+                    {brandNamingRiskHint && (
+                      <div className="text-xs text-status-warning">
+                        {brandNamingRiskHint}
+                      </div>
+                    )}
                   </div>
                   <div
                     id={reviewFieldAnchorIds.modelName}

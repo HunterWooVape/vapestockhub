@@ -6,7 +6,10 @@ import { redirect } from 'next/navigation'
 import {
   contactVisibilityOptions,
   convertAiDraftPackageToInventoryDraft,
+  normalizeELiquidValue,
   normalizeKnownValue,
+  normalizeNicotineValue,
+  normalizeWarehouseLocation,
   parseInventoryAiDraftPackage,
   productTypeOptions,
 } from '@/lib/admin-inventory'
@@ -167,7 +170,7 @@ export default async function AdminToolsPage({
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
     const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
-    const warehouseLocation = String(formData.get('warehouse_location') || '').trim()
+    const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
 
     if (!title || !brand || !productType || price <= 0 || quantity <= 0 || !market || !warehouseLocation) {
       redirect('/admin/tools?error=missing-required-fields')
@@ -256,13 +259,13 @@ export default async function AdminToolsPage({
       quantity: draftValues.quantity ?? 0,
       moq: draftValues.moq ?? 1,
       market,
-      warehouse_location: draftValues.warehouseLocation?.trim() || '',
+      warehouse_location: normalizeWarehouseLocation(draftValues.warehouseLocation || ''),
       description: draftValues.description?.trim() || null,
       images: imageUrl ? [imageUrl] : [],
-      nicotine: draftValues.nicotine?.trim() || null,
+      nicotine: normalizeNicotineValue(draftValues.nicotine || '') || null,
       flavor: draftValues.flavor?.trim() || null,
       puff: draftValues.puff ?? null,
-      e_liquid: draftValues.eLiquid?.trim() || null,
+      e_liquid: normalizeELiquidValue(draftValues.eLiquid || '') || null,
       production_date_text: draftValues.productionDateText?.trim() || null,
       contact_visibility: getSelectedValue(
         draftValues.contactVisibility || 'contact_required',

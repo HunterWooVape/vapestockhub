@@ -22,7 +22,7 @@
 - `/admin` 已支持最小双角色登录：`Admin` / `Staff`
 - 登录成功后会写入带签名的后台会话 cookie：`vsh_admin_session`
 - 会话中已包含最小角色信息，而不再只是布尔型登录态
-- `submit-stock` 仍通过独立访问码控制，不复用后台登录态
+- `submit-stock` 已统一纳入后台登录体系，不再单独维护 access code 入口
 - `/admin`
 - `/admin/submissions`
 - `/admin/submissions/[id]`
@@ -40,7 +40,7 @@
 结论：
 
 - 第 4 段“最小角色与入口限制”核心目标已经基本落地
-- 当前更需要做的是轻量 workflow review 和文档同步，而不是继续扩张权限系统
+- 当前更需要做的是轻量 workflow review、问题回写和文档同步，而不是继续扩张权限系统
 
 ---
 

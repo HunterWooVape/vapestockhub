@@ -288,7 +288,7 @@ export default async function SubmitStockPage({
                     快速录入
                   </div>
                   <p className="text-sm text-muted">
-                    本页会自动保留本地草稿。先完成最低必填字段，再补图片、价格和原始备注。
+                    本页会自动保留本地草稿。检测到旧草稿时会先让你选择恢复、清空或新建空白，再继续录入。
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
@@ -378,7 +378,7 @@ export default async function SubmitStockPage({
                     className={getSubmitFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>只填品牌，不混型号。</SubmissionFieldHint>
+                    <SubmissionFieldHint>只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</SubmissionFieldHint>
                     <input name="brand" list="brand-options" required placeholder="例如 Vozol" className={submitInputClassName} />
                   </div>
                   <div

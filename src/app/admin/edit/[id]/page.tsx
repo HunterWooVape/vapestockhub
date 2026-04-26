@@ -9,9 +9,13 @@ import {
   formatInventoryStatusLabel,
   formatInventoryQualityMessage,
   getInventoryQualityReport,
+  getBrandNamingRiskTerms,
   type InventoryAiDraftPackage,
   inventoryStatusOptions,
+  normalizeELiquidValue,
   normalizeKnownValue,
+  normalizeNicotineValue,
+  normalizeWarehouseLocation,
   placeholderInventoryImage,
   productTypeOptions,
 } from '@/lib/admin-inventory'
@@ -31,6 +35,8 @@ export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
   'inventory-updated': '库存草稿已保存，可继续发布检查。',
+  'inventory-published': '已发布成功，前台已可见。',
+  'inventory-active-updated': '已发布库存已更新，前台内容已同步刷新。',
   'draft-created-from-submission': '已完成转草稿，当前进入发布前确认。',
 }
 
@@ -221,10 +227,12 @@ export default async function EditInventoryPage({
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
     const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
-    const warehouseLocation = String(formData.get('warehouse_location') || '').trim()
+    const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
     const description = String(formData.get('description') || '').trim()
     const imageUrl = String(formData.get('image_url') || '').trim()
+    const nicotine = normalizeNicotineValue(String(formData.get('nicotine') || ''))
     const productionDateText = String(formData.get('production_date_text') || '').trim()
+    const eLiquid = normalizeELiquidValue(String(formData.get('e_liquid') || ''))
     const contactVisibility = getSelectedValue(
       String(formData.get('contact_visibility') || 'contact_required').trim(),
       contactVisibilityOptions,
@@ -291,10 +299,10 @@ export default async function EditInventoryPage({
       warehouse_location: warehouseLocation,
       description: description || null,
       images: imageUrl ? [imageUrl] : ['/images/inventory-placeholder.svg'],
-      nicotine: String(formData.get('nicotine') || '').trim() || null,
+      nicotine: nicotine || null,
       flavor: String(formData.get('flavor') || '').trim() || null,
       puff: Number(formData.get('puff') || 0) || null,
-      e_liquid: String(formData.get('e_liquid') || '').trim() || null,
+      e_liquid: eLiquid || null,
       production_date_text: productionDateText || null,
       contact_visibility: contactVisibility,
       status,
@@ -303,7 +311,14 @@ export default async function EditInventoryPage({
     }).eq('id', resolvedParams.id)
 
     revalidateInventoryRoutes(item.slug, slug)
-    redirect(appendReturnTo('/admin/edit/' + resolvedParams.id + '?success=inventory-updated', returnTo))
+    const successState =
+      status === 'active'
+        ? item.status === 'active'
+          ? 'inventory-active-updated'
+          : 'inventory-published'
+        : 'inventory-updated'
+
+    redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?success=${successState}`, returnTo))
   }
 
   async function deleteInventoryAction() {
@@ -357,6 +372,12 @@ export default async function EditInventoryPage({
       ? '审核队列'
       : '后台总控台'
   const currentEditHref = appendReturnTo(`/admin/edit/${resolvedParams.id}`, returnTo)
+  const isActiveSuccess = success === 'inventory-published' || success === 'inventory-active-updated'
+  const publicInventoryHref = `/inventory/${item.slug}`
+  const brandNamingRiskTerms = getBrandNamingRiskTerms(item.brand)
+  const brandNamingRiskHint = brandNamingRiskTerms.length > 0
+    ? `当前品牌包含通用词：${brandNamingRiskTerms.join('、')}。请只保留真实品牌名，不要把品类词写进品牌。`
+    : null
 
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
@@ -430,7 +451,17 @@ export default async function EditInventoryPage({
 
         {successMessage && (
           <div className="rounded-2xl border border-teal-DEFAULT/40 bg-teal-DEFAULT/10 p-4 text-sm text-foreground">
-            {successMessage}
+            <div>{successMessage}</div>
+            {isActiveSuccess && (
+              <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                <Link href={publicInventoryHref} className="font-medium text-teal-DEFAULT hover:underline">
+                  查看前台页面
+                </Link>
+                <Link href={backHref} className="font-medium text-teal-DEFAULT hover:underline">
+                  返回{backLabel}
+                </Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -467,6 +498,10 @@ export default async function EditInventoryPage({
             <div>
               <label className="text-sm text-muted mb-1 block">品牌</label>
               <input name="brand" list="brand-options-edit" defaultValue={item.brand} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <p className="mt-1 text-xs text-muted">只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</p>
+              {brandNamingRiskHint && (
+                <p className="mt-1 text-xs text-status-warning">{brandNamingRiskHint}</p>
+              )}
             </div>
             <div>
               <label className="text-sm text-muted mb-1 block">产品类型</label>

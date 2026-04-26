@@ -1,4 +1,10 @@
-import { createEmptyInventoryAiDraftPackage } from '@/lib/admin-inventory'
+import {
+  createEmptyInventoryAiDraftPackage,
+  getBrandNamingRiskTerms,
+  normalizeELiquidValue,
+  normalizeNicotineValue,
+  normalizeWarehouseLocation,
+} from '@/lib/admin-inventory'
 
 export const supplierSubmissionStatusOptions = [
   'new',
@@ -163,10 +169,10 @@ export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValu
     moqText: values.moqText.trim(),
     targetMarket: values.targetMarket.trim(),
     marketAccessNote: normalizeSubmissionMultilineText(values.marketAccessNote),
-    warehouseLocation: values.warehouseLocation.trim(),
+    warehouseLocation: normalizeWarehouseLocation(values.warehouseLocation),
     puffText: values.puffText.trim(),
-    nicotineText: values.nicotineText.trim(),
-    eLiquidText: values.eLiquidText.trim(),
+    nicotineText: normalizeNicotineValue(values.nicotineText),
+    eLiquidText: normalizeELiquidValue(values.eLiquidText),
     productionDateText: normalizeSubmissionMultilineText(values.productionDateText),
     flavorList: splitSubmissionFlavorTags(values.flavorList).join(', '),
     flavorBreakdown: normalizeSubmissionMultilineText(values.flavorBreakdown),
@@ -303,6 +309,7 @@ export function buildAiDraftPackageSeedFromSubmission(values: SupplierSubmission
 export function buildRuleBasedAiDraftPackageFromSubmission(values: SupplierSubmissionValues) {
   const normalizedValues = normalizeSupplierSubmissionValues(values)
   const draftPackage = buildAiDraftPackageSeedFromSubmission(normalizedValues)
+  const brandNamingRiskTerms = getBrandNamingRiskTerms(normalizedValues.brand)
 
   // 中文注释：这里先用规则型候选代替真实 LLM 输出，保证流程先跑通且可审查。
   if (!normalizedValues.unitPriceText.trim()) {
@@ -363,6 +370,18 @@ export function buildRuleBasedAiDraftPackageFromSubmission(values: SupplierSubmi
     draftPackage.humanReviewFocus.push({
       field: 'contact_visibility',
       reason: 'Supplier callback channel is empty. Keep traceability notes elsewhere before handoff.',
+    })
+  }
+
+  if (brandNamingRiskTerms.length > 0) {
+    draftPackage.riskFlags.push({
+      code: 'brand-generic-terms',
+      severity: 'low',
+      message: `Brand still contains generic terms (${brandNamingRiskTerms.join(', ')}). Keep only the actual trademark name.`,
+    })
+    draftPackage.humanReviewFocus.push({
+      field: 'brand',
+      reason: 'Remove generic category words from brand and keep the real brand name only.',
     })
   }
 
