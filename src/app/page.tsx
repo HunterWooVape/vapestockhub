@@ -19,23 +19,29 @@ export default async function Home() {
     .select('*')
     .eq('status', 'active')
     .eq('is_featured', true)
+    .order('last_verified_at', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(3)
+
+  const featuredItems = (featuredInventory ?? []) as InventoryRecord[]
+  const featuredIds = featuredItems.map((item) => item.id)
 
   // Fetch latest active inventory
   const { data: latestInventory, error } = await supabase
     .from('inventory')
     .select('*')
     .eq('status', 'active')
+    .order('last_verified_at', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(3)
+    .limit(6)
 
   if (error) {
     console.error('Error fetching inventory (check RLS policies):', error)
   }
 
-  const featuredItems = (featuredInventory ?? []) as InventoryRecord[]
-  const latestItems = (latestInventory ?? []) as InventoryRecord[]
+  const latestItems = ((latestInventory ?? []) as InventoryRecord[])
+    .filter((item) => !featuredIds.includes(item.id))
+    .slice(0, 3)
 
   return (
     <main className="flex-1 flex flex-col items-center">
@@ -88,6 +94,9 @@ export default async function Home() {
               </h2>
               <p className="text-muted mt-1">Selected active listings with strong buyer demand and clear inquiry paths.</p>
             </div>
+            <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
+              View All →
+            </Link>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {featuredItems.map((item) => (

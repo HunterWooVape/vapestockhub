@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import ContactButtons from '@/components/contact/ContactButtons'
-import { getInventoryImageSrc, InventoryRecord, toSlug } from '@/lib/inventory'
+import {
+  buildInventoryImageAlt,
+  getInventoryImageSrc,
+  hasRealInventoryImage,
+  InventoryRecord,
+  toSlug,
+} from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -26,11 +32,11 @@ const getInventoryItem = cache(async (slug: string) => {
 function buildInventoryMetadataDescription(item: InventoryRecord) {
   const summaryParts = [
     `${item.brand} wholesale stock offer`,
-    `available for ${item.market}`,
+    item.market ? `available for ${item.market}` : '',
     `${item.quantity.toLocaleString()} pcs in stock`,
     `MOQ ${item.moq.toLocaleString()} pcs`,
-    `warehouse ${item.warehouse_location}`,
-  ]
+    item.warehouse_location ? `warehouse ${item.warehouse_location}` : '',
+  ].filter(Boolean)
 
   if (item.puff) {
     summaryParts.splice(2, 0, `${item.puff.toLocaleString()} puffs`)
@@ -38,6 +44,10 @@ function buildInventoryMetadataDescription(item: InventoryRecord) {
 
   if (item.production_date_text) {
     summaryParts.push(`production ${item.production_date_text}`)
+  }
+
+  if (item.pricing_mode === 'inquiry_only') {
+    summaryParts.push('pricing on request')
   }
 
   return `${summaryParts.join(', ')}.`
@@ -75,23 +85,30 @@ export default async function InventoryDetailPage({
 
   const supabase = await createClient()
 
-  const unlocked = item.contact_visibility === 'public'
+  const isInquiryOnly = item.pricing_mode === 'inquiry_only'
+  const unlocked = item.contact_visibility === 'public' && !isInquiryOnly
+  const hasRealImage = hasRealInventoryImage(item.images)
 
   const isHot = item.is_featured || item.quantity < 5000
   const flavorList = item.flavor ? item.flavor.split(',').map((f: string) => f.trim()).filter(Boolean) : []
   const displayFlavors = flavorList.slice(0, 6)
   const extraFlavorsCount = flavorList.length - 6
   const brandSlug = toSlug(item.brand)
-  const marketSlug = toSlug(item.market)
+  const marketSlug = item.market ? toSlug(item.market) : ''
 
-  const { data: relatedInventory } = await supabase
+  let relatedQuery = supabase
     .from('inventory')
     .select('*')
     .eq('status', 'active')
     .neq('id', item.id)
-    .or(`brand.ilike.%${item.brand}%,market.ilike.%${item.market}%`)
     .order('created_at', { ascending: false })
     .limit(3)
+
+  relatedQuery = item.market
+    ? relatedQuery.or(`brand.ilike.%${item.brand}%,market.ilike.%${item.market}%`)
+    : relatedQuery.ilike('brand', `%${item.brand}%`)
+
+  const { data: relatedInventory } = await relatedQuery
     
   const relatedItems = (relatedInventory ?? []) as InventoryRecord[]
 
@@ -120,7 +137,13 @@ export default async function InventoryDetailPage({
           )}
         </h1>
         <p className="text-muted mt-4 max-w-3xl">
-          Active wholesale stock offer for the {item.market} market with warehouse availability in {item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.
+          {item.market && item.warehouse_location
+            ? `Active wholesale stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+            : item.market
+              ? `Active wholesale stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+              : item.warehouse_location
+                ? `Active wholesale stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+                : 'Active wholesale stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.'}
         </p>
       </div>
 
@@ -130,7 +153,12 @@ export default async function InventoryDetailPage({
             <Image
               unoptimized
               src={getInventoryImageSrc(item.images)}
-              alt={item.title}
+              alt={buildInventoryImageAlt({
+                title: item.title,
+                brand: item.brand,
+                productType: item.product_type,
+                hasRealImage,
+              })}
               fill
               priority
               sizes="(max-width: 1024px) 100vw, 66vw"
@@ -229,14 +257,18 @@ export default async function InventoryDetailPage({
                 </div>
                 <div>
                   <div className="text-sm text-muted mb-1">Target Market / Location</div>
-                  <div className="text-lg font-semibold flex items-center gap-2">
-                    {item.market} <span className="text-muted text-sm font-normal">({item.warehouse_location})</span>
+                  <div className="text-lg font-semibold">
+                    {[item.market, item.warehouse_location].filter(Boolean).join(' / ') || 'Available on inquiry'}
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-border">
                   <div className="text-sm text-muted mb-1">Wholesale Price</div>
-                  {unlocked ? (
+                  {isInquiryOnly ? (
+                    <div className="text-2xl font-bold text-foreground">
+                      Pricing on Request
+                    </div>
+                  ) : unlocked ? (
                     <div className="text-4xl font-bold text-teal-DEFAULT">
                       ${item.price.toFixed(2)}
                     </div>
@@ -253,13 +285,27 @@ export default async function InventoryDetailPage({
                   sourcePageType="inventory"
                   sourcePageSlug={item.slug}
                   itemSlug={item.slug}
-                  primaryLabel={unlocked ? 'Request Availability via Telegram' : 'Contact for Price via Telegram'}
+                  primaryLabel={
+                    isInquiryOnly
+                      ? 'Request Live Quote via Telegram'
+                      : unlocked
+                        ? 'Request Availability via Telegram'
+                        : 'Contact for Price via Telegram'
+                  }
                   message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Market: ${item.market}). Could you share the wholesale price and availability?`}
                 />
 
-                {!unlocked && (
+                {(isInquiryOnly || !unlocked) && (
                   <p className="text-xs text-center text-muted">
-                    Pricing is shared during direct contact so current stock and terms can be confirmed together.
+                    {isInquiryOnly
+                      ? 'This listing uses inquiry-only pricing. Live quote, flavor details, and current availability are confirmed during direct contact.'
+                      : 'Pricing is shared during direct contact so current stock and terms can be confirmed together.'}
+                  </p>
+                )}
+
+                {item.pricing_note && (
+                  <p className="text-xs text-center text-muted">
+                    {item.pricing_note}
                   </p>
                 )}
 
@@ -277,11 +323,17 @@ export default async function InventoryDetailPage({
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-2xl font-bold">Related Inventory</h2>
-              <p className="text-muted mt-1">Other active stock offers for the {item.market} market or from {item.brand}.</p>
+              <p className="text-muted mt-1">
+                {item.market
+                  ? `Other active stock offers for the ${item.market} market or from ${item.brand}.`
+                  : `Other active stock offers from ${item.brand}.`}
+              </p>
             </div>
-            <Link href={`/market/${marketSlug}`} className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
-              View All →
-            </Link>
+            {marketSlug ? (
+              <Link href={`/market/${marketSlug}`} className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
+                View All →
+              </Link>
+            ) : null}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {relatedItems.map((relatedItem) => (

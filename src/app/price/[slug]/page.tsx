@@ -4,6 +4,7 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { InventoryRecord } from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
+import { notFound } from 'next/navigation'
 
 export const revalidate = 3600
 
@@ -11,6 +12,12 @@ type PriceRangeQuery<T> = {
   lte: (column: string, value: number) => T
   gt: (column: string, value: number) => T
   gte: (column: string, value: number) => T
+}
+
+const allowedPriceTierSlugs = new Set(['under-3', '3-to-5', '5-to-8', 'over-8'])
+
+function isSupportedPriceTierSlug(slug: string) {
+  return allowedPriceTierSlugs.has(slug)
 }
 
 function applyPriceRangeQuery<T extends PriceRangeQuery<T>>(slug: string, query: T) {
@@ -45,10 +52,25 @@ function applyPriceRangeQuery<T extends PriceRangeQuery<T>>(slug: string, query:
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
+
+  if (!isSupportedPriceTierSlug(resolvedParams.slug)) {
+    return {
+      title: 'Price Range Not Found | VapeStockHub',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
+  }
+
   const supabase = await createClient()
   const { query, priceDesc } = applyPriceRangeQuery(
     resolvedParams.slug,
-    supabase.from('inventory').select('id', { count: 'exact', head: true }).eq('status', 'active')
+    supabase
+      .from('inventory')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active')
+      .eq('pricing_mode', 'exact_price')
   )
   const { count } = await query
   
@@ -67,12 +89,18 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function PricePage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params
+
+  if (!isSupportedPriceTierSlug(resolvedParams.slug)) {
+    notFound()
+  }
+
   const supabase = await createClient()
   
   let query = supabase
     .from('inventory')
     .select('*')
     .eq('status', 'active')
+    .eq('pricing_mode', 'exact_price')
     .order('price', { ascending: true })
   const rangeResult = applyPriceRangeQuery(resolvedParams.slug, query)
   query = rangeResult.query

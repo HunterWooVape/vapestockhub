@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 type SubmissionFormDraftSyncProps = {
@@ -20,20 +20,70 @@ function isSupportedField(element: Element): element is SupportedFieldElement {
   )
 }
 
+function collectFormValues(form: HTMLFormElement) {
+  return Array.from(form.elements).reduce<Record<string, string>>((result, field) => {
+    if (!isSupportedField(field) || !field.name) {
+      return result
+    }
+
+    if (field.name === 'access_code') {
+      return result
+    }
+
+    result[field.name] = field.value
+    return result
+  }, {})
+}
+
+function areDraftValuesEqual(
+  currentValues: Record<string, string>,
+  initialValues: Record<string, string>
+) {
+  const fieldNames = new Set([
+    ...Object.keys(currentValues),
+    ...Object.keys(initialValues),
+  ])
+
+  return Array.from(fieldNames).every(
+    (fieldName) => (currentValues[fieldName] ?? '') === (initialValues[fieldName] ?? '')
+  )
+}
+
 export function SubmissionFormDraftSync({
   formId,
   storageKey,
 }: SubmissionFormDraftSyncProps) {
   const searchParams = useSearchParams()
   const [isReady, setIsReady] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDraftChoice, setShowDraftChoice] = useState(false)
   const [storedDraftValues, setStoredDraftValues] = useState<Record<string, string> | null>(null)
   const [persistImmediately, setPersistImmediately] = useState(true)
+  const initialFormValuesRef = useRef<Record<string, string> | null>(null)
 
   const shouldSkipRestore = useMemo(() => Boolean(searchParams.get('success')), [searchParams])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
+      return
+    }
+
+    const form = document.getElementById(formId)
+    if (!(form instanceof HTMLFormElement) || initialFormValuesRef.current) {
+      return
+    }
+
+    // 中文注释：记录页面初始值，后续只有真正偏离初始表单时才写入本地草稿。
+    initialFormValuesRef.current = collectFormValues(form)
+  }, [formId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    if (isSubmitting) {
+      setShowDraftChoice(false)
       return
     }
 
@@ -68,7 +118,30 @@ export function SubmissionFormDraftSync({
       setPersistImmediately(true)
       setIsReady(true)
     }
-  }, [shouldSkipRestore, storageKey])
+  }, [isSubmitting, shouldSkipRestore, storageKey])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const form = document.getElementById(formId)
+    if (!(form instanceof HTMLFormElement)) {
+      return
+    }
+
+    // 中文注释：一旦用户正式提交，就不再重新弹出本地草稿选择层，避免跳转前误打断。
+    const handleSubmit = () => {
+      setIsSubmitting(true)
+      setShowDraftChoice(false)
+    }
+
+    form.addEventListener('submit', handleSubmit)
+
+    return () => {
+      form.removeEventListener('submit', handleSubmit)
+    }
+  }, [formId])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -81,18 +154,13 @@ export function SubmissionFormDraftSync({
     }
 
     const persistDraft = () => {
-      const nextDraft = Array.from(form.elements).reduce<Record<string, string>>((result, field) => {
-        if (!isSupportedField(field) || !field.name) {
-          return result
-        }
+      const nextDraft = collectFormValues(form)
+      const initialFormValues = initialFormValuesRef.current ?? {}
 
-        if (field.name === 'access_code') {
-          return result
-        }
-
-        result[field.name] = field.value
-        return result
-      }, {})
+      if (areDraftValuesEqual(nextDraft, initialFormValues)) {
+        window.sessionStorage.removeItem(storageKey)
+        return
+      }
 
       window.sessionStorage.setItem(storageKey, JSON.stringify(nextDraft))
     }

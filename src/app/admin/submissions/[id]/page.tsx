@@ -7,6 +7,9 @@ import {
   BackofficeFlowBar,
 } from '@/components/submissions/backoffice-flow-bar'
 import {
+  SubmissionDraftCleanup,
+} from '@/components/submissions/submission-draft-cleanup'
+import {
   SubmissionFieldHint,
   SubmissionFieldLabel,
 } from '@/components/submissions/field-meta'
@@ -26,7 +29,9 @@ import {
   type SupplierSubmissionValues,
 } from '@/lib/submissions'
 import {
-  getBrandNamingRiskTerms,
+  formatPricingModeLabel,
+  pricingModeOptions,
+  getBrandNamingRiskHint,
   type InventoryAiDraftPackage,
   productTypeOptions,
 } from '@/lib/admin-inventory'
@@ -40,6 +45,8 @@ import {
 } from '@/lib/unlock'
 
 export const dynamic = 'force-dynamic'
+
+const submitStockDraftStorageKey = 'submit-stock-draft-v1'
 
 const successMessages: Record<string, string> = {
   'submission-created': '提报已录入成功，当前页面就是这条记录的审核入口。',
@@ -197,6 +204,8 @@ export default async function EditSubmissionPage({
   const success = getSingleParam(resolvedSearchParams.success)
   const error = getSingleParam(resolvedSearchParams.error)
   const returnTo = normalizeBackofficeReturnTo(getSingleParam(resolvedSearchParams.return_to))
+  const shouldCleanupSubmitStockDraft =
+    success === 'submission-created' && returnTo === '/submit-stock'
   const missingFields = (getSingleParam(resolvedSearchParams.missing_fields) ?? '')
     .split(',')
     .map((item) => item.trim())
@@ -231,6 +240,10 @@ export default async function EditSubmissionPage({
     sourceType: supplierSubmissionSourceOptions.includes(item.source_type)
       ? item.source_type
       : 'supplier_form',
+    pricingMode: pricingModeOptions.includes(item.pricing_mode)
+      ? item.pricing_mode
+      : 'exact_price',
+    pricingNote: item.pricing_note ?? '',
     brand: item.brand ?? '',
     modelName: item.model_name ?? '',
     productType: item.product_type ?? '',
@@ -301,10 +314,7 @@ export default async function EditSubmissionPage({
       ? 'LLM 完善并生成草稿'
       : '保存审核'
   const statusSummaryText = formatSubmissionStatusLabel(submissionValues.submissionStatus)
-  const brandNamingRiskTerms = getBrandNamingRiskTerms(submissionValues.brand)
-  const brandNamingRiskHint = brandNamingRiskTerms.length > 0
-    ? `当前品牌包含通用词：${brandNamingRiskTerms.join('、')}。请只保留真实品牌名，不要把品类词带进品牌字段。`
-    : null
+  const brandNamingRiskHint = getBrandNamingRiskHint(submissionValues.brand) || null
   const blockingSummaryText = hasConvertedDraft
     ? '这条录入已经转成草稿。'
     : requiredFieldCount === 0
@@ -349,6 +359,10 @@ export default async function EditSubmissionPage({
       sourceType: supplierSubmissionSourceOptions.includes(submittedSourceType as SupplierSubmissionValues['sourceType'])
         ? (submittedSourceType as SupplierSubmissionValues['sourceType'])
         : 'supplier_form',
+      pricingMode: pricingModeOptions.includes(formData.get('pricing_mode') as typeof pricingModeOptions[number])
+        ? (formData.get('pricing_mode') as typeof pricingModeOptions[number])
+        : 'exact_price',
+      pricingNote: String(formData.get('pricing_note') || '').trim(),
       brand: String(formData.get('brand') || '').trim(),
       modelName: String(formData.get('model_name') || '').trim(),
       productType: String(formData.get('product_type') || '').trim(),
@@ -385,6 +399,8 @@ export default async function EditSubmissionPage({
       contact_name: nextValues.contactName || null,
       contact_channel: nextValues.contactChannel || null,
       source_type: nextValues.sourceType,
+      pricing_mode: nextValues.pricingMode,
+      pricing_note: nextValues.pricingNote || null,
       brand: nextValues.brand,
       model_name: nextValues.modelName,
       product_type: nextValues.productType,
@@ -451,6 +467,10 @@ export default async function EditSubmissionPage({
       sourceType: supplierSubmissionSourceOptions.includes(latestSubmission.source_type)
         ? latestSubmission.source_type
         : 'supplier_form',
+      pricingMode: pricingModeOptions.includes(latestSubmission.pricing_mode)
+        ? latestSubmission.pricing_mode
+        : 'exact_price',
+      pricingNote: latestSubmission.pricing_note ?? '',
       brand: latestSubmission.brand ?? '',
       modelName: latestSubmission.model_name ?? '',
       productType: latestSubmission.product_type ?? '',
@@ -512,6 +532,8 @@ export default async function EditSubmissionPage({
         title: draftSeed.title,
         brand: draftSeed.brand,
         product_type: draftSeed.productType || 'Other',
+        pricing_mode: draftSeed.pricingMode,
+        pricing_note: draftSeed.pricingNote || null,
         price: draftSeed.price,
         quantity: draftSeed.quantity,
         moq: draftSeed.moq,
@@ -557,6 +579,9 @@ export default async function EditSubmissionPage({
 
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
+      {shouldCleanupSubmitStockDraft && (
+        <SubmissionDraftCleanup storageKey={submitStockDraftStorageKey} />
+      )}
       <div className="mx-auto max-w-6xl space-y-8">
         <div className="space-y-4 rounded-3xl border border-border bg-surface p-6 sm:p-8">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -574,7 +599,7 @@ export default async function EditSubmissionPage({
               </div>
               <h1 className="text-3xl font-bold text-foreground">提报审核</h1>
               <p className="text-sm text-muted">
-                {submissionValues.brand || '待补品牌'} · {submissionValues.modelName || '待补型号'} · {submissionValues.supplierName || '待补供应商'}
+                {submissionValues.brand || '待补品牌'} · {submissionValues.modelName || '待补型号'} · {submissionValues.supplierName || '待补来源主体'}
               </p>
             </div>
           </div>
@@ -621,7 +646,7 @@ export default async function EditSubmissionPage({
                           {match.brand || '待补品牌'} · {match.model_name || '待补型号'}
                         </div>
                         <div className="text-xs text-muted">
-                          {match.supplier_name || '待补供应商'} · {formatSubmissionStatusLabel(
+                          {match.supplier_name || '待补来源主体'} · {formatSubmissionStatusLabel(
                             supplierSubmissionStatusOptions.includes(match.submission_status)
                               ? match.submission_status
                               : 'new'
@@ -699,13 +724,14 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-foreground">供应商信息</h2>
+                <h2 className="text-xl font-bold text-foreground">库存来源信息</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
                     id={reviewFieldAnchorIds.supplierName}
                     className={getReviewFieldWrapperClass(highlightedFields.has('supplierName'))}
                   >
-                    <SubmissionFieldLabel label="供应商名称" required />
+                    <SubmissionFieldLabel label="库存来源主体" required />
+                    <SubmissionFieldHint>可填写供应商、同行、中介、下线或内部整理后的稳定主体名。</SubmissionFieldHint>
                     <input name="supplier_name" defaultValue={submissionValues.supplierName} required placeholder="例如 Shenzhen ABC Trading" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
@@ -718,6 +744,7 @@ export default async function EditSubmissionPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="来源类型" />
+                    <SubmissionFieldHint>用于标记这条库存是直供来源，还是转手 / 整理后的资源。</SubmissionFieldHint>
                     <select name="source_type" defaultValue={submissionValues.sourceType} className={reviewSelectClassName}>
                       {supplierSubmissionSourceOptions.map((option) => (
                         <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
@@ -745,7 +772,7 @@ export default async function EditSubmissionPage({
                     className={getReviewFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</SubmissionFieldHint>
+                    <SubmissionFieldHint>只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</SubmissionFieldHint>
                     <input name="brand" list="brand-options" defaultValue={submissionValues.brand} required placeholder="例如 Vozol" className={reviewInputClassName} />
                     {brandNamingRiskHint && (
                       <div className="text-xs text-status-warning">
@@ -801,8 +828,23 @@ export default async function EditSubmissionPage({
                 <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
+                    <SubmissionFieldLabel label="报价策略" />
+                    <SubmissionFieldHint>若当前不便录精确价格，可先切成 Inquiry Only。</SubmissionFieldHint>
+                    <select name="pricing_mode" defaultValue={submissionValues.pricingMode} className={reviewSelectClassName}>
+                      {pricingModeOptions.map((option) => (
+                        <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
                     <SubmissionFieldLabel label="单价（USD）" />
+                    <SubmissionFieldHint>报价策略为 Exact Price 时，建议填写精确值。</SubmissionFieldHint>
                     <input name="unit_price_text" defaultValue={submissionValues.unitPriceText} placeholder="例如 3.20" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="报价备注" />
+                    <SubmissionFieldHint>可写“实单再报”“按口味浮动”“大单另议”等说明。</SubmissionFieldHint>
+                    <textarea name="pricing_note" defaultValue={submissionValues.pricingNote} placeholder="例如 Pricing on request for live quantity confirmation" className={reviewTextareaClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.availableQtyText}
@@ -820,7 +862,8 @@ export default async function EditSubmissionPage({
                     className={getReviewFieldWrapperClass(highlightedFields.has('targetMarket'))}
                   >
                     <SubmissionFieldLabel label="目标市场" required />
-                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} required placeholder="例如 Global / Middle East" className={reviewInputClassName} />
+                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项。</SubmissionFieldHint>
+                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} placeholder="例如 Global / Middle East" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="市场限制说明" />
@@ -831,7 +874,8 @@ export default async function EditSubmissionPage({
                     className={`md:col-span-2 ${getReviewFieldWrapperClass(highlightedFields.has('warehouseLocation'))}`}
                   >
                     <SubmissionFieldLabel label="仓库位置" required />
-                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} required placeholder="例如 Dubai, UAE" className={reviewInputClassName} />
+                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项。</SubmissionFieldHint>
+                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} placeholder="例如 Dubai, UAE" className={reviewInputClassName} />
                   </div>
                 </div>
               </div>

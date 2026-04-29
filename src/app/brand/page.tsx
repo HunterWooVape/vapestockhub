@@ -1,17 +1,25 @@
 import Link from 'next/link'
 
+import { buildInventoryFacets } from '@/lib/inventory'
+import { createClient } from '@/lib/supabase/server'
+
 export const metadata = {
   title: 'Vape Inventory by Brand | VapeStockHub',
   description: 'Find active wholesale vape inventory by brand and move directly into brand-specific stock discovery.',
 }
 
-export default function BrandIndexPage() {
-  const brands = [
-    { name: 'Vozol', slug: 'vozol', desc: 'Star, Gear, and other top Vozol models' },
-    { name: 'Elf Bar', slug: 'elf-bar', desc: 'BC5000, Pi9000, and more Elf Bar lines' },
-    { name: 'Geek Bar', slug: 'geek-bar', desc: 'Pulse and other Geek Bar favorites' },
-    { name: 'Lost Mary', slug: 'lost-mary', desc: 'OS5000, MO5000 and clearance stock' }
-  ]
+function getBrandDescription(brandName: string, count: number) {
+  return `${count} active wholesale listing${count > 1 ? 's' : ''} currently available for ${brandName}.`
+}
+
+export default async function BrandIndexPage() {
+  const supabase = await createClient()
+  const { data: inventoryOptions } = await supabase
+    .from('inventory')
+    .select('brand')
+    .eq('status', 'active')
+
+  const brands = buildInventoryFacets((inventoryOptions ?? []).map((item) => item.brand))
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
@@ -24,23 +32,32 @@ export default function BrandIndexPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {brands.map((brand) => (
-          <Link 
-            key={brand.slug} 
-            href={`/brand/${brand.slug}`}
-            className="p-8 rounded-xl border border-border bg-surface hover:border-teal-DEFAULT/50 group transition-all text-center"
-          >
-            <div className="w-16 h-16 mx-auto mb-4 bg-background border border-border rounded-full flex items-center justify-center font-bold text-xl text-teal-DEFAULT">
-              {brand.name.charAt(0)}
-            </div>
-            <h2 className="text-xl font-bold group-hover:text-teal-DEFAULT transition-colors mb-2">
-              {brand.name}
-            </h2>
-            <p className="text-sm text-muted">{brand.desc}</p>
-          </Link>
-        ))}
-      </div>
+      {brands.length > 0 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {brands.map((brand) => (
+            <Link
+              key={brand.slug}
+              href={`/brand/${brand.slug}`}
+              className="p-8 rounded-xl border border-border bg-surface hover:border-teal-DEFAULT/50 group transition-all text-center"
+            >
+              <div className="w-16 h-16 mx-auto mb-4 bg-background border border-border rounded-full flex items-center justify-center font-bold text-xl text-teal-DEFAULT">
+                {brand.label.charAt(0)}
+              </div>
+              <h2 className="text-xl font-bold group-hover:text-teal-DEFAULT transition-colors mb-2">
+                {brand.label}
+              </h2>
+              <p className="text-sm text-muted">{getBrandDescription(brand.label, brand.count)}</p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="rounded-2xl border border-border bg-surface px-6 py-16 text-center">
+          <h2 className="text-xl font-bold text-foreground">No active brands yet</h2>
+          <p className="mt-2 text-sm text-muted">
+            Brand hubs appear here once active inventory is available.
+          </p>
+        </div>
+      )}
     </main>
   )
 }

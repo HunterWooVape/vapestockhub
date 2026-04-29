@@ -6,11 +6,13 @@ import { redirect } from 'next/navigation'
 import {
   contactVisibilityOptions,
   convertAiDraftPackageToInventoryDraft,
+  formatPricingModeLabel,
   normalizeELiquidValue,
   normalizeKnownValue,
   normalizeNicotineValue,
   normalizeWarehouseLocation,
   parseInventoryAiDraftPackage,
+  pricingModeOptions,
   productTypeOptions,
 } from '@/lib/admin-inventory'
 import { toSlug } from '@/lib/inventory'
@@ -167,12 +169,18 @@ export default async function AdminToolsPage({
       productTypeOptions,
       'Other'
     )
+    const pricingMode = getSelectedValue(
+      String(formData.get('pricing_mode') || 'exact_price').trim(),
+      pricingModeOptions,
+      'exact_price'
+    )
+    const pricingNote = String(formData.get('pricing_note') || '').trim()
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
     const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
     const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
 
-    if (!title || !brand || !productType || price <= 0 || quantity <= 0 || !market || !warehouseLocation) {
+    if (!title || !brand || !productType || quantity <= 0 || (!market && !warehouseLocation)) {
       redirect('/admin/tools?error=missing-required-fields')
     }
 
@@ -184,6 +192,8 @@ export default async function AdminToolsPage({
       title,
       brand,
       product_type: productType,
+      pricing_mode: pricingMode,
+      pricing_note: pricingNote || null,
       price,
       quantity,
       moq: 1,
@@ -255,6 +265,8 @@ export default async function AdminToolsPage({
       title,
       brand,
       product_type: productType,
+      pricing_mode: draftValues.pricingMode ?? 'exact_price',
+      pricing_note: draftValues.pricingNote?.trim() || null,
       price: draftValues.price ?? 0,
       quantity: draftValues.quantity ?? 0,
       moq: draftValues.moq ?? 1,
@@ -339,7 +351,13 @@ export default async function AdminToolsPage({
                 <option key={option} value={option}>{option}</option>
               ))}
             </select>
-            <input name="price" type="number" step="0.01" placeholder="价格 USD" required className="rounded-lg border border-border bg-background px-4 py-3" />
+            <select name="pricing_mode" defaultValue="exact_price" className="rounded-lg border border-border bg-background px-4 py-3">
+              {pricingModeOptions.map((option) => (
+                <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
+              ))}
+            </select>
+            <input name="price" type="number" step="0.01" placeholder="价格 USD（Inquiry Only 可留空）" className="rounded-lg border border-border bg-background px-4 py-3" />
+            <textarea name="pricing_note" placeholder="报价备注（可选）" className="min-h-24 rounded-lg border border-border bg-background px-4 py-3 text-sm" />
             <input name="quantity" type="number" placeholder="库存数量" required className="rounded-lg border border-border bg-background px-4 py-3" />
             <input name="market" list="market-options" placeholder="目标市场" required className="rounded-lg border border-border bg-background px-4 py-3" />
             <input name="warehouse_location" placeholder="仓库位置" required className="rounded-lg border border-border bg-background px-4 py-3" />

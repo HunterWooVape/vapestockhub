@@ -7,9 +7,10 @@ import { BackofficeFlowBar } from '@/components/submissions/backoffice-flow-bar'
 import {
   contactVisibilityOptions,
   formatInventoryStatusLabel,
+  formatPricingModeLabel,
   formatInventoryQualityMessage,
+  getBrandNamingRiskHint,
   getInventoryQualityReport,
-  getBrandNamingRiskTerms,
   type InventoryAiDraftPackage,
   inventoryStatusOptions,
   normalizeELiquidValue,
@@ -17,6 +18,7 @@ import {
   normalizeNicotineValue,
   normalizeWarehouseLocation,
   placeholderInventoryImage,
+  pricingModeOptions,
   productTypeOptions,
 } from '@/lib/admin-inventory'
 import { toSlug } from '@/lib/inventory'
@@ -181,6 +183,8 @@ export default async function EditInventoryPage({
       slug: item.slug,
       brand: item.brand,
       productType: item.product_type,
+      pricingMode: item.pricing_mode ?? 'exact_price',
+      pricingNote: item.pricing_note ?? '',
       price: item.price,
       quantity: item.quantity,
       moq: item.moq ?? 1,
@@ -224,6 +228,12 @@ export default async function EditInventoryPage({
       productTypeOptions,
       'Other'
     )
+    const pricingMode = getSelectedValue(
+      String(formData.get('pricing_mode') || item.pricing_mode || 'exact_price').trim(),
+      pricingModeOptions,
+      'exact_price'
+    )
+    const pricingNote = String(formData.get('pricing_note') || '').trim()
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
     const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
@@ -254,7 +264,7 @@ export default async function EditInventoryPage({
       resolvedParams.id
     )
 
-    if (!title || !brand || !productType || price <= 0 || quantity <= 0 || !market || !warehouseLocation || !slug) {
+    if (!title || !brand || !productType || !pricingMode || quantity <= 0 || (!market && !warehouseLocation) || !slug) {
       redirect(appendReturnTo(`/admin/edit/${resolvedParams.id}?error=missing-required-fields`, returnTo))
     }
 
@@ -264,6 +274,8 @@ export default async function EditInventoryPage({
         slug,
         brand,
         productType,
+        pricingMode,
+        pricingNote,
         price,
         quantity,
         moq: Number(formData.get('moq') || 1),
@@ -292,6 +304,8 @@ export default async function EditInventoryPage({
       title,
       brand,
       product_type: productType,
+      pricing_mode: pricingMode,
+      pricing_note: pricingNote || null,
       price,
       quantity,
       moq: Number(formData.get('moq') || 1),
@@ -349,6 +363,9 @@ export default async function EditInventoryPage({
   const currentProductTypeOptions = productTypeOptions.includes(item.product_type)
     ? productTypeOptions
     : [item.product_type, ...productTypeOptions]
+  const currentPricingModeOptions = pricingModeOptions.includes(item.pricing_mode)
+    ? [...pricingModeOptions]
+    : [item.pricing_mode, ...pricingModeOptions]
   const hasBlockingIssues = qualityReport.blockingIssues.length > 0
   const hasWarnings = qualityReport.warnings.length > 0
   const readinessLabel = hasBlockingIssues ? `阻塞 ${qualityReport.blockingIssues.length} 项` : '可进入发布判断'
@@ -374,10 +391,7 @@ export default async function EditInventoryPage({
   const currentEditHref = appendReturnTo(`/admin/edit/${resolvedParams.id}`, returnTo)
   const isActiveSuccess = success === 'inventory-published' || success === 'inventory-active-updated'
   const publicInventoryHref = `/inventory/${item.slug}`
-  const brandNamingRiskTerms = getBrandNamingRiskTerms(item.brand)
-  const brandNamingRiskHint = brandNamingRiskTerms.length > 0
-    ? `当前品牌包含通用词：${brandNamingRiskTerms.join('、')}。请只保留真实品牌名，不要把品类词写进品牌。`
-    : null
+  const brandNamingRiskHint = getBrandNamingRiskHint(item.brand) || null
 
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
@@ -498,7 +512,7 @@ export default async function EditInventoryPage({
             <div>
               <label className="text-sm text-muted mb-1 block">品牌</label>
               <input name="brand" list="brand-options-edit" defaultValue={item.brand} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
-              <p className="mt-1 text-xs text-muted">只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</p>
+              <p className="mt-1 text-xs text-muted">只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</p>
               {brandNamingRiskHint && (
                 <p className="mt-1 text-xs text-status-warning">{brandNamingRiskHint}</p>
               )}
@@ -513,12 +527,34 @@ export default async function EditInventoryPage({
             </div>
 
             <div>
+              <label className="text-sm text-muted mb-1 block">报价策略</label>
+              <select name="pricing_mode" defaultValue={item.pricing_mode ?? 'exact_price'} className="w-full rounded-lg border border-border bg-background px-4 py-3">
+                {currentPricingModeOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {pricingModeOptions.includes(option) ? formatPricingModeLabel(option) : option}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-xs text-muted">Inquiry Only 可不填精确价格，但仍建议补充报价备注。</p>
+            </div>
+            <div>
               <label className="text-sm text-muted mb-1 block">价格 USD</label>
-              <input name="price" type="number" step="0.01" defaultValue={item.price} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <input name="price" type="number" step="0.01" defaultValue={item.price} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <p className="mt-1 text-xs text-muted">仅当报价策略为 Exact Price 时，发布检查会要求价格大于 0。</p>
             </div>
             <div>
               <label className="text-sm text-muted mb-1 block">库存数量</label>
               <input name="quantity" type="number" defaultValue={item.quantity} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="text-sm text-muted mb-1 block">报价备注</label>
+              <textarea
+                name="pricing_note"
+                defaultValue={item.pricing_note || ''}
+                placeholder="例如 Pricing on request for live quantity confirmation"
+                className="min-h-24 w-full rounded-lg border border-border bg-background px-4 py-3 text-sm"
+              />
             </div>
 
             <div>
@@ -550,11 +586,13 @@ export default async function EditInventoryPage({
 
             <div>
               <label className="text-sm text-muted mb-1 block">目标市场</label>
-              <input name="market" list="market-options-edit" defaultValue={item.market} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <input name="market" list="market-options-edit" defaultValue={item.market} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <p className="mt-1 text-xs text-muted">目标市场与仓库位置至少填写一项。</p>
             </div>
             <div>
               <label className="text-sm text-muted mb-1 block">仓库位置</label>
-              <input name="warehouse_location" defaultValue={item.warehouse_location} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <input name="warehouse_location" defaultValue={item.warehouse_location} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <p className="mt-1 text-xs text-muted">目标市场与仓库位置至少填写一项。</p>
             </div>
 
             <div className="md:col-span-2">
@@ -691,7 +729,7 @@ export default async function EditInventoryPage({
               </div>
               <div className="space-y-1 text-sm text-muted">
                 <div>提报 ID：<span className="text-foreground">{linkedSubmission.id}</span></div>
-                <div>供应商：<span className="text-foreground">{linkedSubmission.supplier_name || '未知'}</span></div>
+                <div>来源主体：<span className="text-foreground">{linkedSubmission.supplier_name || '未知'}</span></div>
                 <div>状态：<span className="text-foreground uppercase">{linkedSubmission.submission_status}</span></div>
               </div>
               <div className="border-t border-border pt-3 space-y-2 text-sm text-muted">

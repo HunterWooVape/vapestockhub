@@ -1,5 +1,6 @@
 import {
   createEmptyInventoryAiDraftPackage,
+  pricingModeOptions,
   getBrandNamingRiskTerms,
   normalizeELiquidValue,
   normalizeNicotineValue,
@@ -30,6 +31,8 @@ export type SupplierSubmissionValues = {
   contactName: string
   contactChannel: string
   sourceType: SupplierSubmissionSource
+  pricingMode: typeof pricingModeOptions[number]
+  pricingNote: string
   brand: string
   modelName: string
   productType: string
@@ -66,7 +69,7 @@ export const supplierSubmissionRequiredFields = [
 export type SupplierSubmissionRequiredField = typeof supplierSubmissionRequiredFields[number]
 
 const supplierSubmissionFieldLabels: Record<SupplierSubmissionRequiredField, string> = {
-  supplierName: '供应商名称',
+  supplierName: '库存来源主体',
   brand: '品牌',
   modelName: '型号 / 产品名',
   productType: '产品类型',
@@ -80,8 +83,8 @@ export function formatSupplierSubmissionFieldLabel(field: SupplierSubmissionRequ
 }
 
 const supplierSubmissionSourceLabels: Record<SupplierSubmissionSource, string> = {
-  supplier_form: '供应商表单',
-  internal_form: '内部录入',
+  supplier_form: '直接供应商',
+  internal_form: '内部整理',
   chat: '聊天记录',
   excel: 'Excel 清单',
   other: '其他来源',
@@ -92,7 +95,19 @@ export function formatSupplierSubmissionSourceLabel(source: SupplierSubmissionSo
 }
 
 export function getSupplierSubmissionMissingRequiredFields(values: SupplierSubmissionValues) {
-  return supplierSubmissionRequiredFields.filter((field) => !values[field].trim())
+  const missingFields = supplierSubmissionRequiredFields.filter((field) => {
+    if (field === 'targetMarket' || field === 'warehouseLocation') {
+      return false
+    }
+
+    return !values[field].trim()
+  })
+
+  if (!values.targetMarket.trim() && !values.warehouseLocation.trim()) {
+    missingFields.push('targetMarket')
+  }
+
+  return missingFields
 }
 
 export function parseSubmissionNumber(value: string) {
@@ -161,6 +176,8 @@ export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValu
     supplierName: values.supplierName.trim(),
     contactName: values.contactName.trim(),
     contactChannel: values.contactChannel.trim(),
+    pricingMode: pricingModeOptions.includes(values.pricingMode) ? values.pricingMode : 'exact_price',
+    pricingNote: normalizeSubmissionMultilineText(values.pricingNote),
     brand: values.brand.trim(),
     modelName: values.modelName.trim(),
     productType: values.productType.trim(),
@@ -200,10 +217,11 @@ export function buildSubmissionTitle(values: Pick<SupplierSubmissionValues, 'bra
 
 export function buildSubmissionDescription(values: Pick<
   SupplierSubmissionValues,
-  'stockNotes' | 'flavorBreakdown' | 'packagingNotes' | 'extraNotes' | 'marketAccessNote'
+  'stockNotes' | 'flavorBreakdown' | 'packagingNotes' | 'extraNotes' | 'marketAccessNote' | 'pricingNote'
 >) {
   return [
     values.stockNotes,
+    values.pricingNote ? `Pricing Note:\n${values.pricingNote}` : '',
     values.marketAccessNote ? `Market Access Note:\n${values.marketAccessNote}` : '',
     values.flavorBreakdown,
     values.packagingNotes,
@@ -222,6 +240,8 @@ export function buildSubmissionRawText(values: SupplierSubmissionValues) {
     normalizedValues.contactName ? `Contact Name: ${normalizedValues.contactName}` : '',
     normalizedValues.contactChannel ? `Contact Channel: ${normalizedValues.contactChannel}` : '',
     `Source Type: ${normalizedValues.sourceType}`,
+    `Pricing Mode: ${normalizedValues.pricingMode}`,
+    normalizedValues.pricingNote ? `Pricing Note:\n${normalizedValues.pricingNote}` : '',
     `Brand: ${normalizedValues.brand}`,
     `Model / Product Name: ${normalizedValues.modelName}`,
     `Product Type: ${normalizedValues.productType}`,
@@ -257,6 +277,8 @@ export function convertSubmissionToDraftSeed(values: SupplierSubmissionValues) {
     title,
     brand: normalizedValues.brand,
     productType: normalizedValues.productType,
+    pricingMode: normalizedValues.pricingMode,
+    pricingNote: normalizedValues.pricingNote,
     price: parseSubmissionNumber(normalizedValues.unitPriceText) ?? 0,
     quantity: parseSubmissionInteger(normalizedValues.availableQtyText) ?? 0,
     moq: parseSubmissionInteger(normalizedValues.moqText) ?? 1,
@@ -285,6 +307,8 @@ export function buildAiDraftPackageSeedFromSubmission(values: SupplierSubmission
   draftPackage.normalizedFields.title = draftSeed.title
   draftPackage.normalizedFields.brand = draftSeed.brand
   draftPackage.normalizedFields.product_type = draftSeed.productType || 'Other'
+  draftPackage.normalizedFields.pricing_mode = normalizedValues.pricingMode
+  draftPackage.normalizedFields.pricing_note = normalizedValues.pricingNote
   draftPackage.normalizedFields.price = normalizedValues.unitPriceText
   draftPackage.normalizedFields.quantity = normalizedValues.availableQtyText
   draftPackage.normalizedFields.moq = normalizedValues.moqText || '1'
@@ -312,7 +336,7 @@ export function buildRuleBasedAiDraftPackageFromSubmission(values: SupplierSubmi
   const brandNamingRiskTerms = getBrandNamingRiskTerms(normalizedValues.brand)
 
   // 中文注释：这里先用规则型候选代替真实 LLM 输出，保证流程先跑通且可审查。
-  if (!normalizedValues.unitPriceText.trim()) {
+  if (normalizedValues.pricingMode === 'exact_price' && !normalizedValues.unitPriceText.trim()) {
     draftPackage.riskFlags.push({
       code: 'price-missing',
       severity: 'medium',
@@ -321,6 +345,18 @@ export function buildRuleBasedAiDraftPackageFromSubmission(values: SupplierSubmi
     draftPackage.humanReviewFocus.push({
       field: 'price',
       reason: 'Add or confirm supplier price so the draft does not move forward with a zero-value placeholder.',
+    })
+  }
+
+  if (normalizedValues.pricingMode === 'inquiry_only' && !normalizedValues.pricingNote.trim()) {
+    draftPackage.riskFlags.push({
+      code: 'pricing-note-thin',
+      severity: 'low',
+      message: 'Pricing is marked as inquiry-only, but there is no note explaining the quoting context yet.',
+    })
+    draftPackage.humanReviewFocus.push({
+      field: 'price',
+      reason: 'Add a short note so buyers know that live pricing will be confirmed on inquiry.',
     })
   }
 

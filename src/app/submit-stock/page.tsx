@@ -9,7 +9,11 @@ import {
   SubmissionFieldHint,
   SubmissionFieldLabel,
 } from '@/components/submissions/field-meta'
-import { productTypeOptions } from '@/lib/admin-inventory'
+import {
+  formatPricingModeLabel,
+  pricingModeOptions,
+  productTypeOptions,
+} from '@/lib/admin-inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -115,6 +119,10 @@ export default async function SubmitStockPage({
       sourceType: supplierSubmissionSourceOptions.includes(submittedSourceType as SupplierSubmissionValues['sourceType'])
         ? (submittedSourceType as SupplierSubmissionValues['sourceType'])
         : 'supplier_form',
+      pricingMode: pricingModeOptions.includes(formData.get('pricing_mode') as typeof pricingModeOptions[number])
+        ? (formData.get('pricing_mode') as typeof pricingModeOptions[number])
+        : 'exact_price',
+      pricingNote: String(formData.get('pricing_note') || '').trim(),
       brand: String(formData.get('brand') || '').trim(),
       modelName: String(formData.get('model_name') || '').trim(),
       productType: String(formData.get('product_type') || '').trim(),
@@ -153,6 +161,8 @@ export default async function SubmitStockPage({
       contact_name: submissionValues.contactName || null,
       contact_channel: submissionValues.contactChannel || null,
       source_type: submissionValues.sourceType,
+      pricing_mode: submissionValues.pricingMode,
+      pricing_note: submissionValues.pricingNote || null,
       brand: submissionValues.brand,
       model_name: submissionValues.modelName,
       product_type: submissionValues.productType,
@@ -234,7 +244,7 @@ export default async function SubmitStockPage({
               一条记录对应一个型号
             </div>
             <div className="rounded-full border border-border bg-background px-3 py-1.5">
-              价格、图片可后补
+              市场 / 仓库至少 1 项
             </div>
           </div>
           <div className="mt-5">
@@ -293,7 +303,7 @@ export default async function SubmitStockPage({
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
                   <a href="#section-supplier" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    供应商信息
+                    库存来源
                   </a>
                   <a href="#section-product" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
                     产品基础
@@ -333,16 +343,16 @@ export default async function SubmitStockPage({
               <div className="space-y-4">
                 <div className="space-y-1">
                   <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">01</div>
-                  <h2 className="text-xl font-bold text-foreground">供应商信息</h2>
-                  <p className="text-sm text-muted">先保留货源归属和回联线索。</p>
+                  <h2 className="text-xl font-bold text-foreground">库存来源信息</h2>
+                  <p className="text-sm text-muted">先记录这条库存从哪里来、谁能回联，以及来源线索是否稳定。</p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
                     id={submitFieldAnchorIds.supplierName}
                     className={getSubmitFieldWrapperClass(highlightedFields.has('supplierName'))}
                   >
-                    <SubmissionFieldLabel label="供应商名称" required />
-                    <SubmissionFieldHint>优先填写公司名或稳定主体名。</SubmissionFieldHint>
+                    <SubmissionFieldLabel label="库存来源主体" required />
+                    <SubmissionFieldHint>可填写供应商、同行、中介、下线或内部整理后的稳定主体名。</SubmissionFieldHint>
                     <input name="supplier_name" required placeholder="例如 Shenzhen ABC Trading" className={submitInputClassName} />
                   </div>
                   <div className="space-y-2">
@@ -355,6 +365,7 @@ export default async function SubmitStockPage({
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="来源类型" />
+                    <SubmissionFieldHint>用于标记这条库存是直供来源，还是转手 / 整理后的资源。</SubmissionFieldHint>
                     <select name="source_type" defaultValue="supplier_form" className={submitSelectClassName}>
                       {supplierSubmissionSourceOptions.map((option) => (
                         <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
@@ -378,7 +389,7 @@ export default async function SubmitStockPage({
                     className={getSubmitFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>只填品牌，不混型号，也不要加 `vape`、`disposable` 这类通用词。</SubmissionFieldHint>
+                    <SubmissionFieldHint>只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</SubmissionFieldHint>
                     <input name="brand" list="brand-options" required placeholder="例如 Vozol" className={submitInputClassName} />
                   </div>
                   <div
@@ -431,12 +442,27 @@ export default async function SubmitStockPage({
                 <div className="space-y-1">
                   <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">03</div>
                   <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
-                  <p className="text-sm text-muted">优先保证数量、市场、仓库可判断。</p>
+                  <p className="text-sm text-muted">优先保证报价方式、数量、市场、仓库都可判断。</p>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
+                    <SubmissionFieldLabel label="报价策略" />
+                    <SubmissionFieldHint>若当前不便录精确价格，请改成 Inquiry Only，后续走询盘报价。</SubmissionFieldHint>
+                    <select name="pricing_mode" defaultValue="exact_price" className={submitSelectClassName}>
+                      {pricingModeOptions.map((option) => (
+                        <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
                     <SubmissionFieldLabel label="单价（USD）" />
+                    <SubmissionFieldHint>仅在报价策略为 Exact Price 时建议填写精确值。</SubmissionFieldHint>
                     <input name="unit_price_text" placeholder="例如 3.20" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="报价备注" />
+                    <SubmissionFieldHint>可写“实单再报”“按口味浮动”“大单另议”等说明。</SubmissionFieldHint>
+                    <textarea name="pricing_note" placeholder="例如 Pricing on request for live quantity confirmation" className={submitTextareaClassName} />
                   </div>
                   <div
                     id={submitFieldAnchorIds.availableQtyText}
@@ -454,8 +480,8 @@ export default async function SubmitStockPage({
                     className={getSubmitFieldWrapperClass(highlightedFields.has('targetMarket'))}
                   >
                     <SubmissionFieldLabel label="目标市场" required />
-                    <SubmissionFieldHint>主市场用于聚合与筛选，可直接填写 `Global`。</SubmissionFieldHint>
-                    <input name="target_market" list="market-options" required defaultValue="Global" placeholder="例如 Global / Middle East" className={submitInputClassName} />
+                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项；如已知主市场，可直接填写 `Global`。</SubmissionFieldHint>
+                    <input name="target_market" list="market-options" defaultValue="Global" placeholder="例如 Global / Middle East" className={submitInputClassName} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="市场限制说明" />
@@ -467,8 +493,8 @@ export default async function SubmitStockPage({
                     className={`md:col-span-2 ${getSubmitFieldWrapperClass(highlightedFields.has('warehouseLocation'))}`}
                   >
                     <SubmissionFieldLabel label="仓库位置" required />
-                    <SubmissionFieldHint>写城市 / 国家或仓库地即可。</SubmissionFieldHint>
-                    <input name="warehouse_location" required placeholder="例如 Dubai, UAE" className={submitInputClassName} />
+                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项；这里可写城市 / 国家或仓库地。</SubmissionFieldHint>
+                    <input name="warehouse_location" placeholder="例如 Dubai, UAE" className={submitInputClassName} />
                   </div>
                 </div>
               </div>
@@ -525,7 +551,7 @@ export default async function SubmitStockPage({
                       <div className="space-y-1">
                         <div className="text-sm font-medium text-foreground">提交前检查</div>
                         <div className="text-sm text-muted">
-                          最低必填项：供应商名称、品牌、型号 / 产品名、产品类型、可售数量、目标市场、仓库位置。
+                          最低必填项：库存来源主体、品牌、型号 / 产品名、产品类型、可售数量，且目标市场 / 仓库位置至少填写一项。
                         </div>
                       </div>
                       <div className="text-xs text-muted">

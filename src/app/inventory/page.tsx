@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import InventoryCard from '@/components/inventory/InventoryCard'
-import { InventoryRecord, slugToLabel } from '@/lib/inventory'
+import { buildInventoryFacets, InventoryRecord, resolveFacetLabelBySlug } from '@/lib/inventory'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { siteConfig } from '@/lib/site'
@@ -86,14 +86,24 @@ export default async function InventoryPage({
 }) {
   const params = await searchParams
   const supabase = await createClient()
+  const { data: facetOptions } = await supabase
+    .from('inventory')
+    .select('brand, market')
+    .eq('status', 'active')
 
   const brandSlug = getSingleParam(params.brand)
   const marketSlug = getSingleParam(params.market)
   const sort = getSingleParam(params.sort)
   const page = getPageNumber(params.page)
 
-  const brand = brandSlug ? slugToLabel(brandSlug) : undefined
-  const market = marketSlug ? slugToLabel(marketSlug) : undefined
+  const availableBrands = buildInventoryFacets((facetOptions ?? []).map((item) => item.brand))
+  const availableMarkets = buildInventoryFacets((facetOptions ?? []).map((item) => item.market))
+  const brand = brandSlug
+    ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.brand), brandSlug) ?? undefined
+    : undefined
+  const market = marketSlug
+    ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.market), marketSlug) ?? undefined
+    : undefined
 
   let query = supabase
     .from('inventory')
@@ -101,17 +111,21 @@ export default async function InventoryPage({
     .eq('status', 'active')
 
   if (brand) {
-    query = query.ilike('brand', `%${brand}%`)
+    query = query.eq('brand', brand)
   }
 
   if (market) {
-    query = query.ilike('market', `%${market}%`)
+    query = query.eq('market', market)
   }
 
   if (sort === 'price_asc') {
-    query = query.order('price', { ascending: true })
+    query = query
+      .order('pricing_mode', { ascending: true })
+      .order('price', { ascending: true })
   } else if (sort === 'price_desc') {
-    query = query.order('price', { ascending: false })
+    query = query
+      .order('pricing_mode', { ascending: true })
+      .order('price', { ascending: false })
   } else {
     query = query.order('created_at', { ascending: false })
   }
@@ -163,19 +177,32 @@ export default async function InventoryPage({
             <div>
               <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wider">Top Brands</h3>
               <ul className="space-y-2">
-                <li><Link href={buildInventoryHref({ brand: 'vozol', market: marketSlug, sort })} className={`text-sm hover:text-teal-DEFAULT ${brandSlug === 'vozol' ? 'text-teal-DEFAULT font-bold' : ''}`}>Vozol</Link></li>
-                <li><Link href={buildInventoryHref({ brand: 'elf-bar', market: marketSlug, sort })} className={`text-sm hover:text-teal-DEFAULT ${brandSlug === 'elf-bar' ? 'text-teal-DEFAULT font-bold' : ''}`}>Elf Bar</Link></li>
-                <li><Link href={buildInventoryHref({ brand: 'geek-bar', market: marketSlug, sort })} className={`text-sm hover:text-teal-DEFAULT ${brandSlug === 'geek-bar' ? 'text-teal-DEFAULT font-bold' : ''}`}>Geek Bar</Link></li>
+                {availableBrands.slice(0, 8).map((facet) => (
+                  <li key={facet.slug}>
+                    <Link
+                      href={buildInventoryHref({ brand: facet.slug, market: marketSlug, sort })}
+                      className={`text-sm hover:text-teal-DEFAULT ${brandSlug === facet.slug ? 'text-teal-DEFAULT font-bold' : ''}`}
+                    >
+                      {facet.label} ({facet.count})
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
 
             <div>
               <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wider">Top Markets</h3>
               <ul className="space-y-2">
-                <li><Link href={buildInventoryHref({ brand: brandSlug, market: 'middle-east', sort })} className={`text-sm hover:text-teal-DEFAULT ${marketSlug === 'middle-east' ? 'text-teal-DEFAULT font-bold' : ''}`}>Middle East</Link></li>
-                <li><Link href={buildInventoryHref({ brand: brandSlug, market: 'latin-america', sort })} className={`text-sm hover:text-teal-DEFAULT ${marketSlug === 'latin-america' ? 'text-teal-DEFAULT font-bold' : ''}`}>Latin America</Link></li>
-                <li><Link href={buildInventoryHref({ brand: brandSlug, market: 'eastern-europe', sort })} className={`text-sm hover:text-teal-DEFAULT ${marketSlug === 'eastern-europe' ? 'text-teal-DEFAULT font-bold' : ''}`}>Eastern Europe</Link></li>
-                <li><Link href={buildInventoryHref({ brand: brandSlug, market: 'north-america', sort })} className={`text-sm hover:text-teal-DEFAULT ${marketSlug === 'north-america' ? 'text-teal-DEFAULT font-bold' : ''}`}>North America</Link></li>
+                {availableMarkets.slice(0, 8).map((facet) => (
+                  <li key={facet.slug}>
+                    <Link
+                      href={buildInventoryHref({ brand: brandSlug, market: facet.slug, sort })}
+                      className={`text-sm hover:text-teal-DEFAULT ${marketSlug === facet.slug ? 'text-teal-DEFAULT font-bold' : ''}`}
+                    >
+                      {facet.label} ({facet.count})
+                    </Link>
+                  </li>
+                ))}
               </ul>
             </div>
           </div>

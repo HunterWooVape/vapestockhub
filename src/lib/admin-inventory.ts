@@ -4,12 +4,27 @@ export const productTypeOptions = [
   'Disposable Vape',
   'Vape Kits',
   'Pod System',
+  'Pod Kit',
   'Pod',
   'E-liquid',
   'Device',
   'Accessory',
   'Other',
 ] as const
+
+export const pricingModeOptions = [
+  'exact_price',
+  'inquiry_only',
+] as const
+
+export const pricingModeLabels = {
+  exact_price: 'Exact Price',
+  inquiry_only: 'Inquiry Only',
+} as const
+
+export function formatPricingModeLabel(mode: (typeof pricingModeOptions)[number]) {
+  return pricingModeLabels[mode]
+}
 
 export const inventoryStatusOptions = [
   'draft',
@@ -53,13 +68,13 @@ const promotionalTitlePattern =
 const genericBrandTermPattern = /\b(e-?liquid|vapes?|disposables?|pods?|devices?|kits?)\b/gi
 
 export const inventoryQualityMessages = {
+  'pricing-mode-required': 'Pricing mode is required before publishing.',
   'title-required': 'Title is required before publishing.',
   'brand-required': 'Brand is required before publishing.',
   'product-type-required': 'Product type is required before publishing.',
   'price-invalid': 'Price must be greater than 0 before publishing.',
   'quantity-invalid': 'Quantity must be greater than 0 before publishing.',
-  'market-required': 'Market is required before publishing.',
-  'warehouse-required': 'Warehouse location is required before publishing.',
+  'market-or-warehouse-required': 'Add at least one of market or warehouse location before publishing.',
   'slug-invalid': 'Slug must use lowercase letters, numbers, and hyphens only.',
   'description-required': 'Description is required before publishing.',
   'image-required': 'A valid image is required before publishing.',
@@ -67,9 +82,11 @@ export const inventoryQualityMessages = {
   'description-too-short': 'Description is very short and may feel weak for buyers and SEO.',
   'title-too-promotional': 'Title looks too promotional and should stay B2B inventory-focused.',
   'flavor-missing': 'Flavor is empty. Add flavor tags if they are available.',
+  'image-recommended-inquiry-only': 'Inquiry-only listings can go live without images, but a real image is still strongly recommended.',
+  'pricing-note-recommended-inquiry-only': 'Add a pricing note so buyers understand that live pricing will be confirmed on inquiry.',
   'moq-exceeds-quantity': 'MOQ is higher than quantity and may confuse buyers.',
   'brand-not-standard': 'Brand does not match an existing standard value yet.',
-  'brand-contains-generic-terms': 'Brand includes generic product words like "vape" or "disposable". Keep only the real trademark in the brand field.',
+  'brand-contains-generic-terms': 'Brand includes generic product words like "vape" or "disposable". Review whether they are part of the real trademark before publishing.',
   'market-not-standard': 'Market does not match an existing standard value yet.',
 } as const
 
@@ -80,6 +97,8 @@ export type InventoryFormValues = {
   slug: string
   brand: string
   productType: string
+  pricingMode: typeof pricingModeOptions[number]
+  pricingNote: string
   price: number
   quantity: number
   moq: number
@@ -145,6 +164,8 @@ export type InventoryAiDraftFieldSet = {
   slug: string
   brand: string
   product_type: string
+  pricing_mode: typeof pricingModeOptions[number]
+  pricing_note: string
   price: string
   quantity: string
   moq: string
@@ -239,6 +260,17 @@ export function getBrandNamingRiskTerms(value: string) {
       )
     )
   )
+}
+
+// 中文注释：这里只做软提醒，不强制删除命中的通用品类词，因为部分真实品牌名本身就会包含 vape / vapes。
+export function getBrandNamingRiskHint(value: string) {
+  const matchedTerms = getBrandNamingRiskTerms(value)
+
+  if (matchedTerms.length === 0) {
+    return ''
+  }
+
+  return `当前品牌命中了通用词：${matchedTerms.join('、')}。请人工确认这些词是否属于品牌商标本身；若本来就是正式品牌名，请保留原样，不要强删。`
 }
 
 const warehouseLocationAbbreviations = new Set([
@@ -356,6 +388,8 @@ export function getInventoryQualityReport(
     | 'slug'
     | 'brand'
     | 'productType'
+    | 'pricingMode'
+    | 'pricingNote'
     | 'price'
     | 'quantity'
     | 'moq'
@@ -392,7 +426,11 @@ export function getInventoryQualityReport(
     blockingIssues.push('product-type-required')
   }
 
-  if (values.price <= 0) {
+  if (!values.pricingMode.trim()) {
+    blockingIssues.push('pricing-mode-required')
+  }
+
+  if (values.pricingMode === 'exact_price' && values.price <= 0) {
     blockingIssues.push('price-invalid')
   }
 
@@ -400,12 +438,8 @@ export function getInventoryQualityReport(
     blockingIssues.push('quantity-invalid')
   }
 
-  if (!values.market.trim()) {
-    blockingIssues.push('market-required')
-  }
-
-  if (!values.warehouseLocation.trim()) {
-    blockingIssues.push('warehouse-required')
+  if (!values.market.trim() && !values.warehouseLocation.trim()) {
+    blockingIssues.push('market-or-warehouse-required')
   }
 
   if (!isValidInventorySlug(values.slug.trim())) {
@@ -417,9 +451,17 @@ export function getInventoryQualityReport(
   }
 
   if (!values.imageUrl.trim()) {
-    blockingIssues.push('image-required')
+    if (values.pricingMode === 'inquiry_only') {
+      warnings.push('image-recommended-inquiry-only')
+    } else {
+      blockingIssues.push('image-required')
+    }
   } else if (isPlaceholderInventoryImage(values.imageUrl)) {
-    blockingIssues.push('placeholder-image')
+    if (values.pricingMode === 'inquiry_only') {
+      warnings.push('image-recommended-inquiry-only')
+    } else {
+      blockingIssues.push('placeholder-image')
+    }
   }
 
   if (values.description.trim() && values.description.trim().length < 120) {
@@ -432,6 +474,10 @@ export function getInventoryQualityReport(
 
   if (!values.flavor.trim()) {
     warnings.push('flavor-missing')
+  }
+
+  if (values.pricingMode === 'inquiry_only' && !values.pricingNote.trim()) {
+    warnings.push('pricing-note-recommended-inquiry-only')
   }
 
   if (values.moq > 0 && values.quantity > 0 && values.moq > values.quantity) {
@@ -481,6 +527,8 @@ export function createEmptyInventoryAiDraftPackage(
       slug: '',
       brand: '',
       product_type: 'Disposable Vape',
+      pricing_mode: 'exact_price',
+      pricing_note: '',
       price: '',
       quantity: '',
       moq: '1',
@@ -526,6 +574,7 @@ export function buildInventoryAiPromptAsset(options?: {
     'Do not use language such as retail shop, best deal, cheapest, must buy, hot sale, or other consumer-style promotion.',
     'Preserve ambiguity through missingFields, riskFlags, and humanReviewFocus instead of hallucinating.',
     `Allowed contact_visibility values: ${contactVisibilityOptions.join(', ')}.`,
+    `Allowed pricing_mode values: ${pricingModeOptions.join(', ')}.`,
     `Preferred product_type values: ${productTypes.join(', ')}.`,
     knownBrands.length > 0 ? `Known brand references: ${knownBrands.join(', ')}.` : '',
     knownMarkets.length > 0 ? `Known market references: ${knownMarkets.join(', ')}.` : '',
@@ -560,6 +609,7 @@ export function buildInventoryAiPromptAsset(options?: {
     '- version must be "v1".',
     '- rawInput.rawText must contain the original source text.',
     '- normalizedFields.title, brand, market, and product_type should be filled when the source supports them.',
+    '- normalizedFields.pricing_mode must be exact_price or inquiry_only.',
     '- normalizedFields.contact_visibility must be contact_required or public.',
     '- missingFields is an array of field names that are still absent.',
     '- riskFlags contains factual risk notes with severity high, medium, or low.',
@@ -650,6 +700,11 @@ export function parseInventoryAiDraftPackage(input: string):
   )
     ? (normalizedFields.contact_visibility as typeof contactVisibilityOptions[number])
     : 'contact_required'
+  const pricingMode = pricingModeOptions.includes(
+    normalizedFields.pricing_mode as typeof pricingModeOptions[number]
+  )
+    ? (normalizedFields.pricing_mode as typeof pricingModeOptions[number])
+    : 'exact_price'
 
   const draftPackage: InventoryAiDraftPackage = {
     version: parsedValue.version === 'v1' ? 'v1' : 'v1',
@@ -665,6 +720,8 @@ export function parseInventoryAiDraftPackage(input: string):
       slug: getStringValue(normalizedFields.slug),
       brand: getStringValue(normalizedFields.brand),
       product_type: getStringValue(normalizedFields.product_type) || 'Disposable Vape',
+      pricing_mode: pricingMode,
+      pricing_note: getStringValue(normalizedFields.pricing_note),
       price: getStringValue(normalizedFields.price),
       quantity: getStringValue(normalizedFields.quantity),
       moq: getStringValue(normalizedFields.moq) || '1',
@@ -753,6 +810,8 @@ export function convertAiDraftPackageToInventoryDraft(
     slug: draftPackage.normalizedFields.slug.trim(),
     brand: draftPackage.normalizedFields.brand.trim(),
     productType: draftPackage.normalizedFields.product_type.trim(),
+    pricingMode: draftPackage.normalizedFields.pricing_mode,
+    pricingNote: draftPackage.normalizedFields.pricing_note.trim(),
     price: Number(draftPackage.normalizedFields.price) || 0,
     quantity: Number(draftPackage.normalizedFields.quantity) || 0,
     moq: Number(draftPackage.normalizedFields.moq) || 1,

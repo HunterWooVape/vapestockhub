@@ -11,6 +11,7 @@ import {
   getInventoryQualityReport,
   inventoryStatusOptions,
   placeholderInventoryImage,
+  pricingModeOptions,
 } from '@/lib/admin-inventory'
 import {
   getSupplierSubmissionMissingRequiredFields,
@@ -225,7 +226,7 @@ export default async function AdminPage({
     supabase
       .from('inventory')
       .select(
-        'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, price, quantity, moq, warehouse_location, description, images, flavor',
+        'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, pricing_mode, pricing_note, price, quantity, moq, warehouse_location, description, images, flavor',
         { count: 'exact' }
       )
       .eq('status', inventoryStatusFilter)
@@ -244,6 +245,8 @@ export default async function AdminPage({
         slug: item.slug,
         brand: item.brand,
         productType: item.product_type,
+        pricingMode: item.pricing_mode ?? 'exact_price',
+        pricingNote: item.pricing_note ?? '',
         price: item.price,
         quantity: item.quantity,
         moq: item.moq ?? 1,
@@ -346,7 +349,7 @@ export default async function AdminPage({
 
     const { data: item } = await adminClient
       .from('inventory')
-      .select('id, slug, title, brand, product_type, price, quantity, moq, market, warehouse_location, description, images, contact_visibility, flavor')
+      .select('id, slug, title, brand, product_type, pricing_mode, pricing_note, price, quantity, moq, market, warehouse_location, description, images, contact_visibility, flavor')
       .eq('id', id)
       .single()
 
@@ -357,6 +360,8 @@ export default async function AdminPage({
           slug: item.slug,
           brand: item.brand,
           productType: item.product_type,
+          pricingMode: pricingModeOptions.includes(item.pricing_mode) ? item.pricing_mode : 'exact_price',
+          pricingNote: item.pricing_note ?? '',
           price: item.price,
           quantity: item.quantity,
           moq: item.moq ?? 1,
@@ -444,6 +449,8 @@ export default async function AdminPage({
       contactName: '',
       contactChannel: '',
       sourceType: 'supplier_form',
+      pricingMode: 'exact_price',
+      pricingNote: '',
       brand: item.brand ?? '',
       modelName: item.model_name ?? '',
       productType: item.product_type ?? '',
@@ -474,7 +481,7 @@ export default async function AdminPage({
   })
   const workflowPrimaryHref = '/admin/submissions'
   const workflowPrimaryLabel = '去审核队列 →'
-  const workflowSecondaryHref = '/submit-stock'
+  const workflowSecondaryHref = '/submit-stock?return_to=%2Fadmin'
   const workflowSecondaryLabel = '去内部录入 →'
   const roleSummary = isAdminUser
     ? 'Admin 负责审核推进、草稿终审和发布判断。'
@@ -604,7 +611,7 @@ export default async function AdminPage({
                       <div className="flex justify-between gap-3">
                         <div>
                           <div className="font-semibold">{item.brand || '待补品牌'} · {item.model_name || '待补型号'}</div>
-                          <div className="text-sm text-muted">{item.supplier_name || '待补供应商'}</div>
+                          <div className="text-sm text-muted">{item.supplier_name || '待补来源主体'}</div>
                         </div>
                         <div className="text-right text-sm">
                           <div className="font-medium">{formatSubmissionStatusLabel(item.submission_status)}</div>

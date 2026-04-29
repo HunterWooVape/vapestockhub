@@ -1,6 +1,8 @@
 import { MetadataRoute } from 'next'
-import { createClient } from '@/lib/supabase/server'
+
+import { buildInventoryFacets } from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = await createClient()
@@ -67,24 +69,61 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     routes.push(...inventoryRoutes)
   }
 
-  // Define static category slugs for now (can be made dynamic later)
-  const brands = ['vozol', 'elf-bar', 'geek-bar', 'lost-mary']
-  const brandRoutes = brands.map((brand) => ({
-    url: `${siteConfig.url}/brand/${brand}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.6,
-  }))
-  routes.push(...brandRoutes)
+  const { data: brandInventory } = await supabase
+    .from('inventory')
+    .select('brand, updated_at')
+    .eq('status', 'active')
 
-  const markets = ['middle-east', 'latin-america', 'eastern-europe', 'north-america']
-  const marketRoutes = markets.map((market) => ({
-    url: `${siteConfig.url}/market/${market}`,
-    lastModified: new Date(),
-    changeFrequency: 'weekly' as const,
-    priority: 0.6,
-  }))
-  routes.push(...marketRoutes)
+  if (brandInventory) {
+    const brandFacets = buildInventoryFacets(brandInventory.map((item) => item.brand))
+    const brandRoutes = brandFacets
+      .filter((brand) => brand.count >= 3)
+      .map((brand) => {
+        const latestUpdate = brandInventory
+          .filter((item) => item.brand === brand.label)
+          .map((item) => item.updated_at)
+          .filter(Boolean)
+          .sort()
+          .at(-1)
+
+        return {
+          url: `${siteConfig.url}/brand/${brand.slug}`,
+          lastModified: latestUpdate ? new Date(latestUpdate) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.6,
+        }
+      })
+
+    routes.push(...brandRoutes)
+  }
+
+  const { data: marketInventory } = await supabase
+    .from('inventory')
+    .select('market, updated_at')
+    .eq('status', 'active')
+
+  if (marketInventory) {
+    const marketFacets = buildInventoryFacets(marketInventory.map((item) => item.market))
+    const marketRoutes = marketFacets
+      .filter((market) => market.count >= 3)
+      .map((market) => {
+        const latestUpdate = marketInventory
+          .filter((item) => item.market === market.label)
+          .map((item) => item.updated_at)
+          .filter(Boolean)
+          .sort()
+          .at(-1)
+
+        return {
+          url: `${siteConfig.url}/market/${market.slug}`,
+          lastModified: latestUpdate ? new Date(latestUpdate) : new Date(),
+          changeFrequency: 'weekly' as const,
+          priority: 0.6,
+        }
+      })
+
+    routes.push(...marketRoutes)
+  }
 
   return routes
 }

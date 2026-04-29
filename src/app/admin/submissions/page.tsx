@@ -167,6 +167,8 @@ export default async function AdminSubmissionsPage({
       contactName: item.contact_name ?? '',
       contactChannel: item.contact_channel ?? '',
       sourceType: 'supplier_form',
+      pricingMode: 'exact_price',
+      pricingNote: '',
       brand: item.brand ?? '',
       modelName: item.model_name ?? '',
       productType: item.product_type ?? '',
@@ -313,7 +315,7 @@ export default async function AdminSubmissionsPage({
                           {item.brand || '待补品牌'} · {item.model_name || '待补型号'}
                         </div>
                         <div className="text-sm text-muted">
-                          {item.supplier_name || '待补供应商'} · {item.target_market || '待补市场'}
+                          {item.supplier_name || '待补来源主体'} · {item.target_market || '待补市场'}
                         </div>
                         <div className="text-xs text-muted">
                           {item.warehouse_location || '待补仓库'} · 数量：{item.available_qty_text || '待补'}

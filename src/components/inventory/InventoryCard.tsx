@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
-import { getInventoryImageSrc } from '@/lib/inventory'
+import { buildInventoryImageAlt, getInventoryImageSrc, hasRealInventoryImage } from '@/lib/inventory'
 
 export interface InventoryItem {
   id: string
@@ -9,9 +9,12 @@ export interface InventoryItem {
   title: string
   brand: string
   market: string
+  product_type: string
   flavor: string | null
   nicotine: string | null
   puff: number | null
+  pricing_mode: 'exact_price' | 'inquiry_only'
+  pricing_note: string | null
   price: number
   quantity: number
   moq: number
@@ -23,7 +26,9 @@ export interface InventoryItem {
 }
 
 export default function InventoryCard({ item }: { item: InventoryItem }) {
-  const isHot = item.is_featured || item.quantity < 5000;
+  const isHot = item.is_featured || item.quantity < 5000
+  const isInquiryOnly = item.pricing_mode === 'inquiry_only'
+  const hasRealImage = hasRealInventoryImage(item.images)
 
   return (
     <div className="relative rounded-xl border border-border bg-surface flex flex-col overflow-hidden group hover:border-teal-DEFAULT/50 hover:shadow-[0_0_20px_rgba(34,199,169,0.1)] transition-all">
@@ -33,7 +38,12 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
           <Image
             unoptimized
             src={getInventoryImageSrc(item.images)}
-            alt={item.title}
+            alt={buildInventoryImageAlt({
+              title: item.title,
+              brand: item.brand,
+              productType: item.product_type,
+              hasRealImage,
+            })}
             fill
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -65,9 +75,11 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
             <span className="text-[10px] font-bold uppercase tracking-wider text-teal-DEFAULT bg-teal-DEFAULT/10 px-2 py-0.5 rounded">
               {item.brand}
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-wider text-muted bg-surface border border-border px-2 py-0.5 rounded">
-              {item.market}
-            </span>
+            {item.market && (
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted bg-surface border border-border px-2 py-0.5 rounded">
+                {item.market}
+              </span>
+            )}
           </div>
           
           <h3 className="text-lg font-bold line-clamp-2 group-hover:text-teal-DEFAULT transition-colors">
@@ -78,9 +90,13 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
           <div className="flex justify-between items-end mt-auto pt-4 border-t border-border">
             <div>
               <div className="text-xs text-muted mb-1">Unit Price</div>
-              {item.contact_visibility === 'contact_required' ? (
+              {isInquiryOnly ? (
                 <div className="text-sm font-bold text-foreground bg-surface border border-border px-2 py-1 rounded">
-                  🔒 Contact to View
+                  Pricing on Request
+                </div>
+              ) : item.contact_visibility === 'contact_required' ? (
+                <div className="text-sm font-bold text-foreground bg-surface border border-border px-2 py-1 rounded">
+                  Contact to View
                 </div>
               ) : (
                 <div className="text-xl font-bold text-teal-DEFAULT">${item.price.toFixed(2)}</div>
