@@ -1,13 +1,20 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
 export const adminSessionCookieName = 'vsh_admin_session'
+export const adminLoginGuardCookieName = 'vsh_admin_login_guard'
 export const backofficeRoles = ['admin', 'staff'] as const
 const backofficeSessionVersion = 'v1'
+const backofficeLoginGuardVersion = 'v1'
 
 export type BackofficeRole = typeof backofficeRoles[number]
 export type BackofficeSession = {
   isAuthenticated: boolean
   role: BackofficeRole | null
+}
+
+export type BackofficeLoginGuard = {
+  failedAttempts: number
+  lockedUntil: number | null
 }
 
 function normalizeBackofficeRole(value?: string | null) {
@@ -21,6 +28,10 @@ function getBackofficeSessionSecret() {
 
 function buildBackofficeSessionPayload(role: BackofficeRole) {
   return `${backofficeSessionVersion}:${role}`
+}
+
+function buildBackofficeLoginGuardPayload(failedAttempts: number, lockedUntil: number | null) {
+  return `${backofficeLoginGuardVersion}:${failedAttempts}:${lockedUntil ?? 0}`
 }
 
 function signBackofficeSessionPayload(payload: string, secret: string) {
@@ -85,6 +96,74 @@ export function serializeBackofficeSession(role: BackofficeRole) {
   }
 
   const payload = buildBackofficeSessionPayload(role)
+  const signature = signBackofficeSessionPayload(payload, secret)
+  return `${payload}:${signature}`
+}
+
+export function parseBackofficeLoginGuard(value?: string | null): BackofficeLoginGuard {
+  if (!value) {
+    return {
+      failedAttempts: 0,
+      lockedUntil: null,
+    }
+  }
+
+  const secret = getBackofficeSessionSecret()
+  if (!secret) {
+    return {
+      failedAttempts: 0,
+      lockedUntil: null,
+    }
+  }
+
+  const [version, rawFailedAttempts, rawLockedUntil, signature] = value.split(':')
+  if (version !== backofficeLoginGuardVersion || !rawFailedAttempts || !rawLockedUntil || !signature) {
+    return {
+      failedAttempts: 0,
+      lockedUntil: null,
+    }
+  }
+
+  const failedAttempts = Number.parseInt(rawFailedAttempts, 10)
+  const lockedUntil = Number.parseInt(rawLockedUntil, 10)
+
+  if (
+    !Number.isFinite(failedAttempts) ||
+    failedAttempts < 0 ||
+    !Number.isFinite(lockedUntil) ||
+    lockedUntil < 0
+  ) {
+    return {
+      failedAttempts: 0,
+      lockedUntil: null,
+    }
+  }
+
+  const payload = buildBackofficeLoginGuardPayload(failedAttempts, lockedUntil || null)
+  const isValid = isValidBackofficeSessionSignature(payload, signature, secret)
+  if (!isValid) {
+    return {
+      failedAttempts: 0,
+      lockedUntil: null,
+    }
+  }
+
+  return {
+    failedAttempts,
+    lockedUntil: lockedUntil > 0 ? lockedUntil : null,
+  }
+}
+
+export function serializeBackofficeLoginGuard(guard: BackofficeLoginGuard) {
+  const secret = getBackofficeSessionSecret()
+
+  if (!secret) {
+    return null
+  }
+
+  const failedAttempts = Math.max(0, Math.floor(guard.failedAttempts))
+  const lockedUntil = guard.lockedUntil && guard.lockedUntil > 0 ? Math.floor(guard.lockedUntil) : null
+  const payload = buildBackofficeLoginGuardPayload(failedAttempts, lockedUntil)
   const signature = signBackofficeSessionPayload(payload, secret)
   return `${payload}:${signature}`
 }

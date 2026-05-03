@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# VapeStockHub
 
-## Getting Started
+VapeStockHub 是一个面向 B2B 的电子烟库存信息展示与询盘转化 MVP，技术栈为 Next.js App Router + Supabase。
 
-First, run the development server:
+## 本地启动
+
+1. 复制环境变量模板并填写：
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. 安装依赖并启动开发环境：
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+3. 打开 `http://localhost:3000`
 
-## Learn More
+## 环境变量
 
-To learn more about Next.js, take a look at the following resources:
+以下变量为当前项目实际使用的最小集合：
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+NEXT_PUBLIC_SITE_URL=
+NEXT_PUBLIC_TELEGRAM_USERNAME=
+NEXT_PUBLIC_WHATSAPP_NUMBER=
+NEXT_PUBLIC_CONTACT_EMAIL=
+SUPABASE_SERVICE_ROLE_KEY=
+BACKOFFICE_SESSION_SECRET=
+MONITORING_ENVIRONMENT=
+MONITORING_WEBHOOK_URL=
+ADMIN_USERNAME=
+ADMIN_PASSWORD=
+STAFF_USERNAME=
+STAFF_PASSWORD=
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+说明：
 
-## Deploy on Vercel
+- `SUPABASE_SERVICE_ROLE_KEY` 仅服务端使用，缺失时后台写入功能不可用。
+- `BACKOFFICE_SESSION_SECRET` 用于后台登录会话签名，生产环境必须配置强随机值。
+- `MONITORING_WEBHOOK_URL` 为可选项，可接 Telegram Bot webhook、Slack webhook 或内部告警入口。
+- `ADMIN_USERNAME / ADMIN_PASSWORD / STAFF_USERNAME / STAFF_PASSWORD` 为当前 MVP 后台入口凭证。
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 发布前检查
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+至少执行以下命令：
+
+```bash
+npm run lint
+npm run build
+```
+
+如果使用正式 npm 源，还应补执行：
+
+```bash
+npm audit --omit=dev
+```
+
+## 部署阶段门槛
+
+当前建议按两个阶段判断：
+
+### 阶段 A：可以开始部署到预发环境
+
+满足以下条件即可开始预发部署：
+
+- `npm run lint` 通过
+- `npm run build` 通过
+- `.env.example` 与实际环境变量对齐
+- 基础安全响应头已启用
+- Supabase 迁移已在预发库完整执行
+
+### 阶段 B：可以谨慎开始生产部署
+
+满足以下条件后，才建议开始正式生产部署：
+
+- 已完成阶段 A
+- 已人工验证核心链路：`首页 -> 库存列表 -> 详情页 -> Telegram/WhatsApp 跳转`
+- 已人工验证后台链路：`登录 -> submit-stock -> submissions -> draft/edit -> publish`
+- 已确认生产域名、HTTPS、Supabase 正式项目配置无误
+- 已配置最小错误监控或 webhook 告警
+- 已完成数据库备份或可回滚快照
+- 已准备回滚方案：保留上一版部署，并可快速切回
+
+## 当前状态说明
+
+截至当前修复批次：
+
+- 已修复现有 `lint` 阻断
+- 已补齐环境变量模板
+- 已增加基础安全响应头并关闭 `X-Powered-By`
+- 已增加后台登录限流与 `/go/[channel]` 反刷
+- 已增加最小监控基础：`src/instrumentation.ts` 与 `/health`
+
+这意味着项目**现在可以开始部署到预发环境**。
+
+但在下面事项完成前，**还不建议直接正式上线**：
+
+- 最小 CI/CD 质量门禁
+- 生产环境 webhook 告警配置
+
+## 推荐下一步
+
+优先继续补以下高优先级项：
+
+1. 生产环境接通 webhook 告警
+2. 最小 CI 流水线
+3. 一轮完整预发 walkthrough

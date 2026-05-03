@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 
 type SubmissionFormDraftSyncProps = {
@@ -11,6 +11,69 @@ type SubmissionFormDraftSyncProps = {
 type SupportedFieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
 
 type DraftChoice = 'restore' | 'clear' | 'new-blank'
+
+type DraftSyncState = {
+  isReady: boolean
+  showDraftChoice: boolean
+  storedDraftValues: Record<string, string> | null
+  persistImmediately: boolean
+}
+
+type DraftSyncAction =
+  | { type: 'reset-and-skip-restore' }
+  | { type: 'set-empty-draft' }
+  | { type: 'set-stored-draft'; payload: Record<string, string> }
+  | { type: 'restore-draft' }
+  | { type: 'clear-draft'; payload: { persistImmediately: boolean } }
+
+const initialDraftSyncState: DraftSyncState = {
+  isReady: false,
+  showDraftChoice: false,
+  storedDraftValues: null,
+  persistImmediately: true,
+}
+
+function draftSyncReducer(state: DraftSyncState, action: DraftSyncAction): DraftSyncState {
+  switch (action.type) {
+    case 'reset-and-skip-restore':
+      return {
+        isReady: true,
+        showDraftChoice: false,
+        storedDraftValues: null,
+        persistImmediately: true,
+      }
+    case 'set-empty-draft':
+      return {
+        isReady: true,
+        showDraftChoice: false,
+        storedDraftValues: null,
+        persistImmediately: true,
+      }
+    case 'set-stored-draft':
+      return {
+        ...state,
+        storedDraftValues: action.payload,
+        showDraftChoice: true,
+        isReady: false,
+      }
+    case 'restore-draft':
+      return {
+        ...state,
+        showDraftChoice: false,
+        isReady: true,
+        persistImmediately: true,
+      }
+    case 'clear-draft':
+      return {
+        isReady: true,
+        showDraftChoice: false,
+        storedDraftValues: null,
+        persistImmediately: action.payload.persistImmediately,
+      }
+    default:
+      return state
+  }
+}
 
 function isSupportedField(element: Element): element is SupportedFieldElement {
   return (
@@ -54,14 +117,12 @@ export function SubmissionFormDraftSync({
   storageKey,
 }: SubmissionFormDraftSyncProps) {
   const searchParams = useSearchParams()
-  const [isReady, setIsReady] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [showDraftChoice, setShowDraftChoice] = useState(false)
-  const [storedDraftValues, setStoredDraftValues] = useState<Record<string, string> | null>(null)
-  const [persistImmediately, setPersistImmediately] = useState(true)
+  const [state, dispatch] = useReducer(draftSyncReducer, initialDraftSyncState)
   const initialFormValuesRef = useRef<Record<string, string> | null>(null)
 
   const shouldSkipRestore = useMemo(() => Boolean(searchParams.get('success')), [searchParams])
+  const { isReady, showDraftChoice, storedDraftValues, persistImmediately } = state
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -83,40 +144,28 @@ export function SubmissionFormDraftSync({
     }
 
     if (isSubmitting) {
-      setShowDraftChoice(false)
       return
     }
 
     if (shouldSkipRestore) {
       window.sessionStorage.removeItem(storageKey)
-      setStoredDraftValues(null)
-      setShowDraftChoice(false)
-      setPersistImmediately(true)
-      setIsReady(true)
+      dispatch({ type: 'reset-and-skip-restore' })
       return
     }
 
     const storedDraft = window.sessionStorage.getItem(storageKey)
 
     if (!storedDraft) {
-      setStoredDraftValues(null)
-      setShowDraftChoice(false)
-      setPersistImmediately(true)
-      setIsReady(true)
+      dispatch({ type: 'set-empty-draft' })
       return
     }
 
     try {
       const parsedDraft = JSON.parse(storedDraft) as Record<string, string>
-      setStoredDraftValues(parsedDraft)
-      setShowDraftChoice(true)
-      setIsReady(false)
+      dispatch({ type: 'set-stored-draft', payload: parsedDraft })
     } catch {
       window.sessionStorage.removeItem(storageKey)
-      setStoredDraftValues(null)
-      setShowDraftChoice(false)
-      setPersistImmediately(true)
-      setIsReady(true)
+      dispatch({ type: 'set-empty-draft' })
     }
   }, [isSubmitting, shouldSkipRestore, storageKey])
 
@@ -133,7 +182,6 @@ export function SubmissionFormDraftSync({
     // 中文注释：一旦用户正式提交，就不再重新弹出本地草稿选择层，避免跳转前误打断。
     const handleSubmit = () => {
       setIsSubmitting(true)
-      setShowDraftChoice(false)
     }
 
     form.addEventListener('submit', handleSubmit)
@@ -229,18 +277,18 @@ export function SubmissionFormDraftSync({
 
     if (choice === 'restore') {
       applyDraftToForm()
-      setPersistImmediately(true)
-      setShowDraftChoice(false)
-      setIsReady(true)
+      dispatch({ type: 'restore-draft' })
       return
     }
 
     window.sessionStorage.removeItem(storageKey)
     resetFormToDefaultValues()
-    setStoredDraftValues(null)
-    setShowDraftChoice(false)
-    setPersistImmediately(choice === 'new-blank')
-    setIsReady(true)
+    dispatch({
+      type: 'clear-draft',
+      payload: {
+        persistImmediately: choice === 'new-blank',
+      },
+    })
   }
 
   return (

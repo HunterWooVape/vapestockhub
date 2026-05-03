@@ -21,12 +21,15 @@ import {
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import {
+  adminLoginGuardCookieName,
   adminSessionCookieName,
   getBackofficeRole,
   isAdminRole,
   isBackofficeAuthenticated,
   isBackofficeSessionSigningReady,
   normalizeBackofficeReturnTo,
+  parseBackofficeLoginGuard,
+  serializeBackofficeLoginGuard,
   serializeBackofficeSession,
   type BackofficeRole,
 } from '@/lib/unlock'
@@ -34,6 +37,8 @@ import {
 export const dynamic = 'force-dynamic'
 
 const ITEMS_PER_PAGE = 10
+const maxLoginFailedAttempts = 5
+const loginLockDurationMs = 15 * 60 * 1000
 
 const successMessages: Record<string, string> = {
   'status-updated': '库存状态已更新。',
@@ -41,6 +46,7 @@ const successMessages: Record<string, string> = {
 
 const errorMessages: Record<string, string> = {
   'invalid-credentials': '用户名或密码不正确。',
+  'too-many-attempts': '登录失败次数过多，请稍后再试。',
   'missing-service-role-key': '缺少 `SUPABASE_SERVICE_ROLE_KEY`，当前无法执行写入动作。',
   'missing-session-secret': '缺少 BACKOFFICE_SESSION_SECRET，后台登录已被禁用。',
   'missing-required-fields': '请先补齐库存必填字段，再保存草稿。',
@@ -168,6 +174,19 @@ function buildInventoryFilterHref(
   })
 }
 
+function getAdminCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  }
+}
+
+function getRetryAfterSeconds(lockedUntil: number) {
+  return Math.max(1, Math.ceil((lockedUntil - Date.now()) / 1000))
+}
+
 function revalidateInventoryRoutes(slug?: string) {
   revalidatePath('/')
   revalidatePath('/admin')
@@ -195,6 +214,7 @@ export default async function AdminPage({
   const page = getPageNumber(params.page)
   const success = getSingleParam(params.success)
   const error = getSingleParam(params.error)
+  const retryAfter = Number.parseInt(getSingleParam(params.retry_after) ?? '0', 10)
   const inventoryStatusFilter = getSelectedValue(
     getSingleParam(params.inventory_status) ?? 'draft',
     inventoryStatusOptions,
@@ -270,14 +290,43 @@ export default async function AdminPage({
   async function loginAction(formData: FormData) {
     'use server'
 
+    const actionCookies = await cookies()
     const username = String(formData.get('username') || '').trim()
     const password = String(formData.get('password') || '').trim()
     const returnTo = normalizeBackofficeReturnTo(String(formData.get('return_to') || '').trim())
+    const loginGuard = parseBackofficeLoginGuard(
+      actionCookies.get(adminLoginGuardCookieName)?.value
+    )
+
+    if (loginGuard.lockedUntil && loginGuard.lockedUntil > Date.now()) {
+      redirect(buildAdminPageRedirect({
+        error: 'too-many-attempts',
+        retry_after: String(getRetryAfterSeconds(loginGuard.lockedUntil)),
+        return_to: returnTo,
+      }))
+    }
+
     const role = resolveBackofficeRoleByCredentials(username, password)
 
     if (!role) {
+      const nextFailedAttempts = loginGuard.failedAttempts + 1
+      const shouldLock = nextFailedAttempts >= maxLoginFailedAttempts
+      const lockedUntil = shouldLock ? Date.now() + loginLockDurationMs : null
+      const guardCookieValue = serializeBackofficeLoginGuard({
+        failedAttempts: shouldLock ? 0 : nextFailedAttempts,
+        lockedUntil,
+      })
+
+      if (guardCookieValue) {
+        actionCookies.set(adminLoginGuardCookieName, guardCookieValue, {
+          ...getAdminCookieOptions(),
+          maxAge: shouldLock ? Math.ceil(loginLockDurationMs / 1000) : 60 * 60,
+        })
+      }
+
       redirect(buildAdminPageRedirect({
-        error: 'invalid-credentials',
+        error: shouldLock ? 'too-many-attempts' : 'invalid-credentials',
+        retry_after: lockedUntil ? String(getRetryAfterSeconds(lockedUntil)) : null,
         return_to: returnTo,
       }))
     }
@@ -290,12 +339,9 @@ export default async function AdminPage({
       }))
     }
 
-    const actionCookies = await cookies()
+    actionCookies.delete(adminLoginGuardCookieName)
     actionCookies.set(adminSessionCookieName, sessionValue, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
+      ...getAdminCookieOptions(),
       maxAge: 60 * 60 * 8,
     })
     redirect(returnTo ?? '/admin')
@@ -399,7 +445,11 @@ export default async function AdminPage({
   }
 
   const successMessage = success ? successMessages[success] : null
-  const errorMessage = error ? errorMessages[error] : null
+  const errorMessage = error === 'too-many-attempts' && Number.isFinite(retryAfter) && retryAfter > 0
+    ? `登录失败次数过多，请在 ${Math.ceil(retryAfter / 60)} 分钟后再试。`
+    : error
+      ? errorMessages[error]
+      : null
 
   if (!isAuthenticated) {
     return (
