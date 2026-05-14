@@ -16,6 +16,8 @@ export type InventoryRecord = {
   quantity: number
   moq: number
   market: string
+  featured_markets: string[] | null
+  market_access_note: string | null
   warehouse_location: string
   images: string[] | null
   status: 'draft' | 'active' | 'reserved' | 'sold' | 'expired'
@@ -30,6 +32,46 @@ export type InventoryFacet = {
   label: string
   slug: string
   count: number
+}
+
+function hasLatinLetters(value: string) {
+  return /[A-Za-z]/.test(value)
+}
+
+function isAllLowercaseLabel(value: string) {
+  return hasLatinLetters(value) && value === value.toLowerCase() && value !== value.toUpperCase()
+}
+
+export function pickPreferredDisplayValue(values: Array<string | null | undefined>) {
+  const labelCounts = new Map<string, number>()
+
+  values.forEach((value) => {
+    const label = value?.trim()
+    if (!label) {
+      return
+    }
+
+    labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1)
+  })
+
+  return Array.from(labelCounts.entries())
+    .sort((left, right) => {
+      const [leftLabel, leftCount] = left
+      const [rightLabel, rightCount] = right
+      const leftIsAllLowercase = isAllLowercaseLabel(leftLabel)
+      const rightIsAllLowercase = isAllLowercaseLabel(rightLabel)
+
+      if (leftIsAllLowercase !== rightIsAllLowercase) {
+        return Number(leftIsAllLowercase) - Number(rightIsAllLowercase)
+      }
+
+      if (rightCount !== leftCount) {
+        return rightCount - leftCount
+      }
+
+      return leftLabel.localeCompare(rightLabel)
+    })
+    .at(0)?.[0] ?? ''
 }
 
 export function slugToLabel(slug: string) {
@@ -89,7 +131,7 @@ export function toSlug(value: string) {
 }
 
 export function buildInventoryFacets(values: Array<string | null | undefined>) {
-  const facetMap = new Map<string, InventoryFacet>()
+  const facetMap = new Map<string, InventoryFacet & { rawLabels: string[] }>()
 
   values.forEach((value) => {
     const label = value?.trim()
@@ -106,6 +148,7 @@ export function buildInventoryFacets(values: Array<string | null | undefined>) {
     const existingFacet = facetMap.get(slug)
     if (existingFacet) {
       existingFacet.count += 1
+      existingFacet.rawLabels.push(label)
       return
     }
 
@@ -113,16 +156,22 @@ export function buildInventoryFacets(values: Array<string | null | undefined>) {
       label,
       slug,
       count: 1,
+      rawLabels: [label],
     })
   })
 
-  return Array.from(facetMap.values()).sort((left, right) => {
-    if (right.count !== left.count) {
-      return right.count - left.count
-    }
+  return Array.from(facetMap.values())
+    .map(({ rawLabels, ...facet }) => ({
+      ...facet,
+      label: pickPreferredDisplayValue(rawLabels) || facet.label,
+    }))
+    .sort((left, right) => {
+      if (right.count !== left.count) {
+        return right.count - left.count
+      }
 
-    return left.label.localeCompare(right.label)
-  })
+      return left.label.localeCompare(right.label)
+    })
 }
 
 export function resolveFacetLabelBySlug(

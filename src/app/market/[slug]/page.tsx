@@ -2,7 +2,12 @@ import { createClient } from '@/lib/supabase/server'
 import InventoryCard from '@/components/inventory/InventoryCard'
 import { Metadata } from 'next'
 import { siteConfig } from '@/lib/site'
-import { InventoryRecord, resolveFacetLabelBySlug } from '@/lib/inventory'
+import { InventoryRecord } from '@/lib/inventory'
+import {
+  buildFeaturedMarketFacetsFromInventory,
+  inventoryTargetsFeaturedMarket,
+  resolveFeaturedMarketLabelBySlug,
+} from '@/lib/inventory-markets'
 import { notFound } from 'next/navigation'
 
 export const revalidate = 3600
@@ -13,10 +18,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   const { data: marketOptions } = await supabase
     .from('inventory')
-    .select('market')
+    .select('market, featured_markets')
     .eq('status', 'active')
 
-  const marketName = resolveFacetLabelBySlug((marketOptions ?? []).map((item) => item.market), resolvedParams.slug)
+  const marketName = resolveFeaturedMarketLabelBySlug(marketOptions ?? [], resolvedParams.slug)
 
   if (!marketName) {
     return {
@@ -28,11 +33,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 
-  const { count } = await supabase
-    .from('inventory')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'active')
-    .eq('market', marketName)
+  const matchedCount = buildFeaturedMarketFacetsFromInventory(marketOptions ?? [])
+    .find((market) => market.slug === resolvedParams.slug)?.count ?? 0
   
   return {
     title: `Wholesale Vape Inventory for ${marketName} | VapeStockHub`,
@@ -41,7 +43,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       canonical: `${siteConfig.url}/market/${resolvedParams.slug}`,
     },
     robots: {
-      index: (count ?? 0) >= 3,
+      index: matchedCount >= 3,
       follow: true,
     },
   }
@@ -52,10 +54,10 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
   const supabase = await createClient()
   const { data: marketOptions } = await supabase
     .from('inventory')
-    .select('market')
+    .select('market, featured_markets')
     .eq('status', 'active')
 
-  const marketName = resolveFacetLabelBySlug((marketOptions ?? []).map((item) => item.market), resolvedParams.slug)
+  const marketName = resolveFeaturedMarketLabelBySlug(marketOptions ?? [], resolvedParams.slug)
 
   if (!marketName) {
     notFound()
@@ -65,14 +67,14 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     .from('inventory')
     .select('*')
     .eq('status', 'active')
-    .eq('market', marketName)
-    .order('created_at', { ascending: false })
 
   if (error) {
     console.error('Error fetching market inventory:', error)
   }
 
-  const items = (inventory ?? []) as InventoryRecord[]
+  const items = ((inventory ?? []) as InventoryRecord[])
+    .filter((item) => inventoryTargetsFeaturedMarket(item, marketName))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at))
 
   if (items.length === 0) {
     notFound()
@@ -85,7 +87,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           Wholesale Vape Inventory for <span className="text-teal-DEFAULT">{marketName}</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Explore active wholesale stock suitable for buyers targeting {marketName}. Compare listings by brand, quantity, price visibility, and warehouse availability before sending your inquiry.
+          Explore active wholesale stock curated for buyers targeting {marketName}, including globally available listings prioritized for this market. Compare listings by brand, quantity, price visibility, and warehouse availability before sending your inquiry.
         </p>
       </div>
 
@@ -93,7 +95,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this regional inventory hub to move from target market research into product-level inquiry.</p>
+            <p className="text-sm text-muted mt-1">Use this market hub to review globally available and region-prioritized stock before moving into product-level inquiry.</p>
           </div>
         </div>
 

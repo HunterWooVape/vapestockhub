@@ -31,7 +31,10 @@ import {
   isBackofficeAuthenticated,
   normalizeBackofficeReturnTo,
 } from '@/lib/unlock'
+import { dataEntryGuidelines, featuredMarketPresetGroups, normalizeMarketLabel } from '@/lib/entry-standards'
+import { splitSubmissionMarketTags } from '@/lib/submissions'
 import DeleteButton from './DeleteButton'
+import PublishSuccessReturn from './PublishSuccessReturn'
 
 export const dynamic = 'force-dynamic'
 
@@ -236,7 +239,11 @@ export default async function EditInventoryPage({
     const pricingNote = String(formData.get('pricing_note') || '').trim()
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
-    const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
+    const market = normalizeKnownValue(normalizeMarketLabel(String(formData.get('market') || '')), knownMarkets)
+    const featuredMarkets = splitSubmissionMarketTags(
+      formData.getAll('featured_markets').map((item) => String(item).trim()).filter(Boolean).join(', ')
+    )
+    const marketAccessNote = String(formData.get('market_access_note') || '').trim()
     const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
     const description = String(formData.get('description') || '').trim()
     const imageUrl = String(formData.get('image_url') || '').trim()
@@ -310,6 +317,8 @@ export default async function EditInventoryPage({
       quantity,
       moq: Number(formData.get('moq') || 1),
       market,
+      featured_markets: featuredMarkets,
+      market_access_note: marketAccessNote || null,
       warehouse_location: warehouseLocation,
       description: description || null,
       images: imageUrl ? [imageUrl] : ['/images/inventory-placeholder.svg'],
@@ -389,7 +398,9 @@ export default async function EditInventoryPage({
       ? '审核队列'
       : '后台总控台'
   const currentEditHref = appendReturnTo(`/admin/edit/${resolvedParams.id}`, returnTo)
-  const isActiveSuccess = success === 'inventory-published' || success === 'inventory-active-updated'
+  const isPublishSuccess = success === 'inventory-published'
+  const isActiveUpdateSuccess = success === 'inventory-active-updated'
+  const isActiveSuccess = isPublishSuccess || isActiveUpdateSuccess
   const publicInventoryHref = `/inventory/${item.slug}`
   const brandNamingRiskHint = getBrandNamingRiskHint(item.brand) || null
 
@@ -404,22 +415,24 @@ export default async function EditInventoryPage({
                   {backLabel}
                 </Link>
                 <span>/</span>
-                <span className="text-foreground">发布前确认</span>
+                <span className="text-foreground">{isPublishSuccess ? '发布完成' : '发布前确认'}</span>
               </div>
               <div className="inline-flex rounded-full border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-teal-DEFAULT">
                 {roleBadgeLabel}
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-foreground">发布前确认</h1>
+                <h1 className="text-3xl font-bold text-foreground">{isPublishSuccess ? '发布完成' : '发布前确认'}</h1>
                 <p className="mt-1 text-sm text-muted">
-                  这里只处理最终发布值，重点确认这条草稿现在能不能进入 `active`。
+                  {isPublishSuccess
+                    ? '这条库存已经完成发布，当前前台已可见。系统会短暂停留后自动带你回到来源工作台。'
+                    : '这里只处理最终发布值，重点确认这条草稿现在能不能进入 `active`。'}
                 </p>
               </div>
             </div>
             <div className="flex flex-col items-start gap-3 lg:items-end">
               <div className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3 text-sm text-muted">
                 <div className="font-medium text-foreground">主动作</div>
-                <div className="mt-1">保存修改</div>
+                <div className="mt-1">{isPublishSuccess ? `返回${backLabel}` : '保存修改'}</div>
               </div>
               {isAdminUser ? (
                 <form action={deleteInventoryAction}>
@@ -467,14 +480,17 @@ export default async function EditInventoryPage({
           <div className="rounded-2xl border border-teal-DEFAULT/40 bg-teal-DEFAULT/10 p-4 text-sm text-foreground">
             <div>{successMessage}</div>
             {isActiveSuccess && (
-              <div className="mt-3 flex flex-wrap gap-3 text-sm">
-                <Link href={publicInventoryHref} className="font-medium text-teal-DEFAULT hover:underline">
-                  查看前台页面
-                </Link>
-                <Link href={backHref} className="font-medium text-teal-DEFAULT hover:underline">
-                  返回{backLabel}
-                </Link>
-              </div>
+              <>
+                {isPublishSuccess && <PublishSuccessReturn href={backHref} />}
+                <div className="mt-3 flex flex-wrap gap-3 text-sm">
+                  <Link href={publicInventoryHref} className="font-medium text-teal-DEFAULT hover:underline">
+                    查看前台页面
+                  </Link>
+                  <Link href={backHref} className="font-medium text-teal-DEFAULT hover:underline">
+                    {isPublishSuccess ? '继续下一条' : `返回${backLabel}`}
+                  </Link>
+                </div>
+              </>
             )}
           </div>
         )}
@@ -512,7 +528,7 @@ export default async function EditInventoryPage({
             <div>
               <label className="text-sm text-muted mb-1 block">品牌</label>
               <input name="brand" list="brand-options-edit" defaultValue={item.brand} required className="w-full rounded-lg border border-border bg-background px-4 py-3" />
-              <p className="mt-1 text-xs text-muted">只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</p>
+              <p className="mt-1 text-xs text-muted">{dataEntryGuidelines.brand}</p>
               {brandNamingRiskHint && (
                 <p className="mt-1 text-xs text-status-warning">{brandNamingRiskHint}</p>
               )}
@@ -587,7 +603,41 @@ export default async function EditInventoryPage({
             <div>
               <label className="text-sm text-muted mb-1 block">目标市场</label>
               <input name="market" list="market-options-edit" defaultValue={item.market} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
-              <p className="mt-1 text-xs text-muted">目标市场与仓库位置至少填写一项。</p>
+              <p className="mt-1 text-xs text-muted">{dataEntryGuidelines.market}</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm text-muted mb-1 block">主推市场</label>
+              <div className="space-y-3 rounded-xl border border-border bg-background px-4 py-4">
+                {featuredMarketPresetGroups.map((group) => (
+                  <div key={group.label} className="space-y-2">
+                    <div className="text-xs font-medium text-muted">{group.label}</div>
+                    <div className="flex flex-wrap gap-2">
+                      {group.options.map((option) => (
+                        <label key={option} className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-foreground hover:border-teal-DEFAULT/40">
+                          <input
+                            type="checkbox"
+                            name="featured_markets"
+                            value={option}
+                            defaultChecked={Boolean(item.featured_markets?.includes(option))}
+                            className="h-3.5 w-3.5 accent-[#22C7A9]"
+                          />
+                          <span>{option}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-1 text-xs text-muted">只选预设区域；国家特例仅保留 USA、UK、UAE。</p>
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm text-muted mb-1 block">市场限制说明</label>
+              <textarea
+                name="market_access_note"
+                defaultValue={item.market_access_note || ''}
+                placeholder="例如 Except UAE / Not for Saudi Arabia"
+                className="w-full rounded-lg border border-border bg-background px-4 py-3 min-h-28"
+              />
             </div>
             <div>
               <label className="text-sm text-muted mb-1 block">仓库位置</label>
@@ -598,6 +648,7 @@ export default async function EditInventoryPage({
             <div className="md:col-span-2">
               <label className="text-sm text-muted mb-1 block">图片链接</label>
               <input name="image_url" defaultValue={item.images?.[0] || ''} className="w-full rounded-lg border border-border bg-background px-4 py-3" />
+              <p className="mt-1 text-xs text-muted">{dataEntryGuidelines.imageFileName}</p>
             </div>
 
             <div className="md:col-span-2">

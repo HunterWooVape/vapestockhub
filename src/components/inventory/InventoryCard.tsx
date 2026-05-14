@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 
+import { getInventoryFeaturedMarkets } from '@/lib/inventory-markets'
 import { buildInventoryImageAlt, getInventoryImageSrc, hasRealInventoryImage } from '@/lib/inventory'
 
 export interface InventoryItem {
@@ -20,6 +21,7 @@ export interface InventoryItem {
   moq: number
   warehouse_location: string
   images: string[] | null
+  featured_markets?: string[] | null
   contact_visibility: 'public' | 'contact_required'
   is_urgent_clearance: boolean | null
   is_featured?: boolean | null
@@ -29,12 +31,13 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
   const isHot = item.is_featured || item.quantity < 5000
   const isInquiryOnly = item.pricing_mode === 'inquiry_only'
   const hasRealImage = hasRealInventoryImage(item.images)
+  const featuredMarkets = getInventoryFeaturedMarkets(item).slice(0, 2)
 
   return (
     <div className="relative rounded-xl border border-border bg-surface flex flex-col overflow-hidden group hover:border-teal-DEFAULT/50 hover:shadow-[0_0_20px_rgba(34,199,169,0.1)] transition-all">
       <Link href={`/inventory/${item.slug}`} className="flex flex-col h-full">
         {/* Image Section */}
-        <div className="relative w-full h-48 bg-black/20 overflow-hidden">
+        <div className="relative aspect-[4/3] w-full bg-black/20 overflow-hidden">
           <Image
             unoptimized
             src={getInventoryImageSrc(item.images)}
@@ -85,6 +88,12 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
           <h3 className="text-lg font-bold line-clamp-2 group-hover:text-teal-DEFAULT transition-colors">
             {item.title}
           </h3>
+
+          {featuredMarkets.length > 0 && (
+            <p className="text-xs text-muted line-clamp-2">
+              Featured for {featuredMarkets.join(', ')}
+            </p>
+          )}
           
           {/* Price and Quantity Section */}
           <div className="flex justify-between items-end mt-auto pt-4 border-t border-border">

@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 
 import { buildInventoryFacets } from '@/lib/inventory'
+import { buildFeaturedMarketFacetsFromInventory, inventoryTargetsFeaturedMarket } from '@/lib/inventory-markets'
 import { siteConfig } from '@/lib/site'
 import { createClient } from '@/lib/supabase/server'
 
@@ -99,16 +100,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const { data: marketInventory } = await supabase
     .from('inventory')
-    .select('market, updated_at')
+    .select('market, featured_markets, updated_at')
     .eq('status', 'active')
 
   if (marketInventory) {
-    const marketFacets = buildInventoryFacets(marketInventory.map((item) => item.market))
+    const marketFacets = buildFeaturedMarketFacetsFromInventory(marketInventory)
     const marketRoutes = marketFacets
       .filter((market) => market.count >= 3)
       .map((market) => {
         const latestUpdate = marketInventory
-          .filter((item) => item.market === market.label)
+          .filter((item) => inventoryTargetsFeaturedMarket(item, market.label))
           .map((item) => item.updated_at)
           .filter(Boolean)
           .sort()

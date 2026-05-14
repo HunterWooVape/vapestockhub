@@ -1,3 +1,6 @@
+import { pickPreferredDisplayValue } from '@/lib/inventory'
+import { getImageFileNameRisk } from '@/lib/entry-standards'
+
 export const placeholderInventoryImage = '/images/inventory-placeholder.svg'
 
 export const productTypeOptions = [
@@ -88,6 +91,7 @@ export const inventoryQualityMessages = {
   'brand-not-standard': 'Brand does not match an existing standard value yet.',
   'brand-contains-generic-terms': 'Brand includes generic product words like "vape" or "disposable". Review whether they are part of the real trademark before publishing.',
   'market-not-standard': 'Market does not match an existing standard value yet.',
+  'image-file-name-risk': 'Recommended: use lowercase English words and hyphens for image filenames. Avoid spaces, %20, Chinese characters, and brackets.',
 } as const
 
 export type InventoryQualityCode = keyof typeof inventoryQualityMessages
@@ -103,6 +107,8 @@ export type InventoryFormValues = {
   quantity: number
   moq: number
   market: string
+  featuredMarkets: string[]
+  marketAccessNote: string
   warehouseLocation: string
   description: string
   imageUrl: string
@@ -170,6 +176,8 @@ export type InventoryAiDraftFieldSet = {
   quantity: string
   moq: string
   market: string
+  featured_markets: string[]
+  market_access_note: string
   warehouse_location: string
   nicotine: string
   puff: string
@@ -228,11 +236,33 @@ export function isPlaceholderInventoryImage(imageUrl: string) {
 
 export function normalizeKnownValue(value: string, knownValues: string[]) {
   const normalizedValue = value.trim()
-  const matchedValue = knownValues.find(
+  const matchedValues = knownValues.filter(
     (knownValue) => knownValue.trim().toLowerCase() === normalizedValue.toLowerCase()
   )
 
-  return matchedValue ?? normalizedValue
+  if (matchedValues.length === 0) {
+    return normalizedValue
+  }
+
+  if (matchedValues.some((knownValue) => knownValue.trim() === normalizedValue)) {
+    return normalizedValue
+  }
+
+  const preferredKnownValue = pickPreferredDisplayValue(matchedValues)
+  const knownValueIsAllLowercase =
+    Boolean(preferredKnownValue) &&
+    preferredKnownValue === preferredKnownValue.toLowerCase() &&
+    preferredKnownValue !== preferredKnownValue.toUpperCase()
+  const inputIsAllLowercase =
+    normalizedValue === normalizedValue.toLowerCase() &&
+    normalizedValue !== normalizedValue.toUpperCase()
+
+  // 中文注释：当旧数据只剩全小写脏值，而操作者明确输入了更规范的大小写时，优先信任当前输入。
+  if (knownValueIsAllLowercase && !inputIsAllLowercase) {
+    return normalizedValue
+  }
+
+  return preferredKnownValue || normalizedValue
 }
 
 function normalizeGenericBrandTerm(term: string) {
@@ -464,6 +494,10 @@ export function getInventoryQualityReport(
     }
   }
 
+  if (values.imageUrl.trim() && getImageFileNameRisk(values.imageUrl)) {
+    warnings.push('image-file-name-risk')
+  }
+
   if (values.description.trim() && values.description.trim().length < 120) {
     warnings.push('description-too-short')
   }
@@ -533,6 +567,8 @@ export function createEmptyInventoryAiDraftPackage(
       quantity: '',
       moq: '1',
       market: '',
+      featured_markets: [],
+      market_access_note: '',
       warehouse_location: '',
       nicotine: '',
       puff: '',
@@ -726,6 +762,8 @@ export function parseInventoryAiDraftPackage(input: string):
       quantity: getStringValue(normalizedFields.quantity),
       moq: getStringValue(normalizedFields.moq) || '1',
       market: getStringValue(normalizedFields.market),
+      featured_markets: getStringArrayValue(normalizedFields.featured_markets),
+      market_access_note: getStringValue(normalizedFields.market_access_note),
       warehouse_location: getStringValue(normalizedFields.warehouse_location),
       nicotine: getStringValue(normalizedFields.nicotine),
       puff: getStringValue(normalizedFields.puff),
@@ -816,6 +854,8 @@ export function convertAiDraftPackageToInventoryDraft(
     quantity: Number(draftPackage.normalizedFields.quantity) || 0,
     moq: Number(draftPackage.normalizedFields.moq) || 1,
     market: draftPackage.normalizedFields.market.trim(),
+    featuredMarkets: draftPackage.normalizedFields.featured_markets,
+    marketAccessNote: draftPackage.normalizedFields.market_access_note.trim(),
     warehouseLocation: normalizeWarehouseLocation(draftPackage.normalizedFields.warehouse_location),
     description: buildInventoryDescriptionFromDraftPackage(draftPackage),
     imageUrl: draftPackage.normalizedFields.images[0] ?? '',

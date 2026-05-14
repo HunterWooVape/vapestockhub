@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import ContactButtons from '@/components/contact/ContactButtons'
+import { getInventoryFeaturedMarkets } from '@/lib/inventory-markets'
 import {
   buildInventoryImageAlt,
   getInventoryImageSrc,
@@ -30,9 +31,11 @@ const getInventoryItem = cache(async (slug: string) => {
 })
 
 function buildInventoryMetadataDescription(item: InventoryRecord) {
+  const featuredMarkets = getInventoryFeaturedMarkets(item)
   const summaryParts = [
     `${item.brand} wholesale stock offer`,
-    item.market ? `available for ${item.market}` : '',
+    item.market ? `availability ${item.market}` : '',
+    featuredMarkets.length > 0 ? `featured for ${featuredMarkets.join(', ')}` : '',
     `${item.quantity.toLocaleString()} pcs in stock`,
     `MOQ ${item.moq.toLocaleString()} pcs`,
     item.warehouse_location ? `warehouse ${item.warehouse_location}` : '',
@@ -94,7 +97,9 @@ export default async function InventoryDetailPage({
   const displayFlavors = flavorList.slice(0, 6)
   const extraFlavorsCount = flavorList.length - 6
   const brandSlug = toSlug(item.brand)
-  const marketSlug = item.market ? toSlug(item.market) : ''
+  const featuredMarkets = getInventoryFeaturedMarkets(item)
+  const primaryMarketLabel = featuredMarkets[0] ?? (item.market && toSlug(item.market) !== 'global' ? item.market : '')
+  const marketSlug = primaryMarketLabel ? toSlug(primaryMarketLabel) : ''
 
   let relatedQuery = supabase
     .from('inventory')
@@ -137,13 +142,15 @@ export default async function InventoryDetailPage({
           )}
         </h1>
         <p className="text-muted mt-4 max-w-3xl">
-          {item.market && item.warehouse_location
-            ? `Active wholesale stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-            : item.market
-              ? `Active wholesale stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-              : item.warehouse_location
-                ? `Active wholesale stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-                : 'Active wholesale stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.'}
+          {item.market && featuredMarkets.length > 0
+            ? `Active wholesale stock offer with ${item.market} availability, prioritized for ${featuredMarkets.join(', ')} buyers${item.warehouse_location ? ` and stocked in ${item.warehouse_location}` : ''}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+            : item.market && item.warehouse_location
+              ? `Active wholesale stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+              : item.market
+                ? `Active wholesale stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+                : item.warehouse_location
+                  ? `Active wholesale stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+                  : 'Active wholesale stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.'}
         </p>
       </div>
 
@@ -256,9 +263,31 @@ export default async function InventoryDetailPage({
                   <div className="text-lg font-semibold">{item.moq.toLocaleString()} pcs</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted mb-1">Target Market / Location</div>
+                  <div className="text-sm text-muted mb-1">Availability</div>
                   <div className="text-lg font-semibold">
-                    {[item.market, item.warehouse_location].filter(Boolean).join(' / ') || 'Available on inquiry'}
+                    {item.market || 'Available on inquiry'}
+                  </div>
+                </div>
+                {featuredMarkets.length > 0 && (
+                  <div>
+                    <div className="text-sm text-muted mb-1">Featured Markets</div>
+                    <div className="text-lg font-semibold">
+                      {featuredMarkets.join(' / ')}
+                    </div>
+                  </div>
+                )}
+                {item.market_access_note && (
+                  <div>
+                    <div className="text-sm text-muted mb-1">Market Access Note</div>
+                    <div className="text-sm font-medium text-foreground whitespace-pre-wrap">
+                      {item.market_access_note}
+                    </div>
+                  </div>
+                )}
+                <div>
+                  <div className="text-sm text-muted mb-1">Warehouse</div>
+                  <div className="text-lg font-semibold">
+                    {item.warehouse_location || 'Available on inquiry'}
                   </div>
                 </div>
 
@@ -292,7 +321,7 @@ export default async function InventoryDetailPage({
                         ? 'Request Availability via Telegram'
                         : 'Contact for Price via Telegram'
                   }
-                  message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Market: ${item.market}). Could you share the wholesale price and availability?`}
+                  message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Availability: ${item.market}${featuredMarkets.length > 0 ? ` | Featured Markets: ${featuredMarkets.join(', ')}` : ''}). Could you share the wholesale price and availability?`}
                 />
 
                 {(isInquiryOnly || !unlocked) && (
@@ -325,7 +354,7 @@ export default async function InventoryDetailPage({
               <h2 className="text-2xl font-bold">Related Inventory</h2>
               <p className="text-muted mt-1">
                 {item.market
-                  ? `Other active stock offers for the ${item.market} market or from ${item.brand}.`
+                  ? `Other active stock offers aligned with ${primaryMarketLabel || item.market} buyers or from ${item.brand}.`
                   : `Other active stock offers from ${item.brand}.`}
               </p>
             </div>

@@ -27,10 +27,13 @@ import {
   formatSupplierSubmissionSourceLabel,
   getSupplierSubmissionMissingRequiredFields,
   normalizeSupplierSubmissionValues,
+  submissionMoqFieldHint,
+  submissionQuantityFieldHint,
   supplierSubmissionSourceOptions,
   type SupplierSubmissionRequiredField,
   type SupplierSubmissionValues,
 } from '@/lib/submissions'
+import { dataEntryGuidelines, featuredMarketPresetGroups } from '@/lib/entry-standards'
 
 export const dynamic = 'force-dynamic'
 
@@ -130,6 +133,7 @@ export default async function SubmitStockPage({
       availableQtyText: String(formData.get('available_qty_text') || '').trim(),
       moqText: String(formData.get('moq_text') || '').trim(),
       targetMarket: String(formData.get('target_market') || '').trim(),
+      featuredMarketsText: formData.getAll('featured_markets').map((item) => String(item).trim()).filter(Boolean).join(', '),
       marketAccessNote: String(formData.get('market_access_note') || '').trim(),
       warehouseLocation: String(formData.get('warehouse_location') || '').trim(),
       puffText: String(formData.get('puff_text') || '').trim(),
@@ -170,6 +174,7 @@ export default async function SubmitStockPage({
       available_qty_text: submissionValues.availableQtyText,
       moq_text: submissionValues.moqText || null,
       target_market: submissionValues.targetMarket,
+      featured_markets_text: submissionValues.featuredMarketsText || null,
       market_access_note: submissionValues.marketAccessNote || null,
       warehouse_location: submissionValues.warehouseLocation,
       puff_text: submissionValues.puffText || null,
@@ -298,24 +303,24 @@ export default async function SubmitStockPage({
                     快速录入
                   </div>
                   <p className="text-sm text-muted">
-                    本页会自动保留本地草稿。检测到旧草稿时会先让你选择恢复、清空或新建空白，再继续录入。
+                    自动保留本地草稿；检测到旧草稿时会先提示你恢复或清空。
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2 text-xs">
-                  <a href="#section-supplier" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    库存来源
-                  </a>
                   <a href="#section-product" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    产品基础
+                    产品识别与规格
                   </a>
                   <a href="#section-trade" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    交易与物流
+                    核心交易
                   </a>
-                  <a href="#section-notes" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    口味与备注
+                  <a href="#section-market" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
+                    市场与履约
                   </a>
                   <a href="#section-media" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
-                    图片与提交
+                    图片与库存说明
+                  </a>
+                  <a href="#section-supplier" className="rounded-full border border-border bg-background px-3 py-1.5 text-muted hover:text-foreground">
+                    来源与回联
                   </a>
                 </div>
               </div>
@@ -339,49 +344,11 @@ export default async function SubmitStockPage({
               </div>
             )}
 
-            <div id="section-supplier" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">01</div>
-                  <h2 className="text-xl font-bold text-foreground">库存来源信息</h2>
-                  <p className="text-sm text-muted">先记录这条库存从哪里来、谁能回联，以及来源线索是否稳定。</p>
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div
-                    id={submitFieldAnchorIds.supplierName}
-                    className={getSubmitFieldWrapperClass(highlightedFields.has('supplierName'))}
-                  >
-                    <SubmissionFieldLabel label="库存来源主体" required />
-                    <SubmissionFieldHint>可填写供应商、同行、中介、下线或内部整理后的稳定主体名。</SubmissionFieldHint>
-                    <input name="supplier_name" required placeholder="例如 Shenzhen ABC Trading" className={submitInputClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="联系人" />
-                    <input name="contact_name" placeholder="例如 Allen" className={submitInputClassName} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <SubmissionFieldLabel label="联系渠道 / WhatsApp / Telegram" />
-                    <input name="contact_channel" placeholder="例如 WhatsApp +971..." className={submitInputClassName} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <SubmissionFieldLabel label="来源类型" />
-                    <SubmissionFieldHint>用于标记这条库存是直供来源，还是转手 / 整理后的资源。</SubmissionFieldHint>
-                    <select name="source_type" defaultValue="supplier_form" className={submitSelectClassName}>
-                      {supplierSubmissionSourceOptions.map((option) => (
-                        <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             <div id="section-product" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">02</div>
-                  <h2 className="text-xl font-bold text-foreground">产品基础信息</h2>
-                  <p className="text-sm text-muted">品牌、型号、类型分开填，后续更好整理。</p>
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">01</div>
+                  <h2 className="text-xl font-bold text-foreground">产品识别与规格</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
@@ -389,7 +356,7 @@ export default async function SubmitStockPage({
                     className={getSubmitFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</SubmissionFieldHint>
+                    <SubmissionFieldHint>{dataEntryGuidelines.brand}</SubmissionFieldHint>
                     <input name="brand" list="brand-options" required placeholder="例如 Vozol" className={submitInputClassName} />
                   </div>
                   <div
@@ -430,8 +397,15 @@ export default async function SubmitStockPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="生产时间" />
-                    <SubmissionFieldHint>支持月份、季度或供应商原文批次时间。</SubmissionFieldHint>
                     <input name="production_date_text" placeholder="例如 2026-03 / 2026 Q1 / Batch 2403" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="口味列表" />
+                    <textarea name="flavor_list" placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className={submitTextareaClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="口味明细" />
+                    <textarea name="flavor_breakdown" placeholder="例如 Blue Razz Ice - 300 pcs" className={submitTextareaClassName} />
                   </div>
                 </div>
               </div>
@@ -440,14 +414,26 @@ export default async function SubmitStockPage({
             <div id="section-trade" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">03</div>
-                  <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
-                  <p className="text-sm text-muted">优先保证报价方式、数量、市场、仓库都可判断。</p>
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">02</div>
+                  <h2 className="text-xl font-bold text-foreground">核心交易</h2>
                 </div>
                 <div className="grid gap-4 md:grid-cols-2">
+                  <div
+                    id={submitFieldAnchorIds.availableQtyText}
+                    className={getSubmitFieldWrapperClass(highlightedFields.has('availableQtyText'))}
+                  >
+                    <SubmissionFieldLabel label="可售数量" required />
+                    <SubmissionFieldHint>{submissionQuantityFieldHint}</SubmissionFieldHint>
+                    <input name="available_qty_text" required placeholder="例如 5000" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="MOQ" />
+                    <SubmissionFieldHint>{submissionMoqFieldHint}</SubmissionFieldHint>
+                    <input name="moq_text" placeholder="例如 500" className={submitInputClassName} />
+                  </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="报价策略" />
-                    <SubmissionFieldHint>若当前不便录精确价格，请改成 Inquiry Only，后续走询盘报价。</SubmissionFieldHint>
+                    <SubmissionFieldHint>不方便录精确价格时，改用 Inquiry Only。</SubmissionFieldHint>
                     <select name="pricing_mode" defaultValue="exact_price" className={submitSelectClassName}>
                       {pricingModeOptions.map((option) => (
                         <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
@@ -456,66 +442,76 @@ export default async function SubmitStockPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="单价（USD）" />
-                    <SubmissionFieldHint>仅在报价策略为 Exact Price 时建议填写精确值。</SubmissionFieldHint>
                     <input name="unit_price_text" placeholder="例如 3.20" className={submitInputClassName} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="报价备注" />
-                    <SubmissionFieldHint>可写“实单再报”“按口味浮动”“大单另议”等说明。</SubmissionFieldHint>
-                    <textarea name="pricing_note" placeholder="例如 Pricing on request for live quantity confirmation" className={submitTextareaClassName} />
-                  </div>
-                  <div
-                    id={submitFieldAnchorIds.availableQtyText}
-                    className={getSubmitFieldWrapperClass(highlightedFields.has('availableQtyText'))}
-                  >
-                    <SubmissionFieldLabel label="可售数量" required />
-                    <input name="available_qty_text" required placeholder="例如 5000" className={submitInputClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="MOQ" />
-                    <input name="moq_text" placeholder="例如 500" className={submitInputClassName} />
-                  </div>
-                  <div
-                    id={submitFieldAnchorIds.targetMarket}
-                    className={getSubmitFieldWrapperClass(highlightedFields.has('targetMarket'))}
-                  >
-                    <SubmissionFieldLabel label="目标市场" required />
-                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项；如已知主市场，可直接填写 `Global`。</SubmissionFieldHint>
-                    <input name="target_market" list="market-options" defaultValue="Global" placeholder="例如 Global / Middle East" className={submitInputClassName} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <SubmissionFieldLabel label="市场限制说明" />
-                    <SubmissionFieldHint>用于记录 `Except UAE`、`Not for Saudi Arabia` 等限制说明。</SubmissionFieldHint>
-                    <textarea name="market_access_note" placeholder="例如 Except UAE / Not for Saudi Arabia" className={submitTextareaClassName} />
-                  </div>
-                  <div
-                    id={submitFieldAnchorIds.warehouseLocation}
-                    className={`md:col-span-2 ${getSubmitFieldWrapperClass(highlightedFields.has('warehouseLocation'))}`}
-                  >
-                    <SubmissionFieldLabel label="仓库位置" required />
-                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项；这里可写城市 / 国家或仓库地。</SubmissionFieldHint>
-                    <input name="warehouse_location" placeholder="例如 Dubai, UAE" className={submitInputClassName} />
+                    <textarea name="pricing_note" placeholder="例如 Pricing on request / Large order negotiable" className={submitTextareaClassName} />
                   </div>
                 </div>
               </div>
             </div>
 
-            <div id="section-notes" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
+            <div id="section-market" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">03</div>
+                  <h2 className="text-xl font-bold text-foreground">市场与履约</h2>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div
+                    id={submitFieldAnchorIds.targetMarket}
+                    className={getSubmitFieldWrapperClass(highlightedFields.has('targetMarket'))}
+                  >
+                    <SubmissionFieldLabel label="目标市场" required />
+                    <SubmissionFieldHint>{dataEntryGuidelines.market}</SubmissionFieldHint>
+                    <input name="target_market" list="market-options" defaultValue="Global" placeholder="例如 Global" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="主推市场" />
+                    <SubmissionFieldHint>只选预设区域；国家特例仅保留 USA、UK、UAE。</SubmissionFieldHint>
+                    <div className="space-y-3 rounded-xl border border-border bg-background px-4 py-4">
+                      {featuredMarketPresetGroups.map((group) => (
+                        <div key={group.label} className="space-y-2">
+                          <div className="text-xs font-medium text-muted">{group.label}</div>
+                          <div className="flex flex-wrap gap-2">
+                            {group.options.map((option) => (
+                              <label key={option} className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-foreground hover:border-teal-DEFAULT/40">
+                                <input type="checkbox" name="featured_markets" value={option} className="h-3.5 w-3.5 accent-[#22C7A9]" />
+                                <span>{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div
+                    id={submitFieldAnchorIds.warehouseLocation}
+                    className={getSubmitFieldWrapperClass(highlightedFields.has('warehouseLocation'))}
+                  >
+                    <SubmissionFieldLabel label="仓库位置" required />
+                    <input name="warehouse_location" placeholder="例如 Dubai, UAE" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="市场限制说明" />
+                    <textarea name="market_access_note" placeholder="例如 Except UAE / Not for Saudi Arabia" className={submitTextareaClassName} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="section-media" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">04</div>
-                  <h2 className="text-xl font-bold text-foreground">口味与备注</h2>
-                  <p className="text-sm text-muted">支持直接粘贴原始备注，不需要先改成销售文案。</p>
+                  <h2 className="text-xl font-bold text-foreground">图片与库存说明</h2>
                 </div>
                 <div className="grid gap-4">
                   <div className="space-y-2">
-                    <SubmissionFieldLabel label="口味列表" />
-                    <SubmissionFieldHint>支持逗号或换行。</SubmissionFieldHint>
-                    <textarea name="flavor_list" placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className={submitTextareaClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="口味明细" />
-                    <textarea name="flavor_breakdown" placeholder="例如 Blue Razz Ice - 300 pcs" className={submitTextareaClassName} />
+                    <SubmissionFieldLabel label="图片链接" />
+                    <SubmissionFieldHint>{`每行一个链接，或直接逗号分隔。${dataEntryGuidelines.imageFileName}`}</SubmissionFieldHint>
+                    <textarea name="image_links" placeholder="每行一个链接，或使用逗号分隔" className={submitTextareaClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="库存备注" />
@@ -533,25 +529,42 @@ export default async function SubmitStockPage({
               </div>
             </div>
 
-            <div id="section-media" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
+            <div id="section-supplier" className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <div className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-DEFAULT">05</div>
-                  <h2 className="text-xl font-bold text-foreground">图片与提交</h2>
-                  <p className="text-sm text-muted">图片不是首轮必填，先把结构化字段录进去。</p>
+                  <h2 className="text-xl font-bold text-foreground">来源与回联</h2>
                 </div>
-                <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="图片链接" />
-                    <SubmissionFieldHint>每行一个链接，或直接逗号分隔。</SubmissionFieldHint>
-                    <textarea name="image_links" placeholder="每行一个链接，或使用逗号分隔" className={submitTextareaClassName} />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div
+                    id={submitFieldAnchorIds.supplierName}
+                    className={getSubmitFieldWrapperClass(highlightedFields.has('supplierName'))}
+                  >
+                    <SubmissionFieldLabel label="库存来源主体" required />
+                    <input name="supplier_name" required placeholder="例如 Shenzhen ABC Trading" className={submitInputClassName} />
                   </div>
-                  <div className="rounded-2xl border border-border/70 bg-background px-4 py-4">
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="联系人" />
+                    <input name="contact_name" placeholder="例如 Allen" className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="联系渠道 / WhatsApp / Telegram" />
+                    <input name="contact_channel" placeholder="例如 WhatsApp +971..." className={submitInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="来源类型" />
+                    <select name="source_type" defaultValue="supplier_form" className={submitSelectClassName}>
+                      {supplierSubmissionSourceOptions.map((option) => (
+                        <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="md:col-span-2 rounded-2xl border border-border/70 bg-background px-4 py-4">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                       <div className="space-y-1">
                         <div className="text-sm font-medium text-foreground">提交前检查</div>
                         <div className="text-sm text-muted">
-                          最低必填项：库存来源主体、品牌、型号 / 产品名、产品类型、可售数量，且目标市场 / 仓库位置至少填写一项。
+                          最低必填项：来源主体、品牌、型号 / 产品名、产品类型、可售数量。
                         </div>
                       </div>
                       <div className="text-xs text-muted">
@@ -561,7 +574,7 @@ export default async function SubmitStockPage({
                   </div>
                   <button
                     disabled={!serviceKeyReady}
-                    className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
+                    className="md:col-span-2 rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     提交并去审核
                   </button>

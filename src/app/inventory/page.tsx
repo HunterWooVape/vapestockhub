@@ -1,6 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import InventoryCard from '@/components/inventory/InventoryCard'
-import { buildInventoryFacets, InventoryRecord, resolveFacetLabelBySlug } from '@/lib/inventory'
+import {
+  buildInventoryFacets,
+  InventoryRecord,
+  resolveFacetLabelBySlug,
+} from '@/lib/inventory'
+import {
+  buildFeaturedMarketFacetsFromInventory,
+  inventoryTargetsFeaturedMarket,
+  resolveFeaturedMarketLabelBySlug,
+} from '@/lib/inventory-markets'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import { siteConfig } from '@/lib/site'
@@ -51,6 +60,67 @@ function buildInventoryHref({
   return query ? `/inventory?${query}` : '/inventory'
 }
 
+function FacetList({
+  title,
+  items,
+  activeSlug,
+  buildHref,
+  emptyLabel,
+}: {
+  title: string
+  items: Array<{ label: string; slug: string; count: number }>
+  activeSlug?: string
+  buildHref: (slug: string) => string
+  emptyLabel: string
+}) {
+  if (items.length === 0) {
+    return (
+      <div>
+        <h3 className="text-sm font-semibold text-muted mb-3">{title}</h3>
+        <p className="text-sm text-muted">{emptyLabel}</p>
+      </div>
+    )
+  }
+
+  const primaryItems = items.slice(0, 8)
+  const secondaryItems = items.slice(8)
+
+  const renderFacetLinks = (facets: Array<{ label: string; slug: string; count: number }>) => (
+    <ul className="space-y-2">
+      {facets.map((facet) => (
+        <li key={facet.slug}>
+          <Link
+            href={buildHref(facet.slug)}
+            className={`text-sm hover:text-teal-DEFAULT ${activeSlug === facet.slug ? 'text-teal-DEFAULT font-bold' : ''}`}
+          >
+            {facet.label} ({facet.count})
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
+
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="text-sm font-semibold text-muted">{title}</h3>
+        <span className="text-[11px] text-muted">{items.length}</span>
+      </div>
+      {renderFacetLinks(primaryItems)}
+      {secondaryItems.length > 0 ? (
+        <details className="mt-3">
+          <summary className="list-none cursor-pointer rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-teal-DEFAULT hover:border-teal-DEFAULT/40 hover:text-teal-hover">
+            View all {title.toLowerCase()} ({items.length})
+          </summary>
+          <div className="mt-3 border-t border-border pt-3">
+            {renderFacetLinks(secondaryItems)}
+          </div>
+        </details>
+      ) : null}
+    </div>
+  )
+}
+
 export async function generateMetadata({
   searchParams,
 }: {
@@ -88,7 +158,7 @@ export default async function InventoryPage({
   const supabase = await createClient()
   const { data: facetOptions } = await supabase
     .from('inventory')
-    .select('brand, market')
+    .select('brand, market, featured_markets')
     .eq('status', 'active')
 
   const brandSlug = getSingleParam(params.brand)
@@ -97,52 +167,55 @@ export default async function InventoryPage({
   const page = getPageNumber(params.page)
 
   const availableBrands = buildInventoryFacets((facetOptions ?? []).map((item) => item.brand))
-  const availableMarkets = buildInventoryFacets((facetOptions ?? []).map((item) => item.market))
+  const availableMarkets = buildFeaturedMarketFacetsFromInventory(facetOptions ?? [])
   const brand = brandSlug
     ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.brand), brandSlug) ?? undefined
     : undefined
   const market = marketSlug
-    ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.market), marketSlug) ?? undefined
+    ? resolveFeaturedMarketLabelBySlug(facetOptions ?? [], marketSlug) ?? undefined
     : undefined
 
   let query = supabase
     .from('inventory')
-    .select('*', { count: 'exact' })
+    .select('*')
     .eq('status', 'active')
 
   if (brand) {
     query = query.eq('brand', brand)
   }
 
-  if (market) {
-    query = query.eq('market', market)
-  }
-
-  if (sort === 'price_asc') {
-    query = query
-      .order('pricing_mode', { ascending: true })
-      .order('price', { ascending: true })
-  } else if (sort === 'price_desc') {
-    query = query
-      .order('pricing_mode', { ascending: true })
-      .order('price', { ascending: false })
-  } else {
-    query = query.order('created_at', { ascending: false })
-  }
-
-  const from = (page - 1) * ITEMS_PER_PAGE
-  const to = from + ITEMS_PER_PAGE - 1
-  query = query.range(from, to)
-
-  const { data: inventory, count, error } = await query
+  const { data: inventory, error } = await query
 
   if (error) {
     console.error('Error fetching inventory:', error)
   }
 
-  const items = (inventory ?? []) as InventoryRecord[]
-  const totalItems = count ?? 0
+  const filteredItems = ((inventory ?? []) as InventoryRecord[])
+    .filter((item) => (market ? inventoryTargetsFeaturedMarket(item, market) : true))
+    .sort((left, right) => {
+      if (sort === 'price_asc') {
+        if (left.pricing_mode !== right.pricing_mode) {
+          return left.pricing_mode.localeCompare(right.pricing_mode)
+        }
+
+        return left.price - right.price
+      }
+
+      if (sort === 'price_desc') {
+        if (left.pricing_mode !== right.pricing_mode) {
+          return left.pricing_mode.localeCompare(right.pricing_mode)
+        }
+
+        return right.price - left.price
+      }
+
+      return right.created_at.localeCompare(left.created_at)
+    })
+
+  const totalItems = filteredItems.length
   const totalPages = totalItems > 0 ? Math.ceil(totalItems / ITEMS_PER_PAGE) : 1
+  const from = (page - 1) * ITEMS_PER_PAGE
+  const items = filteredItems.slice(from, from + ITEMS_PER_PAGE)
   const newestHref = buildInventoryHref({ brand: brandSlug, market: marketSlug })
   const priceAscHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, sort: 'price_asc' })
   const clearFiltersHref = '/inventory'
@@ -174,37 +247,21 @@ export default async function InventoryPage({
           )}
 
           <div className="space-y-6">
-            <div>
-              <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wider">Top Brands</h3>
-              <ul className="space-y-2">
-                {availableBrands.slice(0, 8).map((facet) => (
-                  <li key={facet.slug}>
-                    <Link
-                      href={buildInventoryHref({ brand: facet.slug, market: marketSlug, sort })}
-                      className={`text-sm hover:text-teal-DEFAULT ${brandSlug === facet.slug ? 'text-teal-DEFAULT font-bold' : ''}`}
-                    >
-                      {facet.label} ({facet.count})
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <FacetList
+              title="Brands"
+              items={availableBrands}
+              activeSlug={brandSlug}
+              buildHref={(slug) => buildInventoryHref({ brand: slug, market: marketSlug, sort })}
+              emptyLabel="No brands available yet."
+            />
 
-            <div>
-              <h3 className="text-sm font-semibold text-muted mb-3 uppercase tracking-wider">Top Markets</h3>
-              <ul className="space-y-2">
-                {availableMarkets.slice(0, 8).map((facet) => (
-                  <li key={facet.slug}>
-                    <Link
-                      href={buildInventoryHref({ brand: brandSlug, market: facet.slug, sort })}
-                      className={`text-sm hover:text-teal-DEFAULT ${marketSlug === facet.slug ? 'text-teal-DEFAULT font-bold' : ''}`}
-                    >
-                      {facet.label} ({facet.count})
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <FacetList
+              title="Markets"
+              items={availableMarkets}
+              activeSlug={marketSlug}
+              buildHref={(slug) => buildInventoryHref({ brand: brandSlug, market: slug, sort })}
+              emptyLabel="No markets available yet."
+            />
           </div>
         </div>
       </aside>
@@ -220,7 +277,7 @@ export default async function InventoryPage({
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-border pb-4">
           <div>
             <p className="text-lg font-semibold">{totalItems} Active Listings</p>
-            <p className="text-sm text-muted mt-1">Use filters to narrow inventory by brand or target market before opening product-level inquiries.</p>
+            <p className="text-sm text-muted mt-1">Use filters to narrow inventory by brand or featured market before opening product-level inquiries.</p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">

@@ -23,6 +23,9 @@ import {
   formatSupplierSubmissionSourceLabel,
   getSupplierSubmissionMissingRequiredFields,
   normalizeSupplierSubmissionValues,
+  splitSubmissionMarketTags,
+  submissionMoqFieldHint,
+  submissionQuantityFieldHint,
   supplierSubmissionSourceOptions,
   supplierSubmissionStatusOptions,
   type SupplierSubmissionRequiredField,
@@ -43,6 +46,7 @@ import {
   isBackofficeAuthenticated,
   normalizeBackofficeReturnTo,
 } from '@/lib/unlock'
+import { dataEntryGuidelines, featuredMarketPresetGroups } from '@/lib/entry-standards'
 
 export const dynamic = 'force-dynamic'
 
@@ -251,6 +255,7 @@ export default async function EditSubmissionPage({
     availableQtyText: item.available_qty_text ?? '',
     moqText: item.moq_text ?? '',
     targetMarket: item.target_market ?? '',
+    featuredMarketsText: item.featured_markets_text ?? '',
     marketAccessNote: item.market_access_note ?? '',
     warehouseLocation: item.warehouse_location ?? '',
     puffText: item.puff_text ?? '',
@@ -308,6 +313,7 @@ export default async function EditSubmissionPage({
   const aiSummaryText = aiAssistReady
     ? 'LLM 处理已可用，可直接生成草稿辅助上下文。'
     : 'LLM 处理暂不可用，先补齐最低必填项。'
+  const selectedFeaturedMarkets = new Set(splitSubmissionMarketTags(submissionValues.featuredMarketsText))
   const primaryActionLabel = hasConvertedDraft
     ? '去草稿继续编辑'
     : aiAssistReady
@@ -370,6 +376,7 @@ export default async function EditSubmissionPage({
       availableQtyText: String(formData.get('available_qty_text') || '').trim(),
       moqText: String(formData.get('moq_text') || '').trim(),
       targetMarket: String(formData.get('target_market') || '').trim(),
+      featuredMarketsText: formData.getAll('featured_markets').map((item) => String(item).trim()).filter(Boolean).join(', '),
       marketAccessNote: String(formData.get('market_access_note') || '').trim(),
       warehouseLocation: String(formData.get('warehouse_location') || '').trim(),
       puffText: String(formData.get('puff_text') || '').trim(),
@@ -408,6 +415,7 @@ export default async function EditSubmissionPage({
       available_qty_text: nextValues.availableQtyText,
       moq_text: nextValues.moqText || null,
       target_market: nextValues.targetMarket,
+      featured_markets_text: nextValues.featuredMarketsText || null,
       market_access_note: nextValues.marketAccessNote || null,
       warehouse_location: nextValues.warehouseLocation,
       puff_text: nextValues.puffText || null,
@@ -478,6 +486,7 @@ export default async function EditSubmissionPage({
       availableQtyText: latestSubmission.available_qty_text ?? '',
       moqText: latestSubmission.moq_text ?? '',
       targetMarket: latestSubmission.target_market ?? '',
+      featuredMarketsText: latestSubmission.featured_markets_text ?? '',
       marketAccessNote: latestSubmission.market_access_note ?? '',
       warehouseLocation: latestSubmission.warehouse_location ?? '',
       puffText: latestSubmission.puff_text ?? '',
@@ -538,6 +547,8 @@ export default async function EditSubmissionPage({
         quantity: draftSeed.quantity,
         moq: draftSeed.moq,
         market: draftSeed.market,
+        featured_markets: draftSeed.featuredMarkets,
+        market_access_note: draftSeed.marketAccessNote || null,
         warehouse_location: draftSeed.warehouseLocation,
         description: draftSeed.description || null,
         images: inventoryImages,
@@ -697,7 +708,8 @@ export default async function EditSubmissionPage({
         )}
 
         <section className="grid gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(300px,0.55fr)]">
-          <form action={updateSubmissionAction} className="space-y-5 rounded-3xl border border-border bg-surface p-6 sm:p-8">
+          <form action={updateSubmissionAction} className="contents">
+            <div className="space-y-5 rounded-3xl border border-border bg-surface p-6 sm:p-8">
             {highlightedFields.size > 0 && (
               <div className="rounded-2xl border border-status-warning/40 bg-status-warning/10 p-4 text-sm text-foreground">
                 <div className="font-medium">
@@ -724,55 +736,14 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-foreground">库存来源信息</h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div
-                    id={reviewFieldAnchorIds.supplierName}
-                    className={getReviewFieldWrapperClass(highlightedFields.has('supplierName'))}
-                  >
-                    <SubmissionFieldLabel label="库存来源主体" required />
-                    <SubmissionFieldHint>可填写供应商、同行、中介、下线或内部整理后的稳定主体名。</SubmissionFieldHint>
-                    <input name="supplier_name" defaultValue={submissionValues.supplierName} required placeholder="例如 Shenzhen ABC Trading" className={reviewInputClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="联系人" />
-                    <input name="contact_name" defaultValue={submissionValues.contactName} placeholder="例如 Allen" className={reviewInputClassName} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <SubmissionFieldLabel label="联系渠道 / WhatsApp / Telegram" />
-                    <input name="contact_channel" defaultValue={submissionValues.contactChannel} placeholder="例如 WhatsApp +971..." className={reviewInputClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="来源类型" />
-                    <SubmissionFieldHint>用于标记这条库存是直供来源，还是转手 / 整理后的资源。</SubmissionFieldHint>
-                    <select name="source_type" defaultValue={submissionValues.sourceType} className={reviewSelectClassName}>
-                      {supplierSubmissionSourceOptions.map((option) => (
-                        <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="提报状态" />
-                    <select name="submission_status" defaultValue={submissionValues.submissionStatus} className={reviewSelectClassName}>
-                      {supplierSubmissionStatusOptions.map((option) => (
-                        <option key={option} value={option}>{option}</option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-foreground">产品基础信息</h2>
+                <h2 className="text-xl font-bold text-foreground">01 产品识别与规格</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div
                     id={reviewFieldAnchorIds.brand}
                     className={getReviewFieldWrapperClass(highlightedFields.has('brand'))}
                   >
                     <SubmissionFieldLabel label="品牌" required />
-                    <SubmissionFieldHint>只填品牌，不混型号；若 `vape`、`vapes` 等词本来就是正式品牌名的一部分，请保留原样。</SubmissionFieldHint>
+                    <SubmissionFieldHint>{dataEntryGuidelines.brand}</SubmissionFieldHint>
                     <input name="brand" list="brand-options" defaultValue={submissionValues.brand} required placeholder="例如 Vozol" className={reviewInputClassName} />
                     {brandNamingRiskHint && (
                       <div className="text-xs text-status-warning">
@@ -819,17 +790,25 @@ export default async function EditSubmissionPage({
                     <SubmissionFieldLabel label="生产时间" />
                     <input name="production_date_text" defaultValue={submissionValues.productionDateText} placeholder="例如 2026-03 / 2026 Q1 / Batch 2403" className={reviewInputClassName} />
                   </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="口味列表" />
+                    <textarea name="flavor_list" defaultValue={submissionValues.flavorList} placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className={reviewTextareaClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="口味明细" />
+                    <textarea name="flavor_breakdown" defaultValue={submissionValues.flavorBreakdown} placeholder="例如 Blue Razz Ice - 300 pcs" className={reviewTextareaClassName} />
+                  </div>
                 </div>
               </div>
             </div>
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-foreground">交易与物流</h2>
+                <h2 className="text-xl font-bold text-foreground">02 核心交易</h2>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="报价策略" />
-                    <SubmissionFieldHint>若当前不便录精确价格，可先切成 Inquiry Only。</SubmissionFieldHint>
+                    <SubmissionFieldHint>不方便录精确价格时，改用 Inquiry Only。</SubmissionFieldHint>
                     <select name="pricing_mode" defaultValue={submissionValues.pricingMode} className={reviewSelectClassName}>
                       {pricingModeOptions.map((option) => (
                         <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
@@ -838,44 +817,24 @@ export default async function EditSubmissionPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="单价（USD）" />
-                    <SubmissionFieldHint>报价策略为 Exact Price 时，建议填写精确值。</SubmissionFieldHint>
                     <input name="unit_price_text" defaultValue={submissionValues.unitPriceText} placeholder="例如 3.20" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2 md:col-span-2">
                     <SubmissionFieldLabel label="报价备注" />
-                    <SubmissionFieldHint>可写“实单再报”“按口味浮动”“大单另议”等说明。</SubmissionFieldHint>
-                    <textarea name="pricing_note" defaultValue={submissionValues.pricingNote} placeholder="例如 Pricing on request for live quantity confirmation" className={reviewTextareaClassName} />
+                    <textarea name="pricing_note" defaultValue={submissionValues.pricingNote} placeholder="例如 Pricing on request / Large order negotiable" className={reviewTextareaClassName} />
                   </div>
                   <div
                     id={reviewFieldAnchorIds.availableQtyText}
                     className={getReviewFieldWrapperClass(highlightedFields.has('availableQtyText'))}
                   >
                     <SubmissionFieldLabel label="可售数量" required />
+                    <SubmissionFieldHint>{submissionQuantityFieldHint}</SubmissionFieldHint>
                     <input name="available_qty_text" defaultValue={submissionValues.availableQtyText} required placeholder="例如 5000" className={reviewInputClassName} />
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="MOQ" />
+                    <SubmissionFieldHint>{submissionMoqFieldHint}</SubmissionFieldHint>
                     <input name="moq_text" defaultValue={submissionValues.moqText} placeholder="例如 500" className={reviewInputClassName} />
-                  </div>
-                  <div
-                    id={reviewFieldAnchorIds.targetMarket}
-                    className={getReviewFieldWrapperClass(highlightedFields.has('targetMarket'))}
-                  >
-                    <SubmissionFieldLabel label="目标市场" required />
-                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项。</SubmissionFieldHint>
-                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} placeholder="例如 Global / Middle East" className={reviewInputClassName} />
-                  </div>
-                  <div className="space-y-2 md:col-span-2">
-                    <SubmissionFieldLabel label="市场限制说明" />
-                    <textarea name="market_access_note" defaultValue={submissionValues.marketAccessNote} placeholder="例如 Except UAE / Not for Saudi Arabia" className={reviewTextareaClassName} />
-                  </div>
-                  <div
-                    id={reviewFieldAnchorIds.warehouseLocation}
-                    className={`md:col-span-2 ${getReviewFieldWrapperClass(highlightedFields.has('warehouseLocation'))}`}
-                  >
-                    <SubmissionFieldLabel label="仓库位置" required />
-                    <SubmissionFieldHint>目标市场与仓库位置至少填写一项。</SubmissionFieldHint>
-                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} placeholder="例如 Dubai, UAE" className={reviewInputClassName} />
                   </div>
                 </div>
               </div>
@@ -883,16 +842,60 @@ export default async function EditSubmissionPage({
 
             <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
               <div className="space-y-4">
-                <h2 className="text-xl font-bold text-foreground">口味、备注与图片</h2>
+                <h2 className="text-xl font-bold text-foreground">03 市场与履约</h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div
+                    id={reviewFieldAnchorIds.targetMarket}
+                    className={getReviewFieldWrapperClass(highlightedFields.has('targetMarket'))}
+                  >
+                    <SubmissionFieldLabel label="目标市场" required />
+                    <SubmissionFieldHint>{dataEntryGuidelines.market}</SubmissionFieldHint>
+                    <input name="target_market" list="market-options" defaultValue={submissionValues.targetMarket} placeholder="例如 Global" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="主推市场" />
+                    <SubmissionFieldHint>只选预设区域；国家特例仅保留 USA、UK、UAE。</SubmissionFieldHint>
+                    <div className="space-y-3 rounded-xl border border-border bg-background px-4 py-4">
+                      {featuredMarketPresetGroups.map((group) => (
+                        <div key={group.label} className="space-y-2">
+                          <div className="text-xs font-medium text-muted">{group.label}</div>
+                          <div className="flex flex-wrap gap-2">
+                            {group.options.map((option) => (
+                              <label key={option} className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-foreground hover:border-teal-DEFAULT/40">
+                                <input
+                                  type="checkbox"
+                                  name="featured_markets"
+                                  value={option}
+                                  defaultChecked={selectedFeaturedMarkets.has(option)}
+                                  className="h-3.5 w-3.5 accent-[#22C7A9]"
+                                />
+                                <span>{option}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div
+                    id={reviewFieldAnchorIds.warehouseLocation}
+                    className={getReviewFieldWrapperClass(highlightedFields.has('warehouseLocation'))}
+                  >
+                    <SubmissionFieldLabel label="仓库位置" required />
+                    <input name="warehouse_location" defaultValue={submissionValues.warehouseLocation} placeholder="例如 Dubai, UAE" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <SubmissionFieldLabel label="市场限制说明" />
+                    <textarea name="market_access_note" defaultValue={submissionValues.marketAccessNote} placeholder="例如 Except UAE / Not for Saudi Arabia" className={reviewTextareaClassName} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/70 bg-background/40 p-5 sm:p-6">
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-foreground">04 图片与库存说明</h2>
                 <div className="grid gap-4">
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="口味列表" />
-                    <textarea name="flavor_list" defaultValue={submissionValues.flavorList} placeholder="例如 Blue Razz Ice, Watermelon Ice, Mint" className={reviewTextareaClassName} />
-                  </div>
-                  <div className="space-y-2">
-                    <SubmissionFieldLabel label="口味明细" />
-                    <textarea name="flavor_breakdown" defaultValue={submissionValues.flavorBreakdown} placeholder="例如 Blue Razz Ice - 300 pcs" className={reviewTextareaClassName} />
-                  </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="库存备注" />
                     <textarea name="stock_notes" defaultValue={submissionValues.stockNotes} placeholder="例如 ready stock, sealed carton" className={reviewTextareaClassName} />
@@ -907,6 +910,7 @@ export default async function EditSubmissionPage({
                   </div>
                   <div className="space-y-2">
                     <SubmissionFieldLabel label="图片链接" />
+                    <SubmissionFieldHint>{`每行一个链接，或使用逗号分隔。${dataEntryGuidelines.imageFileName}`}</SubmissionFieldHint>
                     <textarea name="image_links" defaultValue={submissionValues.imageLinks} placeholder="每行一个链接，或使用逗号分隔" className={reviewTextareaClassName} />
                   </div>
                   <div className="space-y-2">
@@ -945,6 +949,79 @@ export default async function EditSubmissionPage({
                 </button>
               )}
             </div>
+            </div>
+
+            <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
+              <div className="rounded-3xl border border-border bg-surface p-6">
+                <h2 className="text-xl font-bold text-foreground">处理提醒</h2>
+                <div className="mt-4 space-y-4 text-sm text-muted">
+                  {item.converted_inventory_id && (
+                    <div className="rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-4 py-3 space-y-2">
+                      <div>已关联草稿：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
+                      <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
+                        去草稿继续编辑 →
+                      </Link>
+                    </div>
+                  )}
+
+                  <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
+                    <div className="font-medium text-foreground">处理重点</div>
+                    {requiredFieldCount === 0 ? (
+                      <div className="text-teal-DEFAULT">最低必填已齐，可继续下一步。</div>
+                    ) : (
+                      <ul className="list-disc space-y-1 pl-5">
+                        {requiredFieldIssues.map((field) => (
+                          <li key={field}>
+                            <a href={`#${reviewFieldAnchorIds[field]}`} className="hover:text-foreground hover:underline">
+                              {formatSupplierSubmissionFieldLabel(field)}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <div className="text-xs text-muted">
+                    最后更新：{new Date(item.updated_at).toLocaleString()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-border bg-surface p-6">
+                <h2 className="text-xl font-bold text-foreground">来源与回联</h2>
+                <div className="mt-4 grid gap-4">
+                  <div
+                    id={reviewFieldAnchorIds.supplierName}
+                    className={getReviewFieldWrapperClass(highlightedFields.has('supplierName'))}
+                  >
+                    <SubmissionFieldLabel label="库存来源主体" required />
+                    <input name="supplier_name" defaultValue={submissionValues.supplierName} required placeholder="例如 Shenzhen ABC Trading" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="联系人" />
+                    <input name="contact_name" defaultValue={submissionValues.contactName} placeholder="例如 Allen" className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="联系渠道 / WhatsApp / Telegram" />
+                    <input name="contact_channel" defaultValue={submissionValues.contactChannel} placeholder="例如 WhatsApp +971..." className={reviewInputClassName} />
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="来源类型" />
+                    <select name="source_type" defaultValue={submissionValues.sourceType} className={reviewSelectClassName}>
+                      {supplierSubmissionSourceOptions.map((option) => (
+                        <option key={option} value={option}>{formatSupplierSubmissionSourceLabel(option)}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <SubmissionFieldLabel label="提报状态" />
+                    <select name="submission_status" defaultValue={submissionValues.submissionStatus} className={reviewSelectClassName}>
+                      {supplierSubmissionStatusOptions.map((option) => (
+                        <option key={option} value={option}>{option}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
 
             <datalist id="brand-options">
               {knownBrands.map((brand) => (
@@ -956,43 +1033,6 @@ export default async function EditSubmissionPage({
                 <option key={market} value={market} />
               ))}
             </datalist>
-          </form>
-
-          <div className="space-y-6 lg:sticky lg:top-6 lg:self-start">
-            <div className="rounded-3xl border border-border bg-surface p-6">
-              <h2 className="text-xl font-bold text-foreground">处理提醒</h2>
-              <div className="mt-4 space-y-4 text-sm text-muted">
-                {item.converted_inventory_id && (
-                  <div className="rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-4 py-3 space-y-2">
-                    <div>已关联草稿：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
-                    <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
-                      去草稿继续编辑 →
-                    </Link>
-                  </div>
-                )}
-
-                <div className="rounded-2xl border border-border/70 bg-background px-4 py-3 space-y-2">
-                  <div className="font-medium text-foreground">处理重点</div>
-                  {requiredFieldCount === 0 ? (
-                    <div className="text-teal-DEFAULT">最低必填已齐，可继续下一步。</div>
-                  ) : (
-                    <ul className="list-disc space-y-1 pl-5">
-                      {requiredFieldIssues.map((field) => (
-                        <li key={field}>
-                          <a href={`#${reviewFieldAnchorIds[field]}`} className="hover:text-foreground hover:underline">
-                            {formatSupplierSubmissionFieldLabel(field)}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <div className="text-xs text-muted">
-                  最后更新：{new Date(item.updated_at).toLocaleString()}
-                </div>
-              </div>
-            </div>
-
             <details className="rounded-3xl border border-border bg-surface p-6">
               <summary className="cursor-pointer list-none text-xl font-bold text-foreground">
                 AI 参考
@@ -1007,6 +1047,7 @@ export default async function EditSubmissionPage({
                   <div>标题：<span className="text-foreground">{draftSeedPreview.title || '待补齐必填项'}</span></div>
                   <div>产品类型：<span className="text-foreground">{draftSeedPreview.productType || '待补齐必填项'}</span></div>
                   <div>目标市场：<span className="text-foreground">{draftSeedPreview.market || '待补齐必填项'}</span></div>
+                  <div>主推市场：<span className="text-foreground">{draftSeedPreview.featuredMarkets.join(' / ') || '暂未设置'}</span></div>
                   <div>库存数量：<span className="text-foreground">{draftSeedPreview.quantity > 0 ? draftSeedPreview.quantity : '待补齐必填项'}</span></div>
                 </div>
 
@@ -1036,7 +1077,8 @@ export default async function EditSubmissionPage({
                 {item.raw_text_snapshot || buildSubmissionRawText(submissionValues)}
               </pre>
             </details>
-          </div>
+            </div>
+          </form>
         </section>
       </div>
     </main>

@@ -9,20 +9,21 @@ type SubmissionFormDraftSyncProps = {
 }
 
 type SupportedFieldElement = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+type DraftFieldValue = string | string[]
 
 type DraftChoice = 'restore' | 'clear' | 'new-blank'
 
 type DraftSyncState = {
   isReady: boolean
   showDraftChoice: boolean
-  storedDraftValues: Record<string, string> | null
+  storedDraftValues: Record<string, DraftFieldValue> | null
   persistImmediately: boolean
 }
 
 type DraftSyncAction =
   | { type: 'reset-and-skip-restore' }
   | { type: 'set-empty-draft' }
-  | { type: 'set-stored-draft'; payload: Record<string, string> }
+  | { type: 'set-stored-draft'; payload: Record<string, DraftFieldValue> }
   | { type: 'restore-draft' }
   | { type: 'clear-draft'; payload: { persistImmediately: boolean } }
 
@@ -84,12 +85,30 @@ function isSupportedField(element: Element): element is SupportedFieldElement {
 }
 
 function collectFormValues(form: HTMLFormElement) {
-  return Array.from(form.elements).reduce<Record<string, string>>((result, field) => {
+  return Array.from(form.elements).reduce<Record<string, DraftFieldValue>>((result, field) => {
     if (!isSupportedField(field) || !field.name) {
       return result
     }
 
     if (field.name === 'access_code') {
+      return result
+    }
+
+    if (field instanceof HTMLInputElement && field.type === 'checkbox') {
+      const nextValues = Array.isArray(result[field.name]) ? [...result[field.name]] : []
+      if (field.checked) {
+        nextValues.push(field.value)
+      }
+      result[field.name] = nextValues
+      return result
+    }
+
+    if (field instanceof HTMLInputElement && field.type === 'radio') {
+      if (field.checked) {
+        result[field.name] = field.value
+      } else if (!(field.name in result)) {
+        result[field.name] = ''
+      }
       return result
     }
 
@@ -99,8 +118,8 @@ function collectFormValues(form: HTMLFormElement) {
 }
 
 function areDraftValuesEqual(
-  currentValues: Record<string, string>,
-  initialValues: Record<string, string>
+  currentValues: Record<string, DraftFieldValue>,
+  initialValues: Record<string, DraftFieldValue>
 ) {
   const fieldNames = new Set([
     ...Object.keys(currentValues),
@@ -108,7 +127,7 @@ function areDraftValuesEqual(
   ])
 
   return Array.from(fieldNames).every(
-    (fieldName) => (currentValues[fieldName] ?? '') === (initialValues[fieldName] ?? '')
+    (fieldName) => JSON.stringify(currentValues[fieldName] ?? '') === JSON.stringify(initialValues[fieldName] ?? '')
   )
 }
 
@@ -119,7 +138,7 @@ export function SubmissionFormDraftSync({
   const searchParams = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [state, dispatch] = useReducer(draftSyncReducer, initialDraftSyncState)
-  const initialFormValuesRef = useRef<Record<string, string> | null>(null)
+  const initialFormValuesRef = useRef<Record<string, DraftFieldValue> | null>(null)
 
   const shouldSkipRestore = useMemo(() => Boolean(searchParams.get('success')), [searchParams])
   const { isReady, showDraftChoice, storedDraftValues, persistImmediately } = state
@@ -161,7 +180,7 @@ export function SubmissionFormDraftSync({
     }
 
     try {
-      const parsedDraft = JSON.parse(storedDraft) as Record<string, string>
+      const parsedDraft = JSON.parse(storedDraft) as Record<string, DraftFieldValue>
       dispatch({ type: 'set-stored-draft', payload: parsedDraft })
     } catch {
       window.sessionStorage.removeItem(storageKey)
@@ -249,11 +268,23 @@ export function SubmissionFormDraftSync({
       }
 
       const nextValue = storedDraftValues[field.name]
-      if (typeof nextValue !== 'string') {
+
+      if (field instanceof HTMLInputElement && field.type === 'checkbox') {
+        const nextValues = Array.isArray(nextValue) ? nextValue : typeof nextValue === 'string' ? [nextValue] : []
+        field.checked = nextValues.includes(field.value)
         return
       }
 
-      field.value = nextValue
+      if (field instanceof HTMLInputElement && field.type === 'radio') {
+        if (typeof nextValue === 'string') {
+          field.checked = field.value === nextValue
+        }
+        return
+      }
+
+      if (typeof nextValue === 'string') {
+        field.value = nextValue
+      }
     })
   }
 

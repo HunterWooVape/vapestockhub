@@ -6,6 +6,7 @@ import {
   normalizeNicotineValue,
   normalizeWarehouseLocation,
 } from '@/lib/admin-inventory'
+import { normalizeFeaturedMarketLabels, normalizeMarketLabel } from '@/lib/entry-standards'
 
 export const supplierSubmissionStatusOptions = [
   'new',
@@ -40,6 +41,7 @@ export type SupplierSubmissionValues = {
   availableQtyText: string
   moqText: string
   targetMarket: string
+  featuredMarketsText: string
   marketAccessNote: string
   warehouseLocation: string
   puffText: string
@@ -132,6 +134,9 @@ export function parseSubmissionInteger(value: string) {
   return Math.round(parsedValue)
 }
 
+export const submissionQuantityFieldHint = '推荐只填数字；如需带单位，可写 500 pcs。不要写 5k、区间或箱规混写。'
+export const submissionMoqFieldHint = '推荐只填数字；如需带单位，可写 500 pcs。不要写 5k、500-1000 或 10 boxes / 2000 pcs。'
+
 // 中文注释：把供应商乱格式的口味输入尽量清洗成稳定标签，便于后续展示与 AI 处理。
 export function splitSubmissionFlavorTags(value: string) {
   const seen = new Set<string>()
@@ -170,6 +175,17 @@ export function getSubmissionImageList(imageLinks: string) {
     .filter(Boolean)
 }
 
+// 中文注释：主推市场先按运营录入习惯支持逗号/换行，入库前统一为稳定标签集合。
+export function splitSubmissionMarketTags(value: string) {
+  return normalizeFeaturedMarketLabels(
+    value
+    .replace(/\r\n/g, '\n')
+    .split(/[\n,;|，；、]+/)
+    .map((item) => item.replace(/^[\s\-*]+/, '').trim())
+    .filter(Boolean)
+  )
+}
+
 export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValues): SupplierSubmissionValues {
   return {
     ...values,
@@ -184,7 +200,8 @@ export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValu
     unitPriceText: values.unitPriceText.trim(),
     availableQtyText: values.availableQtyText.trim(),
     moqText: values.moqText.trim(),
-    targetMarket: values.targetMarket.trim(),
+    targetMarket: normalizeMarketLabel(values.targetMarket),
+    featuredMarketsText: splitSubmissionMarketTags(values.featuredMarketsText).join(', '),
     marketAccessNote: normalizeSubmissionMultilineText(values.marketAccessNote),
     warehouseLocation: normalizeWarehouseLocation(values.warehouseLocation),
     puffText: values.puffText.trim(),
@@ -249,6 +266,7 @@ export function buildSubmissionRawText(values: SupplierSubmissionValues) {
     `Available Qty: ${normalizedValues.availableQtyText}`,
     normalizedValues.moqText ? `MOQ: ${normalizedValues.moqText}` : '',
     `Target Market: ${normalizedValues.targetMarket}`,
+    normalizedValues.featuredMarketsText ? `Featured Markets: ${normalizedValues.featuredMarketsText}` : '',
     normalizedValues.marketAccessNote ? `Market Access Note:\n${normalizedValues.marketAccessNote}` : '',
     `Warehouse Location: ${normalizedValues.warehouseLocation}`,
     normalizedValues.puffText ? `Puff Count: ${normalizedValues.puffText}` : '',
@@ -283,6 +301,8 @@ export function convertSubmissionToDraftSeed(values: SupplierSubmissionValues) {
     quantity: parseSubmissionInteger(normalizedValues.availableQtyText) ?? 0,
     moq: parseSubmissionInteger(normalizedValues.moqText) ?? 1,
     market: normalizedValues.targetMarket,
+    featuredMarkets: splitSubmissionMarketTags(normalizedValues.featuredMarketsText),
+    marketAccessNote: normalizedValues.marketAccessNote,
     warehouseLocation: normalizedValues.warehouseLocation,
     description,
     imageUrl: imageList[0] ?? '',
@@ -313,6 +333,8 @@ export function buildAiDraftPackageSeedFromSubmission(values: SupplierSubmission
   draftPackage.normalizedFields.quantity = normalizedValues.availableQtyText
   draftPackage.normalizedFields.moq = normalizedValues.moqText || '1'
   draftPackage.normalizedFields.market = normalizedValues.targetMarket
+  draftPackage.normalizedFields.featured_markets = splitSubmissionMarketTags(normalizedValues.featuredMarketsText)
+  draftPackage.normalizedFields.market_access_note = normalizedValues.marketAccessNote
   draftPackage.normalizedFields.warehouse_location = normalizedValues.warehouseLocation
   draftPackage.normalizedFields.nicotine = normalizedValues.nicotineText
   draftPackage.normalizedFields.puff = normalizedValues.puffText

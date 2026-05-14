@@ -508,6 +508,7 @@ export default async function AdminPage({
       availableQtyText: item.available_qty_text ?? '',
       moqText: '',
       targetMarket: item.target_market ?? '',
+      featuredMarketsText: '',
       marketAccessNote: '',
       warehouseLocation: item.warehouse_location ?? '',
       puffText: '',

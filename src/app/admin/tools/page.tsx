@@ -15,6 +15,7 @@ import {
   pricingModeOptions,
   productTypeOptions,
 } from '@/lib/admin-inventory'
+import { dataEntryGuidelines, normalizeMarketLabel } from '@/lib/entry-standards'
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
@@ -177,7 +178,7 @@ export default async function AdminToolsPage({
     const pricingNote = String(formData.get('pricing_note') || '').trim()
     const price = Number(formData.get('price') || 0)
     const quantity = Number(formData.get('quantity') || 0)
-    const market = normalizeKnownValue(String(formData.get('market') || '').trim(), knownMarkets)
+    const market = normalizeKnownValue(normalizeMarketLabel(String(formData.get('market') || '')), knownMarkets)
     const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
 
     if (!title || !brand || !productType || quantity <= 0 || (!market && !warehouseLocation)) {
@@ -271,6 +272,8 @@ export default async function AdminToolsPage({
       quantity: draftValues.quantity ?? 0,
       moq: draftValues.moq ?? 1,
       market,
+      featured_markets: draftValues.featuredMarkets ?? [],
+      market_access_note: draftValues.marketAccessNote?.trim() || null,
       warehouse_location: normalizeWarehouseLocation(draftValues.warehouseLocation || ''),
       description: draftValues.description?.trim() || null,
       images: imageUrl ? [imageUrl] : [],
@@ -361,6 +364,11 @@ export default async function AdminToolsPage({
             <input name="quantity" type="number" placeholder="库存数量" required className="rounded-lg border border-border bg-background px-4 py-3" />
             <input name="market" list="market-options" placeholder="目标市场" required className="rounded-lg border border-border bg-background px-4 py-3" />
             <input name="warehouse_location" placeholder="仓库位置" required className="rounded-lg border border-border bg-background px-4 py-3" />
+            <div className="rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted">
+              <p>{dataEntryGuidelines.brand}</p>
+              <p className="mt-1">{dataEntryGuidelines.market}</p>
+              <p className="mt-1">{dataEntryGuidelines.imageFileName}</p>
+            </div>
             <button className="rounded-lg bg-teal-DEFAULT px-4 py-3 font-semibold text-background">创建草稿</button>
 
             <datalist id="brand-options">
