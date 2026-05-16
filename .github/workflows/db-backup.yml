@@ -28,8 +28,6 @@ jobs:
 
     - name: Run pg_dump
       env:
-        # 你需要在 GitHub 仓库设置中添加这个 Secret (Settings -> Secrets and variables -> Actions)
-        # 格式: postgresql://[user]:[password]@[host]:[port]/[db_name]
         SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
       run: |
         if [ -z "$SUPABASE_DB_URL" ]; then
@@ -37,7 +35,7 @@ jobs:
           exit 1
         fi
         
-        # 验证 URL 格式（简单检查是否包含密码占位符）
+        # 验证 URL 格式
         if [[ "$SUPABASE_DB_URL" == *"[YOUR-PASSWORD]"* ]]; then
           echo "Error: SUPABASE_DB_URL contains '[YOUR-PASSWORD]' placeholder. Please replace it with your actual password."
           exit 1
@@ -46,9 +44,9 @@ jobs:
         TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
         BACKUP_FILE="vapestockhub_backup_${TIMESTAMP}.sql"
         
-        echo "Starting backup..."
-        # 增加超时控制和更详细的错误输出
-        if ! pg_dump "$SUPABASE_DB_URL" --clean --if-exists --quote-all-identifiers > "$BACKUP_FILE"; then
+        echo "Starting backup using pg_dump from PostgreSQL 17..."
+        # 明确指定使用新安装的 pg_dump 17 的绝对路径
+        if ! /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" --clean --if-exists --quote-all-identifiers > "$BACKUP_FILE"; then
           echo "Error: pg_dump failed. Check if SUPABASE_DB_URL is correct and network is accessible."
           exit 1
         fi
