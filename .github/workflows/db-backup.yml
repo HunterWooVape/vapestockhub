@@ -1,0 +1,50 @@
+name: Database Backup
+
+on:
+  schedule:
+    # 每天凌晨 2 点 (UTC) 执行备份
+    - cron: '0 2 * * *'
+  workflow_dispatch: # 允许在 GitHub 界面手动触发
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install PostgreSQL Client
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y postgresql-client
+
+    - name: Run pg_dump
+      env:
+        # 你需要在 GitHub 仓库设置中添加这个 Secret (Settings -> Secrets and variables -> Actions)
+        # 格式: postgresql://[user]:[password]@[host]:[port]/[db_name]
+        SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      run: |
+        if [ -z "$SUPABASE_DB_URL" ]; then
+          echo "Error: SUPABASE_DB_URL is not set. Please add it to GitHub Secrets."
+          exit 1
+        fi
+        
+        TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
+        BACKUP_FILE="vapestockhub_backup_${TIMESTAMP}.sql"
+        
+        echo "Starting backup..."
+        pg_dump "$SUPABASE_DB_URL" --clean --if-exists --quote-all-identifiers > "$BACKUP_FILE"
+        
+        echo "Backup completed. File size:"
+        ls -lh "$BACKUP_FILE"
+        
+        # 将备份文件设为环境变量供下一步使用
+        echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
+
+    - name: Upload Backup as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: db-backup-${{ env.BACKUP_FILE }}
+        path: ${{ env.BACKUP_FILE }}
+        retention-days: 30 # 免费版 GitHub Actions 最长保留 90 天，这里设置 30 天

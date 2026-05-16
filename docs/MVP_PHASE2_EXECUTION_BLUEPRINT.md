@@ -355,7 +355,7 @@
 ### 10.2G 轻量在线提报入口 V1 已落地项
 - `supplier_submissions` 独立表 migration
 - `/submit-stock` 私用提报入口页
-- 简单访问码校验
+- 后台身份校验 (Admin/Staff 登录态)
 - admin 首页 Recent Submissions 区块
 - `/admin/submissions/[id]` review 页面
 - submission → inventory draft 手动转换动作

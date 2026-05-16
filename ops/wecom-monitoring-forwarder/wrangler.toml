@@ -1,0 +1,8 @@
+name = "vsh-monitoring-forwarder"
+main = "worker.js"
+compatibility_date = "2026-05-15"
+
+[vars]
+# 中文注释：这里不要直接写敏感值，实际部署时建议用 wrangler secret 设置。
+# MONITORING_FORWARDER_TOKEN = ""
+# WECOM_WEBHOOK_URL = ""

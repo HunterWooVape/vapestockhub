@@ -940,13 +940,13 @@
 - 在不引入完整账号体系的前提下，可接受的第一轮方式包括：
   - 不挂主导航
   - 使用专属链接
-  - 或使用简单访问码
+  - 采用 Admin/Staff 后台身份校验
 - 具体实现以后续落地时选择最轻量方案为准，但目标必须是减少垃圾提交与爬虫污染。
 
 ### 2.85 已确认的轻量在线提报入口 V1 第一轮实际落地方式
 - 第一轮实际落地采用：
   - 独立路由 `/submit-stock`
-  - 简单访问码校验
+  - 后台身份校验 (Admin/Staff 登录态)
   - `supplier_submissions` 独立表落库
   - admin 首页展示 Recent Submissions
   - admin 提供单条 submission review 页
@@ -965,7 +965,7 @@
 
 ### 2.87 已确认的当前安全与运维提醒
 - 轻量在线提报入口虽然已数字化，但数据库迁移必须先执行后才能使用。
-- 访问码环境变量也必须先配置，否则入口只会展示但无法提交。
+- 后台凭证 (ADMIN_USERNAME 等) 环境变量必须配置，否则无法提交。
 - 因此第一轮上线前至少需要：
   - 执行 `supplier_submissions` 相关 migration
   - 配置 `SUPPLIER_SUBMISSION_ACCESS_CODE`

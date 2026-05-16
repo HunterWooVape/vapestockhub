@@ -34,10 +34,13 @@ SUPABASE_SERVICE_ROLE_KEY=
 BACKOFFICE_SESSION_SECRET=
 MONITORING_ENVIRONMENT=
 MONITORING_WEBHOOK_URL=
+MONITORING_WEBHOOK_TOKEN=
 ADMIN_USERNAME=
 ADMIN_PASSWORD=
 STAFF_USERNAME=
 STAFF_PASSWORD=
+NEXT_PUBLIC_GA_MEASUREMENT_ID=
+GOOGLE_SITE_VERIFICATION=
 ```
 
 说明：
@@ -45,7 +48,10 @@ STAFF_PASSWORD=
 - `SUPABASE_SERVICE_ROLE_KEY` 仅服务端使用，缺失时后台写入功能不可用。
 - `BACKOFFICE_SESSION_SECRET` 用于后台登录会话签名，生产环境必须配置强随机值。
 - `MONITORING_WEBHOOK_URL` 为可选项，可接 Telegram Bot webhook、Slack webhook 或内部告警入口。
+- `MONITORING_WEBHOOK_TOKEN` 为可选项；若 webhook 前面接了鉴权转发层，建议必须配置。
 - `ADMIN_USERNAME / ADMIN_PASSWORD / STAFF_USERNAME / STAFF_PASSWORD` 为当前 MVP 后台入口凭证。
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` 为 Google Analytics 4 测量 ID。
+- `GOOGLE_SITE_VERIFICATION` 为 Google Search Console 验证码。
 
 ## 发布前检查
 
@@ -54,6 +60,7 @@ STAFF_PASSWORD=
 ```bash
 npm run lint
 npm run build
+npm run smoke-test
 ```
 
 如果使用正式 npm 源，还应补执行：

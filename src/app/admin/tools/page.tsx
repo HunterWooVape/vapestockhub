@@ -25,12 +25,18 @@ import {
   isAdminRole,
   isBackofficeAuthenticated,
 } from '@/lib/unlock'
+import {
+  isMonitoringWebhookConfigured,
+  triggerMonitoringWebhookTest,
+} from '@/lib/monitoring'
 
 export const dynamic = 'force-dynamic'
 
 const successMessages: Record<string, string> = {
   'inventory-created-draft': '已创建新的库存草稿。',
   'ai-draft-imported': 'AI 草稿包已导入为新草稿。',
+  'monitoring-webhook-test-sent': '测试告警已发送，请立即检查 webhook 接收端。',
+  'monitoring-webhook-test-cooldown': '测试告警刚发送过，请等待冷却后重试。',
 }
 
 const errorMessages: Record<string, string> = {
@@ -38,6 +44,8 @@ const errorMessages: Record<string, string> = {
   'missing-service-role-key': '缺少 `SUPABASE_SERVICE_ROLE_KEY`，当前无法执行写入操作。',
   'missing-required-fields': '请先补齐最低必填项。',
   'insufficient-role': '当前角色无权使用该入口。',
+  'monitoring-webhook-disabled': '当前环境未配置 `MONITORING_WEBHOOK_URL`。',
+  'monitoring-webhook-send-failed': '测试告警发送失败，请检查 webhook 地址或接收端是否可用。',
 }
 
 function getSingleParam(value?: string | string[]) {
@@ -143,6 +151,7 @@ export default async function AdminToolsPage({
   const successMessage = success ? successMessages[success] : null
   const errorMessage = error ? errorMessages[error] : null
   const serviceKeyReady = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  const monitoringWebhookReady = isMonitoringWebhookConfigured()
 
   async function createInventoryAction(formData: FormData) {
     'use server'
@@ -296,6 +305,38 @@ export default async function AdminToolsPage({
     redirect('/admin/tools?success=ai-draft-imported')
   }
 
+  async function sendMonitoringWebhookTestAction() {
+    'use server'
+
+    const actionCookies = await cookies()
+    const actionSessionValue = actionCookies.get(adminSessionCookieName)?.value
+
+    if (!isBackofficeAuthenticated(actionSessionValue)) {
+      redirect(buildBackofficeLoginRedirect('/admin/tools'))
+    }
+
+    if (!isAdminRole(actionSessionValue)) {
+      redirect('/admin?error=insufficient-role')
+    }
+
+    // 中文注释：测试告警只允许 Admin 主动触发，避免普通操作误发到生产告警通道。
+    const result = await triggerMonitoringWebhookTest('admin-tools')
+
+    if (result === 'disabled') {
+      redirect('/admin/tools?error=monitoring-webhook-disabled')
+    }
+
+    if (result === 'cooldown') {
+      redirect('/admin/tools?success=monitoring-webhook-test-cooldown')
+    }
+
+    if (result === 'failed') {
+      redirect('/admin/tools?error=monitoring-webhook-send-failed')
+    }
+
+    redirect('/admin/tools?success=monitoring-webhook-test-sent')
+  }
+
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -338,6 +379,39 @@ export default async function AdminToolsPage({
           当前环境缺少 `SUPABASE_SERVICE_ROLE_KEY`，后台写入类操作暂时不可用。
         </div>
       )}
+
+      <section className="rounded-2xl border border-border bg-surface p-6 space-y-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-1">
+            <h2 className="text-xl font-bold">监控告警测试</h2>
+            <p className="text-sm text-muted">
+              接通 `MONITORING_WEBHOOK_URL` 后，可在这里主动发送一条测试告警，避免靠制造真实错误验证。
+            </p>
+          </div>
+          <div className={`rounded-xl border px-4 py-3 text-sm ${
+            monitoringWebhookReady
+              ? 'border-teal-DEFAULT/30 bg-teal-DEFAULT/10 text-foreground'
+              : 'border-status-warning/40 bg-status-warning/10 text-foreground'
+          }`}>
+            {monitoringWebhookReady ? '当前环境已检测到 webhook 配置。' : '当前环境尚未配置 webhook。'}
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-background/60 p-4 text-sm text-muted space-y-2">
+          <p>发送内容：`backoffice.monitoring.webhook_test`</p>
+          <p>冷却规则：同一测试事件 `5` 分钟内不重复发送</p>
+          <p>推荐顺序：先部署配置，再点击发送，最后去 webhook 接收端确认消息。</p>
+        </div>
+
+        <form action={sendMonitoringWebhookTestAction}>
+          <button
+            className="rounded-lg bg-teal-DEFAULT px-4 py-3 font-semibold text-background disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={!monitoringWebhookReady}
+          >
+            发送测试 webhook
+          </button>
+        </form>
+      </section>
 
       <section className="grid grid-cols-1 gap-6 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="rounded-2xl border border-border bg-surface p-6 space-y-5">
