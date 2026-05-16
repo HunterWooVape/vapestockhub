@@ -6,6 +6,10 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch: # 允许在 GitHub 界面手动触发
 
+env:
+  # 解决 Node.js 20 弃用警告，提前适配 Node.js 24
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   backup:
     runs-on: ubuntu-latest
@@ -30,14 +34,30 @@ jobs:
           exit 1
         fi
         
+        # 验证 URL 格式（简单检查是否包含密码占位符）
+        if [[ "$SUPABASE_DB_URL" == *"[YOUR-PASSWORD]"* ]]; then
+          echo "Error: SUPABASE_DB_URL contains '[YOUR-PASSWORD]' placeholder. Please replace it with your actual password."
+          exit 1
+        fi
+        
         TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')
         BACKUP_FILE="vapestockhub_backup_${TIMESTAMP}.sql"
         
         echo "Starting backup..."
-        pg_dump "$SUPABASE_DB_URL" --clean --if-exists --quote-all-identifiers > "$BACKUP_FILE"
+        # 增加超时控制和更详细的错误输出
+        if ! pg_dump "$SUPABASE_DB_URL" --clean --if-exists --quote-all-identifiers > "$BACKUP_FILE"; then
+          echo "Error: pg_dump failed. Check if SUPABASE_DB_URL is correct and network is accessible."
+          exit 1
+        fi
         
         echo "Backup completed. File size:"
         ls -lh "$BACKUP_FILE"
+        
+        # 确保文件非空
+        if [ ! -s "$BACKUP_FILE" ]; then
+          echo "Error: Backup file is empty."
+          exit 1
+        fi
         
         # 将备份文件设为环境变量供下一步使用
         echo "BACKUP_FILE=$BACKUP_FILE" >> $GITHUB_ENV
@@ -47,4 +67,4 @@ jobs:
       with:
         name: db-backup-${{ env.BACKUP_FILE }}
         path: ${{ env.BACKUP_FILE }}
-        retention-days: 30 # 免费版 GitHub Actions 最长保留 90 天，这里设置 30 天
+        retention-days: 30
