@@ -339,6 +339,11 @@ export default async function EditSubmissionPage({
   const queueLabel = returnTo?.startsWith('/submit-stock') ? '内部录入' : '提报队列'
   const currentDetailHref = buildSubmissionDetailHref(resolvedParams.id, {}, returnTo)
 
+  // 中文注释：为了解决“从 submit-stock 进来，发布成功后却回到了提报审核页”的问题。
+  // 如果来源明确是 submit-stock，转草稿时直接将 returnTo 透传给编辑页，
+  // 这样发布成功后就会直接回到 submit-stock，而不是退回到当前的提报审核页。
+  const nextReturnToForDraft = returnTo?.startsWith('/submit-stock') ? returnTo : currentDetailHref
+
   async function updateSubmissionAction(formData: FormData) {
     'use server'
 
@@ -525,7 +530,7 @@ export default async function EditSubmissionPage({
       redirect(
         appendReturnTo(
           `/admin/edit/${latestSubmission.converted_inventory_id}?success=draft-created-from-submission`,
-          currentDetailHref
+          nextReturnToForDraft
         )
       )
     }
@@ -580,7 +585,7 @@ export default async function EditSubmissionPage({
     redirect(
       appendReturnTo(
         `/admin/edit/${createdInventory.id}?success=draft-created-from-submission`,
-        currentDetailHref
+        nextReturnToForDraft
       )
     )
   }
@@ -673,7 +678,7 @@ export default async function EditSubmissionPage({
                         </Link>
                         {match.converted_inventory_id && (
                           <Link
-                            href={appendReturnTo(`/admin/edit/${match.converted_inventory_id}`, currentDetailHref)}
+                            href={appendReturnTo(`/admin/edit/${match.converted_inventory_id}`, nextReturnToForDraft)}
                             className="font-medium text-teal-DEFAULT hover:underline"
                           >
                             打开草稿 →
@@ -924,7 +929,7 @@ export default async function EditSubmissionPage({
             <div className="flex flex-col gap-3 sm:flex-row">
               {hasConvertedDraft ? (
                 <Link
-                  href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)}
+                  href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, nextReturnToForDraft)}
                   className="inline-flex items-center justify-center rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background"
                 >
                   去草稿继续编辑
@@ -958,7 +963,7 @@ export default async function EditSubmissionPage({
                   {item.converted_inventory_id && (
                     <div className="rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/10 px-4 py-3 space-y-2">
                       <div>已关联草稿：<span className="font-medium text-foreground">{item.converted_inventory_id}</span></div>
-                      <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, currentDetailHref)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
+                      <Link href={appendReturnTo(`/admin/edit/${item.converted_inventory_id}`, nextReturnToForDraft)} className="inline-flex text-sm font-medium text-teal-DEFAULT hover:underline">
                         去草稿继续编辑 →
                       </Link>
                     </div>
