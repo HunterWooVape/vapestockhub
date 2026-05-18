@@ -1,7 +1,7 @@
 export const siteConfig = {
   name: 'VapeStockHub',
   url: process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000',
-  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@vapestockhub.com',
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@vapestockhub.com',
   telegramUsername: process.env.NEXT_PUBLIC_TELEGRAM_USERNAME || 'VapeStockHub',
   whatsappNumber: (process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '8615899880706').replace(/\D/g, ''),
 }
