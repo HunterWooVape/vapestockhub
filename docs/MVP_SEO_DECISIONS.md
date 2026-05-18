@@ -462,7 +462,10 @@
   - 复杂交互与动画层
 
 ### 9.4 SEO 规则配套项
-- 统一薄页 noindex 阈值口径
+- 统一薄页 noindex 阈值口径：
+  - `Brand` 聚合页：`>= 3` 条 active listings 才允许索引
+  - `Market` 聚合页：`>= 3` 条 active listings 才允许索引
+  - `Price` 聚合页：`>= 4` 条 exact-price active listings 才允许索引
 - 明确 query 参数页的 SEO 降级策略
 - 继续使用 canonical 指向 clean routes
 - 保证 Brand / Market / Price 聚合页只承接各自专属语义

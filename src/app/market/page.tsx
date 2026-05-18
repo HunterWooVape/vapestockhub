@@ -4,8 +4,8 @@ import { buildFeaturedMarketFacetsFromInventory } from '@/lib/inventory-markets'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata = {
-  title: 'Vape Inventory by Market | VapeStockHub',
-  description: 'Find active wholesale vape inventory by target market and region, then move directly into market-specific stock discovery.',
+  title: 'Wholesale Vape Inventory by Target Market | VapeStockHub',
+  description: 'Browse wholesale vape inventory by target market and region to find active stock aligned with buyer destination, sourcing route, and inquiry priorities.',
 }
 
 export default async function MarketIndexPage() {
@@ -21,10 +21,10 @@ export default async function MarketIndexPage() {
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Find Inventory by <span className="text-teal-DEFAULT">Target Market</span>
+          Browse Wholesale Inventory by <span className="text-teal-DEFAULT">Target Market</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Select a region to explore active wholesale stock aligned with your destination market, warehouse path, and current sourcing priorities.
+          Select a region to explore active wholesale stock aligned with your destination market, sourcing route, and current inquiry priorities.
         </p>
       </div>
 
@@ -45,7 +45,7 @@ export default async function MarketIndexPage() {
                 </span>
               </div>
               <p className="text-muted">
-                Explore active wholesale inventory curated for {market.label} buyers, including globally available stock prioritized for this market.
+                Review active wholesale stock curated for {market.label} buyers, including globally available inventory prioritized for this target market.
               </p>
             </Link>
           ))}
@@ -54,7 +54,7 @@ export default async function MarketIndexPage() {
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <h2 className="text-2xl font-bold text-foreground">Markets are being prepared</h2>
           <p className="mx-auto mt-3 max-w-2xl text-muted">
-            We are organizing market-focused inventory coverage. Check back after featured markets are assigned to active listings.
+            We are organizing market-focused inventory coverage. Check back after target-market tags are assigned to active listings.
           </p>
         </div>
       )}

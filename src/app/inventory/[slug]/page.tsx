@@ -56,6 +56,18 @@ function buildInventoryMetadataDescription(item: InventoryRecord) {
   return `${summaryParts.join(', ')}.`
 }
 
+// 中文注释：统一详情页标题口径，让页面更像可询盘的库存要约页。
+function buildInventoryMetadataTitle(item: InventoryRecord) {
+  const titleParts = [`${item.title} Wholesale Inventory Offer`]
+
+  if (item.market) {
+    titleParts.push(item.market)
+  }
+
+  titleParts.push('VapeStockHub')
+  return titleParts.join(' | ')
+}
+
 // Dynamically generate SEO metadata based on the inventory item
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
@@ -66,7 +78,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   return {
-    title: `${item.title} Wholesale Stock | ${item.market} | VapeStockHub`,
+    title: buildInventoryMetadataTitle(item),
     description: buildInventoryMetadataDescription(item),
     alternates: {
       canonical: `${siteConfig.url}/inventory/${resolvedParams.slug}`,
@@ -100,6 +112,24 @@ export default async function InventoryDetailPage({
   const featuredMarkets = getInventoryFeaturedMarkets(item)
   const primaryMarketLabel = featuredMarkets[0] ?? (item.market && toSlug(item.market) !== 'global' ? item.market : '')
   const marketSlug = primaryMarketLabel ? toSlug(primaryMarketLabel) : ''
+  const inventoryFaqs = [
+    {
+      question: `Can I buy ${item.brand} stock in bulk from this listing?`,
+      answer: 'Yes, if the listing is still active. Review quantity, MOQ, market fit, and price visibility, then use the inquiry button to confirm current availability.',
+    },
+    {
+      question: 'What details should I confirm before sending an inquiry?',
+      answer: 'Focus on available quantity, MOQ, warehouse location, target market, flavor coverage, and whether pricing is public or inquiry-only.',
+    },
+    {
+      question: 'How is pricing handled for this inventory offer?',
+      answer: isInquiryOnly
+        ? 'This listing uses inquiry-only pricing. Send a message with the listing context to request a live quote and confirm stock terms.'
+        : unlocked
+          ? 'The page shows the current visible wholesale price. You should still confirm live availability and final terms during direct contact.'
+          : 'Pricing is unlocked during direct contact so current stock and trading terms can be confirmed together.',
+    },
+  ]
 
   let relatedQuery = supabase
     .from('inventory')
@@ -127,6 +157,10 @@ export default async function InventoryDetailPage({
           <span>/</span>
           <Link href={`/brand/${brandSlug}`} className="hover:text-teal-DEFAULT transition-colors font-medium">{item.brand}</Link>
         </div>
+
+        <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-DEFAULT/80">
+          Inventory Offer
+        </p>
 
         <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center flex-wrap gap-4">
           {item.title}
@@ -174,7 +208,7 @@ export default async function InventoryDetailPage({
           </div>
 
           <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
-            <h2 className="text-xl font-bold mb-6">Inventory Specifications</h2>
+            <h2 className="text-xl font-bold mb-6">Stock Offer Specifications</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-6 mb-8">
               <div>
                 <div className="text-sm text-muted mb-1">Brand</div>
@@ -233,7 +267,7 @@ export default async function InventoryDetailPage({
 
           {item.description && (
             <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
-              <h2 className="text-xl font-bold mb-4">Inventory Manifest & Details</h2>
+              <h2 className="text-xl font-bold mb-4">Stock Manifest & Offer Details</h2>
               <div className="prose prose-invert max-w-none">
                 <p className="whitespace-pre-wrap text-muted leading-relaxed">
                   {item.description}
@@ -249,13 +283,13 @@ export default async function InventoryDetailPage({
               {isHot && (
                 <div className="mb-6 flex items-center gap-3 text-sm font-medium text-orange-500 bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
                   <span>Hot</span>
-                  <span>Fast-moving stock. Send your inquiry early to confirm remaining availability.</span>
+                  <span>Fast-moving inventory offer. Send your inquiry early to confirm remaining availability.</span>
                 </div>
               )}
 
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted mb-1">Available Quantity</div>
+                  <div className="text-sm text-muted mb-1">Available Stock</div>
                   <div className="text-2xl font-bold">{item.quantity.toLocaleString()} pcs</div>
                 </div>
                 <div>
@@ -263,7 +297,7 @@ export default async function InventoryDetailPage({
                   <div className="text-lg font-semibold">{item.moq.toLocaleString()} pcs</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted mb-1">Availability</div>
+                  <div className="text-sm text-muted mb-1">Target Market</div>
                   <div className="text-lg font-semibold">
                     {item.market || 'Available on inquiry'}
                   </div>
@@ -347,11 +381,28 @@ export default async function InventoryDetailPage({
         </div>
       </div>
 
+      <section className="mt-16 border-t border-border pt-12">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold">Inventory Offer FAQ</h2>
+          <p className="text-muted mt-2 max-w-3xl">
+            Key questions buyers review before requesting live price and availability for this stock offer.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {inventoryFaqs.map((faq) => (
+            <div key={faq.question} className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
+              <p className="text-sm text-muted">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {relatedItems.length > 0 && (
         <div className="mt-16 pt-16 border-t border-border">
           <div className="flex justify-between items-end mb-8">
             <div>
-              <h2 className="text-2xl font-bold">Related Inventory</h2>
+              <h2 className="text-2xl font-bold">Related Stock Offers</h2>
               <p className="text-muted mt-1">
                 {item.market
                   ? `Other active stock offers aligned with ${primaryMarketLabel || item.market} buyers or from ${item.brand}.`

@@ -4,12 +4,12 @@ import { buildInventoryFacets } from '@/lib/inventory'
 import { createClient } from '@/lib/supabase/server'
 
 export const metadata = {
-  title: 'Vape Inventory by Brand | VapeStockHub',
-  description: 'Find active wholesale vape inventory by brand and move directly into brand-specific stock discovery.',
+  title: 'Wholesale Vape Inventory by Brand | VapeStockHub',
+  description: 'Browse active wholesale vape inventory by brand and move directly into brand-specific stock discovery for bulk sourcing and inquiry.',
 }
 
 function getBrandDescription(brandName: string, count: number) {
-  return `${count} active wholesale listing${count > 1 ? 's' : ''} currently available for ${brandName}.`
+  return `${count} active wholesale listing${count > 1 ? 's' : ''} currently available for ${brandName} buyers and bulk inquiry.`
 }
 
 export default async function BrandIndexPage() {
@@ -25,10 +25,10 @@ export default async function BrandIndexPage() {
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Find Inventory by <span className="text-teal-DEFAULT">Brand</span>
+          Browse Wholesale Inventory by <span className="text-teal-DEFAULT">Brand</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Explore active wholesale stock by brand and move quickly from brand preference into current inventory discovery.
+          Explore active wholesale stock by brand and move quickly from brand preference into current inventory discovery and direct inquiry.
         </p>
       </div>
 

@@ -7,7 +7,7 @@ import { getTrackedContactHref } from '@/lib/site'
 
 export const metadata: Metadata = {
   title: 'Global Wholesale Vape Inventory | VapeStockHub',
-  description: 'Browse verified active wholesale vape stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to confirm pricing and availability.',
+  description: 'Browse verified wholesale vape inventory, bulk disposable vape stock, and inquiry-ready listings by brand, market, and price range.',
 }
 
 export default async function Home() {
@@ -52,7 +52,10 @@ export default async function Home() {
             Global <span className="text-teal-DEFAULT">Wholesale Vape Inventory</span>
           </h1>
           <p className="text-xl text-muted">
-            Browse verified active stock by market, brand, and price range. Send a Telegram or WhatsApp inquiry to confirm pricing and availability.
+            Browse verified wholesale vape inventory, bulk disposable vape stock, and inquiry-ready listings by brand, market, and price range.
+          </p>
+          <p className="text-sm text-muted max-w-2xl mx-auto">
+            Built for B2B buyers who need live stock visibility, MOQ clarity, and fast WhatsApp or Telegram inquiry.
           </p>
           <div className="flex justify-center gap-4 pt-4">
             <Link href="/inventory" className="px-6 py-3 rounded-lg bg-teal-DEFAULT text-background font-semibold hover:bg-teal-hover transition-colors">
@@ -70,16 +73,16 @@ export default async function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Link href="/market" className="p-6 rounded-2xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
             <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Market →</h3>
-            <p className="text-muted text-sm mt-2">Find active wholesale stock for target markets including Middle East, LATAM, and Eastern Europe.</p>
+            <p className="text-muted text-sm mt-2">Find wholesale vape stock for your target market, sourcing route, and current regional demand.</p>
           </Link>
           <Link href="/brand" className="p-6 rounded-2xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
             <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Brand →</h3>
-            <p className="text-muted text-sm mt-2">Compare active listings from top disposable vape brands and bulk inventory lines.</p>
+            <p className="text-muted text-sm mt-2">Compare active wholesale inventory from brands currently available for inquiry and bulk sourcing.</p>
           </Link>
           <Link href="/price" className="p-6 rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/5 hover:border-teal-DEFAULT transition-colors group relative overflow-hidden">
             <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-teal-DEFAULT animate-pulse"></div>
             <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Price →</h3>
-            <p className="text-muted text-sm mt-2">Screen clearance and budget-aligned inventory by wholesale price band.</p>
+            <p className="text-muted text-sm mt-2">Screen bulk disposable vape stock by unit price, margin target, and clearance potential.</p>
           </Link>
         </div>
       </section>
@@ -92,7 +95,7 @@ export default async function Home() {
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <span className="text-orange-500">🔥</span> Featured Inventory
               </h2>
-              <p className="text-muted mt-1">Selected active listings with strong buyer demand and clear inquiry paths.</p>
+              <p className="text-muted mt-1">Selected wholesale vape listings with active stock, clear MOQ signals, and strong inquiry potential.</p>
             </div>
             <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
               View All →
@@ -111,7 +114,7 @@ export default async function Home() {
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-2xl font-bold">Latest Active Inventory</h2>
-            <p className="text-muted mt-1">Recently verified wholesale stock with current availability, MOQ, and market coverage.</p>
+            <p className="text-muted mt-1">Recently verified wholesale listings with current availability, MOQ, market fit, and inquiry-ready stock.</p>
           </div>
           <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
             View All →
@@ -135,7 +138,7 @@ export default async function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">How VapeStockHub Works</h2>
-            <p className="text-muted max-w-2xl mx-auto">A streamlined B2B workflow built for buyers who need to move from inventory discovery to supplier inquiry quickly.</p>
+            <p className="text-muted max-w-2xl mx-auto">A streamlined B2B workflow for buyers who need to move from wholesale inventory discovery to direct supplier inquiry fast.</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="p-6">
@@ -165,20 +168,20 @@ export default async function Home() {
         </div>
         <div className="space-y-6">
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">How is inventory verified?</h3>
-            <p className="text-muted">We review supplier-provided inventory information before listings go live and use verification timestamps to keep active stock current. Final transaction checks still happen directly during inquiry.</p>
+            <h3 className="text-lg font-bold mb-2">Where can I find wholesale disposable vapes in bulk?</h3>
+            <p className="text-muted">Use the inventory index, brand hubs, and price-band pages to review active wholesale disposable vape listings before sending a direct inquiry.</p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">What is the Minimum Order Quantity (MOQ)?</h3>
-            <p className="text-muted">MOQs vary by listing. Many wholesale offers start around 500-1000 units, while urgent clearance stock may require larger takeovers. Review each inventory page for listing-specific terms.</p>
+            <h3 className="text-lg font-bold mb-2">How do I request live price and availability for wholesale vape stock?</h3>
+            <p className="text-muted">Open the Telegram or WhatsApp inquiry button on any inventory page. Your message includes the listing context so price and availability can be confirmed faster.</p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">How do I get pricing and availability?</h3>
-            <p className="text-muted">Open the Telegram or WhatsApp inquiry button on any inventory page. Your message includes the product context so pricing, quantity, and availability can be confirmed faster.</p>
+            <h3 className="text-lg font-bold mb-2">What is the MOQ for wholesale vape inventory?</h3>
+            <p className="text-muted">MOQs vary by listing. Review each inventory page for the current minimum order quantity before deciding which stock to pursue.</p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">Why browse by market instead of only by brand?</h3>
-            <p className="text-muted">Many buyers source by destination first. Market pages help you focus on inventory that is relevant to your target region, warehouse path, and current deal flow before you narrow by brand or price.</p>
+            <h3 className="text-lg font-bold mb-2">Can I browse wholesale vape stock by brand, market, or price range?</h3>
+            <p className="text-muted">Yes. VapeStockHub organizes active inventory by brand, market, and price band so buyers can move from broad sourcing intent into listing-level inquiry quickly.</p>
           </div>
         </div>
       </section>

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import InventoryCard from '@/components/inventory/InventoryCard'
 import { Metadata } from 'next'
 import { InventoryRecord, resolveFacetLabelBySlug } from '@/lib/inventory'
+import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
 import { notFound } from 'next/navigation'
 
@@ -36,12 +37,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   return {
     title: `${brandName} Wholesale Vape Inventory | VapeStockHub`,
-    description: `Browse active wholesale listings for ${brandName}, including bulk offers, clearance stock, and inquiry-ready inventory from verified supply sources.`,
+    description: `Browse active wholesale listings for ${brandName}, including bulk stock offers, current availability, and inquiry-ready inventory for B2B buyers.`,
     alternates: {
       canonical: `${siteConfig.url}/brand/${resolvedParams.slug}`,
     },
     robots: {
-      index: (count ?? 0) >= 3,
+      index: (count ?? 0) >= TAXONOMY_INDEX_THRESHOLDS.brand,
       follow: true,
     },
   }
@@ -82,10 +83,10 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Wholesale <span className="text-teal-DEFAULT">{brandName}</span> Inventory
+          <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Vape Inventory
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Browse active wholesale listings for {brandName}, including bulk offers, clearance stock, and inquiry-ready inventory that can move quickly into direct sourcing conversations.
+          Browse active {brandName} wholesale inventory, including bulk stock offers, current availability, and inquiry-ready listings for B2B buyers.
         </p>
       </div>
 
@@ -93,7 +94,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this brand inventory hub to compare current stock and move into product-level inquiry.</p>
+            <p className="text-sm text-muted mt-1">Compare live {brandName} wholesale listings by MOQ, market fit, price visibility, and stock depth before sending your inquiry.</p>
           </div>
         </div>
 
@@ -103,6 +104,35 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
           ))}
         </div>
       </div>
+
+      <section className="border-t border-border pt-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold">{brandName} Wholesale FAQ</h2>
+          <p className="text-muted mt-2 max-w-3xl">
+            Key questions buyers review before requesting live price and availability for {brandName} stock.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">Can I buy {brandName} vapes in bulk?</h3>
+            <p className="text-sm text-muted">
+              Yes, if active {brandName} listings are available. Review current stock on this page and confirm quantity, price, and availability by direct inquiry.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">What is the MOQ for {brandName} wholesale inventory?</h3>
+            <p className="text-sm text-muted">
+              MOQ depends on the listing. Open the relevant inventory page to review the current minimum order quantity before contacting the supplier.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">How do I request live price and availability for {brandName} stock?</h3>
+            <p className="text-sm text-muted">
+              Use the Telegram or WhatsApp inquiry button on the listing you want. The message includes product context so the supplier can confirm price and stock faster.
+            </p>
+          </div>
+        </div>
+      </section>
     </main>
   )
 }

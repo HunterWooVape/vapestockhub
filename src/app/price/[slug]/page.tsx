@@ -3,6 +3,7 @@ import InventoryCard from '@/components/inventory/InventoryCard'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { InventoryRecord } from '@/lib/inventory'
+import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
 import { notFound } from 'next/navigation'
 
@@ -75,13 +76,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { count } = await query
   
   return {
-    title: `Wholesale Vape Inventory ${priceDesc} | VapeStockHub`,
-    description: `Browse active wholesale vape listings ${priceDesc}, including clearance stock and bulk offers sorted by unit price for faster sourcing.`,
+    title: `Wholesale Disposable Vape Inventory ${priceDesc} | VapeStockHub`,
+    description: 'Review active wholesale disposable vape listings in this price band, compare MOQ and stock depth, and send an inquiry for live availability.',
     alternates: {
       canonical: `${siteConfig.url}/price/${resolvedParams.slug}`,
     },
     robots: {
-      index: (count ?? 0) >= 3,
+      index: (count ?? 0) >= TAXONOMY_INDEX_THRESHOLDS.price,
       follow: true,
     },
   }
@@ -120,10 +121,10 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-DEFAULT/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
         
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 relative z-10">
-          Wholesale Vape Inventory <span className="text-teal-DEFAULT">{priceDesc}</span>
+          Wholesale Disposable Vape Inventory <span className="text-teal-DEFAULT">{priceDesc}</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto relative z-10">
-          Browse active stock within this price band, compare unit-price aligned listings, and move quickly into inquiry once you find the right inventory fit.
+          Review active wholesale stock within this price band, compare unit-price aligned listings, and send an inquiry when you find the right inventory fit.
         </p>
       </div>
 
@@ -131,7 +132,7 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this price-band inventory hub to screen clearance and budget-aligned stock before opening product-level inquiries.</p>
+            <p className="text-sm text-muted mt-1">Use this price-band inventory hub to screen clearance-ready and budget-aligned stock before opening product-level inquiries.</p>
           </div>
         </div>
 
@@ -143,8 +144,8 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
           </div>
         ) : (
           <div className="text-center py-20 bg-surface rounded-xl border border-border">
-            <h3 className="text-lg font-bold mb-2">No inventory found in this range</h3>
-            <p className="text-muted mb-6">Inventory moves fast. Try another price band or return to the full inventory index.</p>
+            <h3 className="text-lg font-bold mb-2">No active wholesale stock in this range</h3>
+            <p className="text-muted mb-6">No active wholesale stock is currently available in this price range. Try another band or return to the full inventory index.</p>
             <Link href="/inventory" className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
               View All Inventory
             </Link>

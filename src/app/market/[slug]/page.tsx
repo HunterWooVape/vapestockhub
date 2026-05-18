@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import InventoryCard from '@/components/inventory/InventoryCard'
 import { Metadata } from 'next'
+import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
 import { InventoryRecord } from '@/lib/inventory'
 import {
@@ -38,12 +39,12 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   return {
     title: `Wholesale Vape Inventory for ${marketName} | VapeStockHub`,
-    description: `Browse active wholesale vape stock suitable for the ${marketName} market, including verified listings, bulk offers, and clearance opportunities ready for inquiry.`,
+    description: `Browse active wholesale vape stock suitable for the ${marketName} market, including verified listings, target-market aligned inventory, and inquiry-ready bulk offers.`,
     alternates: {
       canonical: `${siteConfig.url}/market/${resolvedParams.slug}`,
     },
     robots: {
-      index: matchedCount >= 3,
+      index: matchedCount >= TAXONOMY_INDEX_THRESHOLDS.market,
       follow: true,
     },
   }
@@ -76,6 +77,21 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     .filter((item) => inventoryTargetsFeaturedMarket(item, marketName))
     .sort((left, right) => right.created_at.localeCompare(left.created_at))
 
+  const marketFaqs = [
+    {
+      question: `Can I source wholesale vape inventory for ${marketName} through this page?`,
+      answer: `Yes. This page groups active listings prioritized for ${marketName} buyers so you can review current stock and move into direct inquiry faster.`,
+    },
+    {
+      question: `What should I compare before sending an inquiry for ${marketName}?`,
+      answer: 'Check MOQ, available quantity, warehouse location, price visibility, and whether the listing matches your target market route before contacting the supplier.',
+    },
+    {
+      question: `Does this market page only show local stock?`,
+      answer: `No. It can include globally available inventory that is still prioritized or suitable for ${marketName} demand and shipping paths.`,
+    },
+  ]
+
   if (items.length === 0) {
     notFound()
   }
@@ -87,7 +103,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           Wholesale Vape Inventory for <span className="text-teal-DEFAULT">{marketName}</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Explore active wholesale stock curated for buyers targeting {marketName}, including globally available listings prioritized for this market. Compare listings by brand, quantity, price visibility, and warehouse availability before sending your inquiry.
+          Browse active wholesale stock curated for buyers targeting {marketName}, including globally available listings prioritized for this market. Compare listings by brand, MOQ, stock depth, price visibility, and warehouse readiness before sending your inquiry.
         </p>
       </div>
 
@@ -95,7 +111,7 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this market hub to review globally available and region-prioritized stock before moving into product-level inquiry.</p>
+            <p className="text-sm text-muted mt-1">Use this market hub to review target-market aligned stock before moving into product-level inquiry.</p>
           </div>
         </div>
 
@@ -105,6 +121,23 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           ))}
         </div>
       </div>
+
+      <section className="border-t border-border pt-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold">{marketName} Market FAQ</h2>
+          <p className="text-muted mt-2 max-w-3xl">
+            Key questions buyers review when using this regional inventory hub to identify suitable stock and send a direct inquiry.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {marketFaqs.map((faq) => (
+            <div key={faq.question} className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">{faq.question}</h3>
+              <p className="text-sm text-muted">{faq.answer}</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </main>
   )
 }

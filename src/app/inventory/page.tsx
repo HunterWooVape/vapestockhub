@@ -135,8 +135,8 @@ export async function generateMetadata({
   )
 
   return {
-    title: 'Active Wholesale Vape Inventory | VapeStockHub',
-    description: 'Browse verified active wholesale vape listings by brand, market, and price range. Move quickly from inventory discovery to direct inquiry.',
+    title: 'Active Wholesale Disposable Vape Inventory | VapeStockHub',
+    description: 'Browse verified wholesale disposable vape listings by brand, market, and price band. Review MOQ, stock level, and inquiry options before buying vapes in bulk.',
     alternates: {
       canonical: `${siteConfig.url}/inventory`,
     },
@@ -227,6 +227,9 @@ export default async function InventoryPage({
       <aside className="w-full md:w-64 shrink-0 space-y-8">
         <div>
           <h2 className="text-xl font-bold mb-4">Filters</h2>
+          <p className="text-sm text-muted mb-6">
+            Filter live wholesale inventory by brand and market before opening product-level inquiries.
+          </p>
 
           {(brand || market) && (
             <div className="flex flex-wrap gap-2 mb-6">
@@ -268,16 +271,16 @@ export default async function InventoryPage({
 
       <div className="flex-1">
         <div className="mb-8 border-b border-border pb-6">
-          <h1 className="text-3xl font-bold">Browse Active Wholesale Vape Inventory</h1>
+          <h1 className="text-3xl font-bold">Browse Active Wholesale Disposable Vape Inventory</h1>
           <p className="text-muted mt-3 max-w-3xl">
-            Explore verified wholesale vape listings across brands, markets, and price ranges. Use filters to find active stock and move quickly into product-level inquiries.
+            Explore verified wholesale disposable vape listings across brands, markets, and price bands. Use filters to find bulk inventory, compare MOQ and stock depth, and move quickly into direct inquiry.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-border pb-4">
           <div>
             <p className="text-lg font-semibold">{totalItems} Active Listings</p>
-            <p className="text-sm text-muted mt-1">Use filters to narrow inventory by brand or featured market before opening product-level inquiries.</p>
+            <p className="text-sm text-muted mt-1">Use filters to find bulk disposable vape stock, compare active listings, and move quickly into supplier inquiry.</p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -324,12 +327,41 @@ export default async function InventoryPage({
         ) : (
           <div className="text-center py-20 bg-surface rounded-xl border border-border">
             <h3 className="text-lg font-bold mb-2">No inventory found</h3>
-            <p className="text-muted mb-6">Adjust your filters or return to the full inventory index to review all active listings.</p>
+            <p className="text-muted mb-6">No wholesale vape inventory matches your current filters. Clear filters to view all active bulk listings.</p>
             <Link href={clearFiltersHref} className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
               Clear Filters
             </Link>
           </div>
         )}
+
+        <section className="mt-16 border-t border-border pt-12">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">Wholesale Inventory FAQ</h2>
+            <p className="text-muted mt-2 max-w-3xl">
+              Key questions from buyers reviewing wholesale disposable vape stock before sending a direct inquiry.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">What is the MOQ for wholesale disposable vapes?</h3>
+              <p className="text-sm text-muted">
+                MOQ varies by listing. Review each inventory page for the current minimum order requirement before sending your inquiry.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Can I buy vapes in bulk across multiple brands?</h3>
+              <p className="text-sm text-muted">
+                Availability depends on current active listings. Use filters to review matching stock, then confirm mixed-order options during direct inquiry.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">How often is wholesale vape inventory updated?</h3>
+              <p className="text-sm text-muted">
+                Inventory changes frequently. We highlight active listings and verification timestamps so buyers can focus on currently available stock.
+              </p>
+            </div>
+          </div>
+        </section>
       </div>
     </main>
   )

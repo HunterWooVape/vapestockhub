@@ -1,16 +1,16 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Vape Inventory by Price Range | VapeStockHub',
-  description: 'Browse active wholesale vape inventory by price range and move directly into budget-aligned stock discovery.',
+  title: 'Wholesale Disposable Vape Inventory by Price Range | VapeStockHub',
+  description: 'Browse wholesale disposable vape stock by unit price to find budget-friendly, clearance-ready, and margin-aligned inventory for bulk buying.',
 }
 
 export default function PriceIndexPage() {
   const priceTiers = [
-    { name: 'Under $3.00', slug: 'under-3', desc: 'Urgent clearance & budget disposable stock', isHot: true },
-    { name: '$3.00 - $5.00', slug: '3-to-5', desc: 'Standard wholesale margin products', isHot: false },
-    { name: '$5.00 - $8.00', slug: '5-to-8', desc: 'High puff count & premium devices', isHot: false },
-    { name: 'Over $8.00', slug: 'over-8', desc: 'Hardware, kits and high-end stock', isHot: false }
+    { name: 'Under $3.00', slug: 'under-3', desc: 'Low-cost wholesale disposable vape stock for clearance buying, budget sourcing, and fast-moving bulk orders.', isHot: true },
+    { name: '$3.00 - $5.00', slug: '3-to-5', desc: 'Core wholesale price band for balanced margin, repeat demand, and scalable bulk sourcing.', isHot: false },
+    { name: '$5.00 - $8.00', slug: '5-to-8', desc: 'Mid-to-premium wholesale inventory with stronger feature sets, higher puff counts, and broader buyer appeal.', isHot: false },
+    { name: 'Over $8.00', slug: 'over-8', desc: 'Higher-ticket wholesale stock for premium devices, advanced hardware, and specialty inventory lines.', isHot: false }
   ]
 
   return (
@@ -21,7 +21,7 @@ export default function PriceIndexPage() {
           Find Inventory by <span className="text-teal-DEFAULT">Price Range</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto relative z-10">
-          Browse active wholesale inventory by unit price so you can quickly focus on clearance and budget-aligned stock for your sourcing target.
+          Browse wholesale disposable vape stock by unit price so you can quickly find budget-friendly, clearance-ready, and margin-aligned inventory for bulk buying.
         </p>
       </div>
 
