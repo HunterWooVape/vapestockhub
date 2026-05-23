@@ -128,6 +128,14 @@ function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
 
+function normalizeSearchQuery(value?: string | string[]) {
+  return getSingleParam(value)
+    ?.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[,%()]/g, ' ')
+    .slice(0, 80) ?? ''
+}
+
 function getPageNumber(value?: string | string[]) {
   const parsedValue = Number.parseInt(getSingleParam(value) ?? '1', 10)
 
@@ -166,11 +174,13 @@ function buildAdminPageRedirect(params: Record<string, string | null | undefined
 
 function buildInventoryFilterHref(
   inventoryStatus: (typeof inventoryStatusOptions)[number],
-  page?: number
+  page?: number,
+  q?: string
 ) {
   return buildAdminPageRedirect({
     inventory_status: inventoryStatus === 'draft' ? null : inventoryStatus,
     page: page && page > 1 ? String(page) : null,
+    q: q || null,
   })
 }
 
@@ -220,6 +230,7 @@ export default async function AdminPage({
     inventoryStatusOptions,
     'draft'
   )
+  const searchQuery = normalizeSearchQuery(params.q)
   const returnTo = normalizeBackofficeReturnTo(getSingleParam(params.return_to))
   const issues = (getSingleParam(params.issues) ?? '')
     .split(',')
@@ -239,21 +250,38 @@ export default async function AdminPage({
 
   const supabase = await createClient()
 
-  const from = (page - 1) * ITEMS_PER_PAGE
-  const to = from + ITEMS_PER_PAGE - 1
+  const inventoryQuery = supabase
+    .from('inventory')
+    .select(
+      'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, pricing_mode, pricing_note, price, quantity, moq, warehouse_location, description, images, flavor',
+      { count: 'exact' }
+    )
+    .eq('status', inventoryStatusFilter)
+    .order('created_at', { ascending: false })
 
-  const [{ data: inventory, count }, { data: inventoryOptions }] = await Promise.all([
-    supabase
-      .from('inventory')
-      .select(
-        'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, pricing_mode, pricing_note, price, quantity, moq, warehouse_location, description, images, flavor',
-        { count: 'exact' }
-      )
-      .eq('status', inventoryStatusFilter)
-      .order('created_at', { ascending: false })
-      .range(from, to),
+  if (searchQuery) {
+    const searchPattern = `%${searchQuery.replace(/\s+/g, '%')}%`
+    inventoryQuery.or([
+      `title.ilike.${searchPattern}`,
+      `slug.ilike.${searchPattern}`,
+      `brand.ilike.${searchPattern}`,
+      `market.ilike.${searchPattern}`,
+      `warehouse_location.ilike.${searchPattern}`,
+    ].join(','))
+  }
+
+  const [{ count }, { data: inventoryOptions }] = await Promise.all([
+    inventoryQuery,
     supabase.from('inventory').select('brand, market'),
   ])
+
+  const totalItems = count ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
+  const currentPage = Math.min(page, totalPages)
+  const from = (currentPage - 1) * ITEMS_PER_PAGE
+  const to = from + ITEMS_PER_PAGE - 1
+
+  const { data: inventory } = await inventoryQuery.range(from, to)
 
   const knownBrands = getUniqueValues((inventoryOptions ?? []).map((item) => item.brand))
   const knownMarkets = getUniqueValues((inventoryOptions ?? []).map((item) => item.market))
@@ -283,9 +311,6 @@ export default async function AdminPage({
       }
     ),
   }))
-
-  const totalItems = count ?? 0
-  const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
 
   async function loginAction(formData: FormData) {
     'use server'
@@ -390,6 +415,7 @@ export default async function AdminPage({
         error: 'invalid-status',
         inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
         page: currentPage > 1 ? String(currentPage) : null,
+        q: normalizeSearchQuery(formData.get('q')?.toString()),
       }))
     }
 
@@ -430,6 +456,7 @@ export default async function AdminPage({
           issues: report.blockingIssues.join(','),
           inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
           page: currentPage > 1 ? String(currentPage) : null,
+          q: normalizeSearchQuery(formData.get('q')?.toString()),
         }))
       }
     }
@@ -441,6 +468,7 @@ export default async function AdminPage({
       success: 'status-updated',
       inventory_status: currentInventoryStatusFilter === 'draft' ? null : currentInventoryStatusFilter,
       page: currentPage > 1 ? String(currentPage) : null,
+      q: normalizeSearchQuery(formData.get('q')?.toString()),
     }))
   }
 
@@ -545,9 +573,12 @@ export default async function AdminPage({
     : inventoryStatusFilter === 'active'
       ? '已发布库存可在这里回改内容或继续维护状态。'
       : '查看当前状态库存，并进入编辑页继续处理。'
-  const inventoryCountLabel = inventoryStatusFilter === 'draft'
-    ? `草稿数：${totalItems}`
-    : `${formatInventoryStatusLabel(inventoryStatusFilter)}数：${totalItems}`
+  const inventoryCountLabel = searchQuery
+    ? `命中：${totalItems}`
+    : inventoryStatusFilter === 'draft'
+      ? `草稿数：${totalItems}`
+      : `${formatInventoryStatusLabel(inventoryStatusFilter)}数：${totalItems}`
+  const clearInventorySearchHref = buildInventoryFilterHref(inventoryStatusFilter)
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
@@ -695,12 +726,43 @@ export default async function AdminPage({
           </div>
 
           <div id="recent-inventory" className="bg-surface border border-border rounded-2xl p-6 space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
               <div>
                 <h2 className="text-xl font-bold">{inventorySectionTitle}</h2>
-                <p className="mt-1 text-sm text-muted">{inventorySectionDescription}</p>
+                <p className="mt-1 text-sm text-muted">
+                  {searchQuery
+                    ? `当前按关键词“${searchQuery}”与状态共同筛选库存。`
+                    : inventorySectionDescription}
+                </p>
               </div>
-              <span className="text-sm text-muted">{inventoryCountLabel}</span>
+              <div className="flex w-full flex-col gap-3 xl:w-auto xl:min-w-[420px]">
+                <form action="/admin" method="get" className="flex flex-col gap-3 sm:flex-row">
+                  {inventoryStatusFilter !== 'draft' ? <input type="hidden" name="inventory_status" value={inventoryStatusFilter} /> : null}
+                  <input
+                    name="q"
+                    defaultValue={searchQuery}
+                    placeholder="搜索标题、slug、品牌、市场或仓库"
+                    className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted focus:border-teal-DEFAULT"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="submit"
+                      className="rounded-lg bg-teal-DEFAULT px-4 py-2.5 text-sm font-medium text-background hover:bg-teal-hover transition-colors"
+                    >
+                      搜索
+                    </button>
+                    {searchQuery ? (
+                      <Link
+                        href={clearInventorySearchHref}
+                        className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background transition-colors"
+                      >
+                        清空
+                      </Link>
+                    ) : null}
+                  </div>
+                </form>
+                <span className="text-sm text-muted">{inventoryCountLabel}</span>
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               {inventoryStatusOptions.map((status) => {
@@ -709,7 +771,7 @@ export default async function AdminPage({
                 return (
                   <Link
                     key={status}
-                    href={buildInventoryFilterHref(status)}
+                    href={buildInventoryFilterHref(status, undefined, searchQuery)}
                     className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                       isCurrentStatus
                         ? 'border-teal-DEFAULT/40 bg-teal-DEFAULT/10 text-teal-DEFAULT'
@@ -726,20 +788,31 @@ export default async function AdminPage({
                 <div className="rounded-xl border border-border/70 bg-background px-4 py-5 text-sm text-muted">
                   <div>
                     {inventoryStatusFilter === 'draft'
-                      ? '当前没有待发布草稿。'
-                      : `当前没有${formatInventoryStatusLabel(inventoryStatusFilter)}库存。`}
+                      ? (searchQuery ? '当前搜索条件下没有待发布草稿。' : '当前没有待发布草稿。')
+                      : searchQuery
+                        ? `当前搜索条件下没有${formatInventoryStatusLabel(inventoryStatusFilter)}库存。`
+                        : `当前没有${formatInventoryStatusLabel(inventoryStatusFilter)}库存。`}
                   </div>
                   <div className="mt-2">
-                    {inventoryStatusFilter === 'draft'
-                      ? '审核队列转出草稿后，会自动回到这里继续发布检查。'
-                      : '切换其他状态筛选，或等待新的库存进入该状态。'}
+                    {searchQuery
+                      ? '可以更换关键词，或清空搜索后继续按状态处理库存。'
+                      : inventoryStatusFilter === 'draft'
+                        ? '审核队列转出草稿后，会自动回到这里继续发布检查。'
+                        : '切换其他状态筛选，或等待新的库存进入该状态。'}
                   </div>
+                  {searchQuery ? (
+                    <div className="mt-4">
+                      <Link href={clearInventorySearchHref} className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface">
+                        清空搜索
+                      </Link>
+                    </div>
+                  ) : null}
                 </div>
               ) : (
                 inventoryRows.map((item) => {
                   const priorityMeta = getDraftPriorityMeta(item)
                   const adminReturnHref = encodeURIComponent(
-                    buildInventoryFilterHref(inventoryStatusFilter, page)
+                    buildInventoryFilterHref(inventoryStatusFilter, currentPage, searchQuery)
                   )
 
                   return (
@@ -796,8 +869,9 @@ export default async function AdminPage({
                         {isAdminUser && inventoryStatusFilter === 'draft' ? (
                           <form action={updateStatusAction} className="flex flex-wrap gap-2 xl:justify-end">
                             <input type="hidden" name="id" value={item.id} />
-                            <input type="hidden" name="page" value={String(page)} />
+                            <input type="hidden" name="page" value={String(currentPage)} />
                             <input type="hidden" name="inventory_status" value={inventoryStatusFilter} />
+                            <input type="hidden" name="q" value={searchQuery} />
                             <button name="status" value="active" className="rounded-md border border-border px-3 py-2 text-sm hover:bg-background transition-colors">{formatInventoryStatusActionLabel('active')}</button>
                           </form>
                         ) : (
@@ -818,20 +892,20 @@ export default async function AdminPage({
 
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-4 pt-6 border-t border-border">
-                {page > 1 && (
+                {currentPage > 1 && (
                   <Link
-                    href={buildInventoryFilterHref(inventoryStatusFilter, page - 1)}
+                    href={buildInventoryFilterHref(inventoryStatusFilter, currentPage - 1, searchQuery)}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-background transition-colors text-sm"
                   >
                     上一页
                   </Link>
                 )}
                 <span className="text-sm text-muted">
-                  第 {page} / {totalPages} 页
+                  第 {currentPage} / {totalPages} 页
                 </span>
-                {page < totalPages && (
+                {currentPage < totalPages && (
                   <Link
-                    href={buildInventoryFilterHref(inventoryStatusFilter, page + 1)}
+                    href={buildInventoryFilterHref(inventoryStatusFilter, currentPage + 1, searchQuery)}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-background transition-colors text-sm"
                   >
                     下一页

@@ -1,0 +1,237 @@
+{
+  "keyword": "geek bar alternative",
+  "title": "Best Geek Bar Alternatives for Wholesale Buyers in 2026",
+  "requestedSources": [
+    {
+      "source": "ivg-beyond-clk6000-disposable-vape",
+      "slug": "ivg-beyond-clk6000-disposable-vape"
+    },
+    {
+      "source": "voopoo-argus-bar-neon-2k-pod-kit",
+      "slug": "voopoo-argus-bar-neon-2k-pod-kit"
+    },
+    {
+      "source": "arctic-vape-elite-10k-pod-kit",
+      "slug": "arctic-vape-elite-10k-pod-kit"
+    }
+  ],
+  "derivedItems": [
+    {
+      "row": {
+        "id": "02d7d73e-86ca-4334-a00e-cdfe652cd382",
+        "slug": "arctic-vape-elite-10k-pod-kit",
+        "title": "ARCTIC VAPE ELITE 10K Pod Kit",
+        "brand": "ARCTIC",
+        "product_type": "Pod Kit",
+        "pricing_mode": "exact_price",
+        "pricing_note": null,
+        "description": "PH10000 Pod Cartridge\r\nZESTY SALT - 4800pcs\r\nLICH KING - 7440pcs\r\nCHARMELON - 7440pcs\r\nMIXED PEBBLES - 7440pcs\r\nPURPLE PEBBLES - 7440pcs\r\nTUMMY AID - 7200pcs\r\nNERDY SOUR - 4800pcs\r\nICE APE - 4800pcs\r\nPINK PEBBLES - 7200pcs\r\nPERFECT MATCH - 7200pcs\r\nBLACK FIZZ - 7200pcs\r\nRED TANGO - 7200pcs",
+        "flavor": "ZESTY SALT, LICH KING, CHARMELON, MIXED PEBBLES, PURPLE PEBBLES, TUMMY AID, NERDY SOUR, ICE APE, PINK PEBBLES, PERFECT MATCH, BLACK FIZZ, RED TANGO",
+        "nicotine": "5%",
+        "puff": 10000,
+        "e_liquid": "10ml",
+        "price": 0.9,
+        "quantity": 80160,
+        "moq": 80160,
+        "market": "Global",
+        "featured_markets": [],
+        "market_access_note": null,
+        "warehouse_location": "Shenzhen,China",
+        "status": "active",
+        "contact_visibility": "public",
+        "is_featured": false,
+        "is_urgent_clearance": false,
+        "last_verified_at": "2026-04-30T08:57:57.823725+00:00"
+      },
+      "source": "arctic-vape-elite-10k-pod-kit",
+      "flavorCount": 12,
+      "featuredMarketCount": 0,
+      "textSignals": [],
+      "dataGaps": [
+        "Missing market access note"
+      ],
+      "priceBandLabel": "Budget-visible price (< $3)",
+      "puffBandLabel": "Mid puff range",
+      "candidateAngles": [
+        "High-puff alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 80,160 pcs",
+        "Stock: 80,160 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Mid puff range",
+        "Primary market: Global",
+        "Warehouse: Shenzhen,China",
+        "Flavor count: 12"
+      ]
+    },
+    {
+      "row": {
+        "id": "ce0558e7-fed6-4104-a27c-fe2b238db8f5",
+        "slug": "ivg-beyond-clk6000-disposable-vape",
+        "title": "IVG Beyond CLK6000 Disposable Vape",
+        "brand": "IVG",
+        "product_type": "Disposable Vape",
+        "pricing_mode": "exact_price",
+        "pricing_note": null,
+        "description": "Blue Sour Razz - 16975pcs\r\nCherry Crush - 12975pcs\r\nLemon Lime - 14975pcs\r\nBanana Crush - 5475pcs\r\nBlackberry Raspberry - 15975pcs\r\nBlue Razz Pineapple - 13975pcs\r\nBlue Kiwi - 15975pcs\r\nCherry Peach Lemon - 10965pcs\r\nWhite Peach - 5975pcs\r\nPineapple Ice - 16975pcs\r\nGrape Blackcurrant - 3975pcs\r\nPink Lemonade - 12975pcs\r\nGreen Apple - 7475pcs\r\nGuava Pineapple Passionfruit - 14975pcs\r\nYellow Melon - 7975pcs",
+        "flavor": "Blue Sour Razz, Cherry Crush, Lemon Lime, Banana Crush, Blackberry Raspberry, Blue Razz Pineapple, Blue Kiwi, Cherry Peach Lemon, White Peach, Pineapple Ice, Grape Blackcurrant, Pink Lemonade, Green Apple, Guava Pineapple Passionfruit, Yellow Melon",
+        "nicotine": "2%",
+        "puff": 6000,
+        "e_liquid": "12ml",
+        "price": 1.8,
+        "quantity": 177615,
+        "moq": 177615,
+        "market": "Global",
+        "featured_markets": [
+          "Middle East",
+          "UK"
+        ],
+        "market_access_note": null,
+        "warehouse_location": "Shenzhen,China",
+        "status": "active",
+        "contact_visibility": "public",
+        "is_featured": false,
+        "is_urgent_clearance": false,
+        "last_verified_at": "2026-05-14T02:42:01.918569+00:00"
+      },
+      "source": "ivg-beyond-clk6000-disposable-vape",
+      "flavorCount": 15,
+      "featuredMarketCount": 2,
+      "textSignals": [],
+      "dataGaps": [
+        "Missing market access note"
+      ],
+      "priceBandLabel": "Budget-visible price (< $3)",
+      "puffBandLabel": "Mid puff range",
+      "candidateAngles": [
+        "Market-flexible alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 177,615 pcs",
+        "Stock: 177,615 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Mid puff range",
+        "Primary market: Global",
+        "Featured markets: Middle East, UK",
+        "Warehouse: Shenzhen,China",
+        "Flavor count: 15"
+      ]
+    },
+    {
+      "row": {
+        "id": "b1193cec-76bb-4a4b-8757-df13aa0dacae",
+        "slug": "voopoo-argus-bar-neon-2k-pod-kit",
+        "title": "VooPoo Argus Bar Neon 2K Pod Kit",
+        "brand": "VooPoo",
+        "product_type": "Pod Kit",
+        "pricing_mode": "exact_price",
+        "pricing_note": null,
+        "description": "Location: London, UK\r\n\r\nArgusbar Neon 2K Pod Kit：\r\nPineapple Ice - 20000sets\r\nJuicy Peach - 20000sets\r\nBanana Ice - 20000sets\r\nStrawberry Raspberry - 20000sets\r\nLemon Lime - 20000sets\r\nBlueberry Sour Berry - 20000sets\r\nTriple Mango - 20000sets\r\nMr. Blue - 20000sets\r\nCherry Ice - 20000sets\r\nWatermelon Ice - 20000sets\r\n\r\nDelivery cost not included",
+        "flavor": "Pineapple Ice, Juicy Peach, Banana Ice, Strawberry Raspberry, Lemon Lime, Blueberry Sour Berry, Triple Mango, Mr. Blue, Cherry Ice, Watermelon Ice",
+        "nicotine": "2%",
+        "puff": 2000,
+        "e_liquid": "5ml",
+        "price": 0.8,
+        "quantity": 200000,
+        "moq": 500,
+        "market": "Global",
+        "featured_markets": [
+          "UK"
+        ],
+        "market_access_note": null,
+        "warehouse_location": "London,UK",
+        "status": "active",
+        "contact_visibility": "public",
+        "is_featured": true,
+        "is_urgent_clearance": true,
+        "last_verified_at": "2026-05-17T06:57:20.419274+00:00"
+      },
+      "source": "voopoo-argus-bar-neon-2k-pod-kit",
+      "flavorCount": 10,
+      "featuredMarketCount": 1,
+      "textSignals": [
+        "Bar-style signal"
+      ],
+      "dataGaps": [
+        "Missing market access note"
+      ],
+      "priceBandLabel": "Budget-visible price (< $3)",
+      "puffBandLabel": "Lower puff range",
+      "candidateAngles": [
+        "Low-MOQ alternative",
+        "Strong stock-depth alternative",
+        "Budget-visible alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 500 pcs",
+        "Stock: 200,000 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Lower puff range",
+        "Primary market: Global",
+        "Featured markets: UK",
+        "Warehouse: London,UK",
+        "Flavor count: 10",
+        "Signal: Bar-style signal"
+      ]
+    }
+  ],
+  "recommendations": [
+    {
+      "slotLabel": "Low-MOQ alternative",
+      "inventorySlug": "voopoo-argus-bar-neon-2k-pod-kit",
+      "inventoryTitle": "VooPoo Argus Bar Neon 2K Pod Kit",
+      "whyItFits": [
+        "Low-MOQ alternative",
+        "Strong stock-depth alternative",
+        "Budget-visible alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 500 pcs",
+        "Stock: 200,000 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Lower puff range"
+      ]
+    },
+    {
+      "slotLabel": "High-puff alternative",
+      "inventorySlug": "arctic-vape-elite-10k-pod-kit",
+      "inventoryTitle": "ARCTIC VAPE ELITE 10K Pod Kit",
+      "whyItFits": [
+        "High-puff alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 80,160 pcs",
+        "Stock: 80,160 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Mid puff range"
+      ]
+    },
+    {
+      "slotLabel": "Market-flexible alternative",
+      "inventorySlug": "ivg-beyond-clk6000-disposable-vape",
+      "inventoryTitle": "IVG Beyond CLK6000 Disposable Vape",
+      "whyItFits": [
+        "Market-flexible alternative",
+        "Flavor-breadth alternative"
+      ],
+      "evidence": [
+        "Status: active",
+        "MOQ: 177,615 pcs",
+        "Stock: 177,615 pcs",
+        "Pricing: Budget-visible price (< $3)",
+        "Puff band: Mid puff range"
+      ]
+    }
+  ]
+}

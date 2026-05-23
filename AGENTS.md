@@ -9,10 +9,14 @@ This version has breaking changes — APIs, conventions, and file structure may 
 You are an expert software engineer pair-programming with the user to build VapeStockHub.
 You MUST strictly follow these rules in this project. Do not deviate unless explicitly instructed by the user.
 
-## 1. Project Context & Boundary (MVP)
+## 1. Project Context, Boundary & Current Stage
 - **Project Goal**: A B2B global vape inventory marketplace (Information + Lead Generation).
 - **North Star Metric**: Number of valid inquiries (leads). NOT online GMV.
-- **MVP Boundary**: 
+- **Current Stage**:
+  - The project is NOT in the original pre-launch MVP build phase anymore.
+  - The site is already live.
+  - The correct default interpretation is: `MVP core complete, now in MVP closure + early optimization stage`.
+- **MVP Boundary**:
   - ONLY build: Inventory display, SEO pages (Market/Brand/Price), Lead routing (Telegram/WhatsApp).
   - DO NOT build: User registration, Cart, Checkout, Payment, Vendor dashboard.
   - DO NOT over-engineer. Keep the implementation as simple as possible to validate the market.
@@ -51,8 +55,21 @@ You MUST strictly follow these rules in this project. Do not deviate unless expl
 
 ## 5. Workflow & Communication
 - **Pair-Programming Stance**: Do not be a "yes-man". If the user's proposal compromises UX, SEO, or MVP speed, push back with professional, well-reasoned alternatives (Ultrathink). Always present a balance between operational efficiency and frontend experience.
-- ALWAYS check `docs/MVP_PLAN.md` and `docs/PRE_DEV_CHECKLIST.md` before proposing major architectural changes.
-- Never write code for features outside the MVP scope. If the user asks for one, suggest logging it in `docs/PARKING_LOT.md` first.
+- **Primary Planning Docs**:
+  - ALWAYS check `docs/CURRENT_STAGE.md` first before proposing major product or architecture changes.
+  - Then check `docs/MVP_AUDIT_REPORT.md`, `docs/MVP_CLOSURE_CHECKLIST.md`, and `docs/PARKING_LOT.md`.
+  - Treat `docs/MVP_PLAN.md` as the historical startup baseline, not the only current-stage decision source.
+- **Feature Classification Rule**:
+  - First classify new work as one of:
+    - `MVP Closure`: required to stabilize the live project or complete MVP closeout
+    - `MVP+ Optimization`: improves the current discovery -> inquiry loop without changing the business model
+    - `Phase 2 Expansion`: introduces new platform capability, role complexity, supply-side expansion, or system complexity
+  - `MVP Closure` and high-value `MVP+ Optimization` work can be implemented in the current stage.
+  - `Phase 2 Expansion` work should NOT be implemented directly; log it in `docs/PARKING_LOT.md` or a dedicated phase-two document first.
+- **Live Product Mindset**:
+  - Default to thinking of VapeStockHub as a live project in operation, not a blank MVP prototype.
+  - Prioritize stability of the public discovery -> detail -> contact flow and the internal submit -> review -> draft -> publish workflow.
+  - Be more cautious with public-page regressions, SEO disruptions, and anything that adds operational burden without clear inquiry upside.
 - Execute tasks end-to-end when given a clear directive. Don't ask for permission at every micro-step, but DO stop and ask when a business logic decision is required.
 - **Backoffice Workflow Rule**:
   - Default internal flow is `提报 -> 审核 -> AI建议 -> 转草稿 -> 草稿编辑 -> 发布`.

@@ -33,6 +33,14 @@ function getSingleParam(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value
 }
 
+function normalizeSearchQuery(value?: string | string[]) {
+  return getSingleParam(value)
+    ?.trim()
+    .replace(/\s+/g, ' ')
+    .replace(/[,%()]/g, ' ')
+    .slice(0, 80) ?? ''
+}
+
 function getPageNumber(value?: string | string[]) {
   const parsedValue = Number.parseInt(getSingleParam(value) ?? '1', 10)
 
@@ -54,7 +62,7 @@ function formatSubmissionStatusLabel(status: (typeof supplierSubmissionStatusOpt
   return submissionStatusLabels[status]
 }
 
-function buildSubmissionsListHref(page: number, statusFilter: string) {
+function buildSubmissionsListHref(page: number, statusFilter: string, q?: string) {
   const searchParams = new URLSearchParams()
 
   if (page > 1) {
@@ -63,6 +71,10 @@ function buildSubmissionsListHref(page: number, statusFilter: string) {
 
   if (statusFilter !== 'all') {
     searchParams.set('status', statusFilter)
+  }
+
+  if (q) {
+    searchParams.set('q', q)
   }
 
   const queryString = searchParams.toString()
@@ -131,6 +143,7 @@ export default async function AdminSubmissionsPage({
   const params = await searchParams
   const page = getPageNumber(params.page)
   const statusFilter = getStatusFilter(params.status)
+  const searchQuery = normalizeSearchQuery(params.q)
   const returnTo = normalizeBackofficeReturnTo(getSingleParam(params.return_to))
   const cookieStore = await cookies()
 
@@ -158,6 +171,17 @@ export default async function AdminSubmissionsPage({
   const query = statusFilter === 'all'
     ? baseQuery.neq('submission_status', 'converted')
     : baseQuery.eq('submission_status', statusFilter)
+
+  if (searchQuery) {
+    const searchPattern = `%${searchQuery.replace(/\s+/g, '%')}%`
+    query.or([
+      `supplier_name.ilike.${searchPattern}`,
+      `brand.ilike.${searchPattern}`,
+      `model_name.ilike.${searchPattern}`,
+      `target_market.ilike.${searchPattern}`,
+      `warehouse_location.ilike.${searchPattern}`,
+    ].join(','))
+  }
 
   const { data: submissions, count } = await query.range(from, to)
 
@@ -203,14 +227,16 @@ export default async function AdminSubmissionsPage({
 
   const totalItems = count ?? 0
   const totalPages = Math.max(1, Math.ceil(totalItems / ITEMS_PER_PAGE))
+  const currentPage = Math.min(page, totalPages)
   const isConvertedView = statusFilter === 'converted'
-  const currentListHref = buildSubmissionsListHref(page, statusFilter)
+  const currentListHref = buildSubmissionsListHref(currentPage, statusFilter, searchQuery)
   const backHref = returnTo ?? '/admin'
   const backLabel = returnTo ? '← 返回上一页' : '← 返回后台总控台'
   const pageTitle = isConvertedView ? '已转草稿记录' : '待审核录入'
   const pageDescription = isConvertedView
     ? '这里只在需要回溯时查看已转草稿记录。日常处理请回到待审核视图。'
     : '这里只放还没转成草稿的录入。按卡片提示进入处理即可。'
+  const clearSearchHref = buildSubmissionsListHref(1, statusFilter)
 
   return (
     <main className="min-h-screen px-4 py-12 sm:px-6 lg:px-8">
@@ -261,11 +287,42 @@ export default async function AdminSubmissionsPage({
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-1">
               <h2 className="text-xl font-bold text-foreground">队列记录</h2>
-              <p className="text-sm text-muted">当前共 {totalItems} 条记录，按卡片里的处理优先级推进即可。</p>
+              <p className="text-sm text-muted">
+                {searchQuery
+                  ? `当前命中 ${totalItems} 条记录，已按关键词与状态共同筛选。`
+                  : `当前共 ${totalItems} 条记录，按卡片里的处理优先级推进即可。`}
+              </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex w-full flex-col gap-3 lg:w-auto lg:min-w-[420px]">
+              <form action="/admin/submissions" method="get" className="flex flex-col gap-3 sm:flex-row">
+                {statusFilter !== 'all' ? <input type="hidden" name="status" value={statusFilter} /> : null}
+                {returnTo ? <input type="hidden" name="return_to" value={returnTo} /> : null}
+                <input
+                  name="q"
+                  defaultValue={searchQuery}
+                  placeholder="搜索供应商、品牌、型号、市场或仓库"
+                  className="w-full rounded-lg border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted focus:border-teal-DEFAULT"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-teal-DEFAULT px-4 py-2.5 text-sm font-medium text-background hover:bg-teal-hover"
+                  >
+                    搜索
+                  </button>
+                  {searchQuery ? (
+                    <Link
+                      href={clearSearchHref}
+                      className="rounded-lg border border-border px-4 py-2.5 text-sm font-medium text-foreground hover:bg-background"
+                    >
+                      清空
+                    </Link>
+                  ) : null}
+                </div>
+              </form>
+              <div className="flex flex-wrap gap-2">
               <Link
-                href={buildSubmissionsListHref(1, 'all')}
+                href={buildSubmissionsListHref(1, 'all', searchQuery)}
                 className={`rounded-full border px-4 py-2 text-sm transition-colors ${statusFilter === 'all' ? 'border-teal-DEFAULT text-teal-DEFAULT bg-teal-DEFAULT/10' : 'border-border text-muted hover:bg-background'}`}
               >
                 待处理全部
@@ -273,7 +330,7 @@ export default async function AdminSubmissionsPage({
               {visibleQueueStatusFilters.map((status) => (
                 <Link
                   key={status}
-                  href={buildSubmissionsListHref(1, status)}
+                  href={buildSubmissionsListHref(1, status, searchQuery)}
                   className={`rounded-full border px-4 py-2 text-sm transition-colors ${statusFilter === status ? 'border-teal-DEFAULT text-teal-DEFAULT bg-teal-DEFAULT/10' : 'border-border text-muted hover:bg-background'}`}
                 >
                   {formatSubmissionStatusLabel(status)}
@@ -281,26 +338,41 @@ export default async function AdminSubmissionsPage({
               ))}
               {isConvertedView && (
                 <Link
-                  href={buildSubmissionsListHref(1, 'converted')}
+                  href={buildSubmissionsListHref(1, 'converted', searchQuery)}
                   className="rounded-full border border-teal-DEFAULT bg-teal-DEFAULT/10 px-4 py-2 text-sm text-teal-DEFAULT transition-colors"
                 >
                   已转草稿
                 </Link>
               )}
             </div>
+            </div>
           </div>
 
           {submissionRows.length === 0 ? (
             <div className="rounded-2xl border border-border/70 bg-background px-4 py-8 text-sm text-muted">
-              <div>当前筛选条件下暂无记录。</div>
-              <div className="mt-2">先去内部录入台新增提报，再回到这里推进审核。</div>
+              <div>{searchQuery ? '当前搜索条件下暂无记录。' : '当前筛选条件下暂无记录。'}</div>
+              <div className="mt-2">
+                {searchQuery
+                  ? '可以换一个关键词，或清空搜索后继续按状态推进审核。'
+                  : '先去内部录入台新增提报，再回到这里推进审核。'}
+              </div>
               <div className="mt-4">
-                <Link
-                  href={appendReturnTo('/submit-stock', currentListHref)}
-                  className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-teal-DEFAULT hover:bg-surface"
-                >
-                  去内部录入 →
-                </Link>
+                <div className="flex flex-wrap gap-3">
+                  {searchQuery ? (
+                    <Link
+                      href={clearSearchHref}
+                      className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-surface"
+                    >
+                      清空搜索
+                    </Link>
+                  ) : null}
+                  <Link
+                    href={appendReturnTo('/submit-stock', currentListHref)}
+                    className="inline-flex rounded-lg border border-border px-4 py-2 text-sm font-medium text-teal-DEFAULT hover:bg-surface"
+                  >
+                    去内部录入 →
+                  </Link>
+                </div>
               </div>
             </div>
           ) : (
@@ -381,20 +453,20 @@ export default async function AdminSubmissionsPage({
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-4 border-t border-border pt-6">
-              {page > 1 && (
+              {currentPage > 1 && (
                 <Link
-                  href={buildSubmissionsListHref(page - 1, statusFilter)}
+                  href={buildSubmissionsListHref(currentPage - 1, statusFilter, searchQuery)}
                   className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background"
                 >
                   上一页
                 </Link>
               )}
               <span className="text-sm text-muted">
-                第 {page} / {totalPages} 页
+                第 {currentPage} / {totalPages} 页
               </span>
-              {page < totalPages && (
+              {currentPage < totalPages && (
                 <Link
-                  href={buildSubmissionsListHref(page + 1, statusFilter)}
+                  href={buildSubmissionsListHref(currentPage + 1, statusFilter, searchQuery)}
                   className="rounded-lg border border-border px-4 py-2 text-sm hover:bg-background"
                 >
                   下一页

@@ -22,23 +22,33 @@ function getSingleParam(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value
 }
 
+function normalizeSearchQuery(value: string | string[] | undefined) {
+  return getSingleParam(value)?.trim().replace(/\s+/g, ' ').slice(0, 80) ?? ''
+}
+
 function getPageNumber(value: string | string[] | undefined) {
   const parsed = Number.parseInt(getSingleParam(value) || '1', 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
 }
 
 function buildInventoryHref({
+  q,
   brand,
   market,
   sort,
   page,
 }: {
+  q?: string
   brand?: string
   market?: string
   sort?: string
   page?: number
 }) {
   const searchParams = new URLSearchParams()
+
+  if (q) {
+    searchParams.set('q', q)
+  }
 
   if (brand) {
     searchParams.set('brand', brand)
@@ -58,6 +68,39 @@ function buildInventoryHref({
 
   const query = searchParams.toString()
   return query ? `/inventory?${query}` : '/inventory'
+}
+
+// 中文注释：首版搜索用轻量关键词匹配，优先覆盖买家最常搜的字段，不引入复杂相关度系统。
+function inventoryMatchesSearchQuery(item: InventoryRecord, searchQuery: string) {
+  if (!searchQuery) {
+    return true
+  }
+
+  const queryTokens = searchQuery
+    .toLowerCase()
+    .split(' ')
+    .map((token) => token.trim())
+    .filter(Boolean)
+
+  if (queryTokens.length === 0) {
+    return true
+  }
+
+  const haystack = [
+    item.title,
+    item.brand,
+    item.product_type,
+    item.flavor,
+    item.market,
+    item.warehouse_location,
+    item.pricing_note,
+    ...(item.featured_markets ?? []),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  return queryTokens.every((token) => haystack.includes(token))
 }
 
 function FacetList({
@@ -128,6 +171,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const params = await searchParams
   const hasQueryModifiers = Boolean(
+    normalizeSearchQuery(params.q) ||
     getSingleParam(params.brand) ||
     getSingleParam(params.market) ||
     getSingleParam(params.sort) ||
@@ -161,6 +205,7 @@ export default async function InventoryPage({
     .select('brand, market, featured_markets')
     .eq('status', 'active')
 
+  const searchQuery = normalizeSearchQuery(params.q)
   const brandSlug = getSingleParam(params.brand)
   const marketSlug = getSingleParam(params.market)
   const sort = getSingleParam(params.sort)
@@ -191,6 +236,7 @@ export default async function InventoryPage({
   }
 
   const filteredItems = ((inventory ?? []) as InventoryRecord[])
+    .filter((item) => inventoryMatchesSearchQuery(item, searchQuery))
     .filter((item) => (market ? inventoryTargetsFeaturedMarket(item, market) : true))
     .sort((left, right) => {
       if (sort === 'price_asc') {
@@ -214,13 +260,15 @@ export default async function InventoryPage({
 
   const totalItems = filteredItems.length
   const totalPages = totalItems > 0 ? Math.ceil(totalItems / ITEMS_PER_PAGE) : 1
-  const from = (page - 1) * ITEMS_PER_PAGE
+  const currentPage = Math.min(page, totalPages)
+  const from = (currentPage - 1) * ITEMS_PER_PAGE
   const items = filteredItems.slice(from, from + ITEMS_PER_PAGE)
-  const newestHref = buildInventoryHref({ brand: brandSlug, market: marketSlug })
-  const priceAscHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, sort: 'price_asc' })
+  const newestHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug })
+  const priceAscHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort: 'price_asc' })
   const clearFiltersHref = '/inventory'
-  const clearBrandHref = buildInventoryHref({ market: marketSlug, sort })
-  const clearMarketHref = buildInventoryHref({ brand: brandSlug, sort })
+  const clearBrandHref = buildInventoryHref({ q: searchQuery, market: marketSlug, sort })
+  const clearMarketHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, sort })
+  const clearSearchHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, sort })
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
@@ -231,8 +279,14 @@ export default async function InventoryPage({
             Filter live wholesale inventory by brand and market before opening product-level inquiries.
           </p>
 
-          {(brand || market) && (
+          {(searchQuery || brand || market) && (
             <div className="flex flex-wrap gap-2 mb-6">
+              {searchQuery && (
+                <span className="text-xs bg-surface border border-border px-2 py-1 rounded-md flex items-center gap-1">
+                  Search: {searchQuery}
+                  <Link href={clearSearchHref} className="text-muted hover:text-foreground ml-1">×</Link>
+                </span>
+              )}
               {brand && (
                 <span className="text-xs bg-surface border border-border px-2 py-1 rounded-md flex items-center gap-1">
                   Brand: {brand}
@@ -254,7 +308,7 @@ export default async function InventoryPage({
               title="Brands"
               items={availableBrands}
               activeSlug={brandSlug}
-              buildHref={(slug) => buildInventoryHref({ brand: slug, market: marketSlug, sort })}
+              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: slug, market: marketSlug, sort })}
               emptyLabel="No brands available yet."
             />
 
@@ -262,7 +316,7 @@ export default async function InventoryPage({
               title="Markets"
               items={availableMarkets}
               activeSlug={marketSlug}
-              buildHref={(slug) => buildInventoryHref({ brand: brandSlug, market: slug, sort })}
+              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: brandSlug, market: slug, sort })}
               emptyLabel="No markets available yet."
             />
           </div>
@@ -277,10 +331,60 @@ export default async function InventoryPage({
           </p>
         </div>
 
+        <div className="mb-8 rounded-2xl border border-border bg-surface p-4 sm:p-5">
+          <form action="/inventory" method="get" className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            {brandSlug ? <input type="hidden" name="brand" value={brandSlug} /> : null}
+            {marketSlug ? <input type="hidden" name="market" value={marketSlug} /> : null}
+            {sort && sort !== 'newest' ? <input type="hidden" name="sort" value={sort} /> : null}
+            <div className="flex-1">
+              <label htmlFor="inventory-search" className="mb-2 block text-sm font-medium text-foreground">
+                Search inventory
+              </label>
+              <input
+                id="inventory-search"
+                name="q"
+                defaultValue={searchQuery}
+                placeholder="Search by brand, model, flavor, market, or warehouse"
+                className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground outline-none transition-colors placeholder:text-muted focus:border-teal-DEFAULT"
+              />
+            </div>
+            <div className="flex gap-3 lg:self-end">
+              <button
+                type="submit"
+                className="rounded-xl bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background hover:bg-teal-hover transition-colors"
+              >
+                Search
+              </button>
+              {(searchQuery || brand || market || sort) && (
+                <Link
+                  href={clearFiltersHref}
+                  className="rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground hover:bg-background transition-colors"
+                >
+                  Reset
+                </Link>
+              )}
+            </div>
+          </form>
+
+          {searchQuery ? (
+            <p className="mt-3 text-sm text-muted">
+              Showing results for <span className="font-medium text-foreground">&quot;{searchQuery}&quot;</span>.
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-muted">
+              Search active listings by brand, model keywords, flavor, target market, or warehouse location.
+            </p>
+          )}
+        </div>
+
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-border pb-4">
           <div>
             <p className="text-lg font-semibold">{totalItems} Active Listings</p>
-            <p className="text-sm text-muted mt-1">Use filters to find bulk disposable vape stock, compare active listings, and move quickly into supplier inquiry.</p>
+            <p className="text-sm text-muted mt-1">
+              {searchQuery
+                ? 'Search results stay compatible with your current filters and sorting so you can move faster into supplier inquiry.'
+                : 'Use filters to find bulk disposable vape stock, compare active listings, and move quickly into supplier inquiry.'}
+            </p>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -302,20 +406,20 @@ export default async function InventoryPage({
 
             {totalPages > 1 && (
               <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-border">
-                {page > 1 && (
+                {currentPage > 1 && (
                   <Link
-                    href={buildInventoryHref({ brand: brandSlug, market: marketSlug, sort, page: page - 1 })}
+                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort, page: currentPage - 1 })}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
                   >
                     Previous
                   </Link>
                 )}
                 <span className="text-sm text-muted px-4">
-                  Page {page} of {totalPages}
+                  Page {currentPage} of {totalPages}
                 </span>
-                {page < totalPages && (
+                {currentPage < totalPages && (
                   <Link
-                    href={buildInventoryHref({ brand: brandSlug, market: marketSlug, sort, page: page + 1 })}
+                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort, page: currentPage + 1 })}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
                   >
                     Next
@@ -327,10 +431,21 @@ export default async function InventoryPage({
         ) : (
           <div className="text-center py-20 bg-surface rounded-xl border border-border">
             <h3 className="text-lg font-bold mb-2">No inventory found</h3>
-            <p className="text-muted mb-6">No wholesale vape inventory matches your current filters. Clear filters to view all active bulk listings.</p>
-            <Link href={clearFiltersHref} className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
-              Clear Filters
-            </Link>
+            <p className="text-muted mb-6">
+              {searchQuery
+                ? `No wholesale vape inventory matches "${searchQuery}" with your current filters. Try another keyword or return to all active listings.`
+                : 'No wholesale vape inventory matches your current filters. Clear filters to view all active bulk listings.'}
+            </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              {searchQuery ? (
+                <Link href={clearSearchHref} className="px-6 py-2 border border-border rounded-lg font-medium hover:bg-background transition-colors">
+                  Clear Search
+                </Link>
+              ) : null}
+              <Link href={clearFiltersHref} className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
+                View All Inventory
+              </Link>
+            </div>
           </div>
         )}
 

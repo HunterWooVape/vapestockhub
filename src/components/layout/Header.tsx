@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Search } from 'lucide-react'
 
 import { getTrackedContactHref } from '@/lib/site'
 
@@ -46,9 +47,10 @@ export default function Header() {
           </a>
           <Link 
             href="/inventory"
-            className="text-sm font-medium bg-surface border border-border px-4 py-2 rounded-lg hover:bg-border transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-medium bg-surface border border-border px-4 py-2 rounded-lg hover:bg-border transition-colors"
           >
-            Browse Inventory
+            <Search className="h-4 w-4" />
+            Search Inventory
           </Link>
         </div>
       </div>
