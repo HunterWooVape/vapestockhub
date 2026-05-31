@@ -31,6 +31,9 @@ export default function Header() {
           <Link href="/price" className="text-sm font-medium text-teal-DEFAULT hover:text-teal-hover transition-colors">
             Price Range
           </Link>
+          <Link href="/blog" className="text-sm font-medium text-muted hover:text-foreground transition-colors">
+            Blog
+          </Link>
         </nav>
 
         {/* Actions */}

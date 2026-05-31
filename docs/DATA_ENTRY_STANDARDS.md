@@ -73,13 +73,18 @@
 - 不要在标题中堆叠过多营销词。
 
 ## 8. product_type 写法
-- MVP 阶段建议固定以下值：
-  - Disposable
+- 当前阶段主推库存多为 `Disposable Vape`，但发布层不应把所有产品强行归为一次性产品。
+- `product_type` 使用固定标准枚举，推荐值：
+  - Disposable Vape
+  - Pod Kit
   - Pod System
-  - Kit
+  - Vape Kit
   - E-liquid
   - Accessory
-- 不要同义词混用，如 Disposable / Disposable Vape / Disposable Device。
+  - Device
+  - Other
+- 不要同义词混用，如 Disposable / Disposable / Disposable Device；明显属于一次性电子烟时统一为 `Disposable Vape`。
+- 若产品类型无法稳定判断，先保留为 `Other` 或进入人工复核，不要由 AI 静默硬改。
 
 ## 9. contact_visibility 写法
 - 仅允许两种值：
@@ -127,6 +132,37 @@
   - 只有一句空泛介绍
   - 大量形容词堆叠
   - 写成面向零售消费者的广告文案
+
+## 12.1 LLM 辅助标题与描述生成口径
+- 允许运营把供应商资料、Excel 行、聊天记录、官网参数、产品说明复制到原始资料区，由 LLM 辅助拆解和重写。
+- 后续真实 API 接入应采用可配置 provider 方案，优先兼容 DeepSeek API；不要把业务流程绑定到单一模型厂商。
+- LLM 调用只应发生在服务端后台流程，例如 `AI Draft Package` 生成或刷新；公开页面不实时调用 LLM 生成 title / description。
+- LLM 适合负责：
+  - 提取 `brand`、`model_name`、`product_type`、`puff`、`flavor`、`quantity`、`MOQ`、`warehouse_location` 等字段候选值
+  - 生成规范 `title` 草稿
+  - 生成 `seo_title_suggestion`
+  - 生成 `seo_description_suggestion`
+  - 整理 `description_summary`
+  - 保留并清洗 `manifest_notes`
+  - 提炼 `product_features`
+  - 标记 `missingFields`、`riskFlags`、`humanReviewFocus`
+- LLM 不允许负责：
+  - 编造品牌、型号、认证、产地、库存、价格或仓库
+  - 判断库存一定可售
+  - 判断某市场一定合规
+  - 自动发布库存
+- API 输出必须先进入人工可审查的草稿层，不能直接覆盖已发布页面。
+- 推荐 title 模板：
+  - `Disposable Vape`：`Brand + Model + Puff Count + Disposable Vape`
+  - `Pod Kit`：`Brand + Model + Pod Kit`
+  - `Vape Kit`：`Brand + Model + Vape Kit`
+  - `E-liquid`：`Brand + Flavor/Series + E-liquid`
+  - `Accessory`：`Brand + Product Name + Vape Accessory`
+- 推荐 description 结构：
+  - 一段 B2B stock summary
+  - 一段关键规格 / 产品特点摘要
+  - 一段库存清单、口味、数量、仓库、MOQ 或交易备注
+  - 保持事实表达，不写成零售广告。
 
 ## 13. 正式上线前的发布门槛
 - 正式上线前，以下字段不建议缺失：
@@ -221,6 +257,9 @@
   - `rawText`
 - `normalizedFields` 至少保留：
   - `title`
+  - `model_name`
+  - `seo_title_suggestion`
+  - `seo_description_suggestion`
   - `slug`
   - `brand`
   - `product_type`
@@ -236,9 +275,13 @@
   - `images`
   - `flavor_tags`
   - `flavor_breakdown`
+  - `product_features`
   - `description_summary`
   - `manifest_notes`
 - admin 回填时：
+  - `title` 回填到发布标题
+  - `model_name`、`seo_title_suggestion`、`seo_description_suggestion`、`product_features` 先作为 AI 草稿包审查信息保留，不立即写入 inventory 数据库字段
+  - `product_type` 必须先归一到 canonical value，例如 `Vape Kits` / `starter kit` → `Vape Kit`
   - `description_summary` + `manifest_notes` 合并回填到 `description`
   - `flavor_tags` 回填到 `flavor`
   - 默认状态仍为 `draft`

@@ -28,6 +28,7 @@ export default function Footer() {
               <li><Link href="/market" className="hover:text-foreground transition-colors">Find by Market</Link></li>
               <li><Link href="/brand" className="hover:text-foreground transition-colors">Find by Brand</Link></li>
               <li><Link href="/price" className="hover:text-foreground transition-colors">Find by Price</Link></li>
+              <li><Link href="/blog" className="hover:text-foreground transition-colors">Sourcing Guides</Link></li>
               <li><Link href="/about" className="hover:text-foreground transition-colors">About</Link></li>
               <li><Link href="/contact" className="hover:text-foreground transition-colors">Contact</Link></li>
             </ul>

@@ -36,8 +36,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .eq('brand', brandName)
   
   return {
-    title: `${brandName} Wholesale Vape Inventory | VapeStockHub`,
-    description: `Browse active wholesale listings for ${brandName}, including bulk stock offers, current availability, and inquiry-ready inventory for B2B buyers.`,
+    title: `${brandName} Wholesale Vape Stock | VapeStockHub`,
+    description: `Browse active ${brandName} wholesale vape stock, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings for B2B buyers.`,
     alternates: {
       canonical: `${siteConfig.url}/brand/${resolvedParams.slug}`,
     },
@@ -83,10 +83,10 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Vape Inventory
+          <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Vape Stock
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Browse active {brandName} wholesale inventory, including bulk stock offers, current availability, and inquiry-ready listings for B2B buyers.
+          Browse active {brandName} wholesale vape stock, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings for B2B buyers.
         </p>
       </div>
 
@@ -94,7 +94,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Compare live {brandName} wholesale listings by MOQ, market fit, price visibility, and stock depth before sending your inquiry.</p>
+            <p className="text-sm text-muted mt-1">Compare live {brandName} wholesale listings by MOQ, warehouse, market fit, price visibility, and stock depth before sending your inquiry.</p>
           </div>
         </div>
 
@@ -126,7 +126,25 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
             </p>
           </div>
           <div className="rounded-xl border border-border bg-surface p-6">
-            <h3 className="text-lg font-bold mb-2">How do I request live price and availability for {brandName} stock?</h3>
+            <h3 className="text-lg font-bold mb-2">What warehouse details should I check for {brandName} stock?</h3>
+            <p className="text-sm text-muted">
+              Check warehouse location, available quantity, MOQ, and whether the listing matches your sourcing route before requesting live availability.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">Are there {brandName} clearance or budget stock offers?</h3>
+            <p className="text-sm text-muted">
+              Clearance and budget opportunities depend on active inventory. Review visible prices, pricing notes, and related price-band pages before sending an inquiry.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">Can I ask for related or alternative stock if {brandName} is unavailable?</h3>
+            <p className="text-sm text-muted">
+              Yes. Use direct inquiry to ask for related stock or wholesale-friendly alternatives while keeping brand and product relationships clearly labeled.
+            </p>
+          </div>
+          <div className="rounded-xl border border-border bg-surface p-6">
+            <h3 className="text-lg font-bold mb-2">How do I request {brandName} wholesale price?</h3>
             <p className="text-sm text-muted">
               Use the Telegram or WhatsApp inquiry button on the listing you want. The message includes product context so the supplier can confirm price and stock faster.
             </p>

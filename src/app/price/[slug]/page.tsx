@@ -17,6 +17,43 @@ type PriceRangeQuery<T> = {
 
 const allowedPriceTierSlugs = new Set(['under-3', '3-to-5', '5-to-8', 'over-8'])
 
+const priceTierCopy: Record<string, {
+  h1: string
+  title: string
+  description: string
+  intro: string
+  listingSummary: string
+}> = {
+  'under-3': {
+    h1: 'Cheap Disposable Vapes for Wholesale Clearance',
+    title: 'Cheap Disposable Vapes for Wholesale Clearance | VapeStockHub',
+    description: 'Review low-cost disposable vape stock, clearance-ready offers, and budget wholesale listings. Compare MOQ, unit price, warehouse, and live availability before sending an inquiry.',
+    intro: 'Use this price band to screen low-cost disposable vape offers for wholesale and clearance sourcing. Listings may move quickly, so confirm live price, MOQ, remaining quantity, and warehouse location before committing.',
+    listingSummary: 'Use this clearance-focused price band to compare budget stock, MOQ, warehouse, and live availability before opening product-level inquiries.',
+  },
+  '3-to-5': {
+    h1: 'Wholesale Disposable Vapes from $3 to $5',
+    title: 'Wholesale Disposable Vapes from $3 to $5 | VapeStockHub',
+    description: 'Review wholesale disposable vape stock from $3 to $5, including bulk offers, MOQ, warehouse location, and live availability before requesting a quote.',
+    intro: 'Use this price band to screen mainstream wholesale disposable vape offers with balanced margin potential, stable bulk sourcing fit, and clear MOQ signals.',
+    listingSummary: 'Use this price-band inventory hub to compare balanced wholesale offers before opening product-level inquiries.',
+  },
+  '5-to-8': {
+    h1: 'Disposable Vape Wholesale Stock from $5 to $8',
+    title: 'Disposable Vape Wholesale Stock from $5 to $8 | VapeStockHub',
+    description: 'Browse disposable vape wholesale stock from $5 to $8 by MOQ, warehouse, and availability before requesting live price confirmation.',
+    intro: 'Use this price band to review higher-ticket wholesale disposable vape offers with stronger feature sets and clear sourcing context.',
+    listingSummary: 'Use this price-band inventory hub to compare active wholesale stock before opening product-level inquiries.',
+  },
+  'over-8': {
+    h1: 'Disposable Vape Wholesale Stock Over $8',
+    title: 'Disposable Vape Wholesale Stock Over $8 | VapeStockHub',
+    description: 'Browse higher-ticket disposable vape wholesale stock over $8 by MOQ, warehouse, and availability before requesting live price confirmation.',
+    intro: 'Use this price band to review higher-ticket wholesale stock, advanced hardware, specialty inventory lines, and live availability context.',
+    listingSummary: 'Use this price-band inventory hub to compare active wholesale stock before opening product-level inquiries.',
+  },
+}
+
 function isSupportedPriceTierSlug(slug: string) {
   return allowedPriceTierSlugs.has(slug)
 }
@@ -65,7 +102,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   }
 
   const supabase = await createClient()
-  const { query, priceDesc } = applyPriceRangeQuery(
+  const { query } = applyPriceRangeQuery(
     resolvedParams.slug,
     supabase
       .from('inventory')
@@ -74,10 +111,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       .eq('pricing_mode', 'exact_price')
   )
   const { count } = await query
+  const tierCopy = priceTierCopy[resolvedParams.slug]
   
   return {
-    title: `Wholesale Disposable Vape Inventory ${priceDesc} | VapeStockHub`,
-    description: 'Review active wholesale disposable vape listings in this price band, compare MOQ and stock depth, and send an inquiry for live availability.',
+    title: tierCopy.title,
+    description: tierCopy.description,
     alternates: {
       canonical: `${siteConfig.url}/price/${resolvedParams.slug}`,
     },
@@ -105,7 +143,7 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
     .order('price', { ascending: true })
   const rangeResult = applyPriceRangeQuery(resolvedParams.slug, query)
   query = rangeResult.query
-  const priceDesc = rangeResult.priceDesc
+  const tierCopy = priceTierCopy[resolvedParams.slug]
 
   const { data: inventory, error } = await query
 
@@ -118,13 +156,11 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-DEFAULT/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
-        
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 relative z-10">
-          Wholesale Disposable Vape Inventory <span className="text-teal-DEFAULT">{priceDesc}</span>
+          {tierCopy.h1}
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto relative z-10">
-          Review active wholesale stock within this price band, compare unit-price aligned listings, and send an inquiry when you find the right inventory fit.
+          {tierCopy.intro}
         </p>
       </div>
 
@@ -132,7 +168,7 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
         <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
           <div>
             <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this price-band inventory hub to screen clearance-ready and budget-aligned stock before opening product-level inquiries.</p>
+            <p className="text-sm text-muted mt-1">{tierCopy.listingSummary}</p>
           </div>
         </div>
 
@@ -152,6 +188,49 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
           </div>
         )}
       </div>
+
+      {resolvedParams.slug === 'under-3' && (
+        <section className="border-t border-border pt-12">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold">Wholesale Clearance FAQ</h2>
+            <p className="text-muted mt-2 max-w-3xl">
+              Key questions for buyers reviewing cheap disposable vapes and clearance-ready wholesale stock.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Where can I find cheap disposable vapes in bulk?</h3>
+              <p className="text-sm text-muted">
+                This price band shows active exact-price listings under $3. Confirm MOQ, remaining quantity, warehouse, and live availability before sourcing.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Are these clearance disposable vapes ready to ship?</h3>
+              <p className="text-sm text-muted">
+                Warehouse and availability details vary by listing. Use Telegram or WhatsApp to confirm whether the stock is ready for your route.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Why do prices change after inquiry?</h3>
+              <p className="text-sm text-muted">
+                Clearance stock can move quickly. Final price can depend on quantity, warehouse, flavor mix, and current stock status.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Can I mix brands or flavors in a budget order?</h3>
+              <p className="text-sm text-muted">
+                Mixed orders depend on active stock and MOQ. Include your target quantity and flavor preference in the inquiry.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Is this a retail checkout page?</h3>
+              <p className="text-sm text-muted">
+                No. This page is for wholesale inventory discovery and direct B2B inquiry, not retail cart checkout.
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
     </main>
   )
 }

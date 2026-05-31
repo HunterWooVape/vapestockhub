@@ -68,7 +68,8 @@ export default function InventoryCard({ item }: { item: InventoryItem }) {
           
           {/* Warehouse Location - Bottom Right of Image */}
           <div className="absolute bottom-3 right-3 text-[11px] font-semibold text-white bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10 shadow-sm flex items-center gap-1">
-            <span className="text-teal-DEFAULT">📍</span> {item.warehouse_location}
+            <span className="text-teal-DEFAULT">Warehouse:</span>
+            <span className="max-w-[150px] truncate">{item.warehouse_location || 'On inquiry'}</span>
           </div>
         </div>
         

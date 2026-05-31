@@ -11,7 +11,7 @@ import { getTelegramUrl, getWhatsAppUrl } from '@/lib/site'
 
 export const dynamic = 'force-dynamic'
 
-const allowedSourcePageTypes = new Set(['inventory', 'market', 'brand', 'price', 'home', 'contact'])
+const allowedSourcePageTypes = new Set(['inventory', 'market', 'brand', 'price', 'home', 'contact', 'blog'])
 const maxTrackedSlugLength = 120
 const maxTrackedMessageLength = 500
 
@@ -51,7 +51,7 @@ export async function GET(
 
   const rawSourcePageType = searchParams.get('sourcePageType')
   const sourcePageType = allowedSourcePageTypes.has(rawSourcePageType ?? '')
-    ? (rawSourcePageType as 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact')
+    ? (rawSourcePageType as 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact' | 'blog')
     : 'inventory'
   const sourcePageSlug = normalizeTrackedSlug(searchParams.get('sourcePageSlug'), 'unknown')
   const itemSlug = normalizeTrackedSlug(searchParams.get('itemSlug'), '')

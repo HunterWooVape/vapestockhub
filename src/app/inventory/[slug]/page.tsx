@@ -32,40 +32,100 @@ const getInventoryItem = cache(async (slug: string) => {
 
 function buildInventoryMetadataDescription(item: InventoryRecord) {
   const featuredMarkets = getInventoryFeaturedMarkets(item)
+  const marketFit = featuredMarkets.length > 0
+    ? featuredMarkets.join(', ')
+    : item.market || 'qualified buyers'
   const summaryParts = [
-    `${item.brand} wholesale stock offer`,
-    item.market ? `availability ${item.market}` : '',
-    featuredMarkets.length > 0 ? `featured for ${featuredMarkets.join(', ')}` : '',
-    `${item.quantity.toLocaleString()} pcs in stock`,
+    `Active wholesale ${item.product_type} stock offer`,
+    `${item.quantity.toLocaleString()} pcs available`,
     `MOQ ${item.moq.toLocaleString()} pcs`,
-    item.warehouse_location ? `warehouse ${item.warehouse_location}` : '',
+    item.warehouse_location ? `warehouse in ${item.warehouse_location}` : '',
+    `market fit for ${marketFit}`,
   ].filter(Boolean)
 
-  if (item.puff) {
-    summaryParts.splice(2, 0, `${item.puff.toLocaleString()} puffs`)
-  }
-
-  if (item.production_date_text) {
-    summaryParts.push(`production ${item.production_date_text}`)
-  }
-
   if (item.pricing_mode === 'inquiry_only') {
-    summaryParts.push('pricing on request')
+    summaryParts.push('Pricing is available on request')
   }
 
-  return `${summaryParts.join(', ')}.`
+  if (item.is_urgent_clearance) {
+    summaryParts.push('Clearance stock may move quickly; confirm remaining quantity before ordering')
+  }
+
+  return `${summaryParts.join(', ')}. Request live price and availability before committing.`
 }
 
-// 中文注释：统一详情页标题口径，让页面更像可询盘的库存要约页。
-function buildInventoryMetadataTitle(item: InventoryRecord) {
-  const titleParts = [`${item.title} Wholesale Inventory Offer`]
+function getSeoProductType(productType: string) {
+  const normalizedType = productType.trim().toLowerCase()
 
-  if (item.market) {
-    titleParts.push(item.market)
+  if (normalizedType === 'disposable vape') {
+    return 'Disposable Vape'
   }
 
-  titleParts.push('VapeStockHub')
-  return titleParts.join(' | ')
+  if (normalizedType === 'pod kit') {
+    return 'Pod Kit'
+  }
+
+  if (normalizedType === 'pod system') {
+    return 'Pod System'
+  }
+
+  if (normalizedType === 'pod') {
+    return 'Pod'
+  }
+
+  if (normalizedType === 'vape kit' || normalizedType === 'vape kits') {
+    return 'Vape Kit'
+  }
+
+  if (normalizedType === 'e-liquid' || normalizedType === 'eliquid') {
+    return 'E-liquid'
+  }
+
+  if (normalizedType === 'device') {
+    return 'Vape Device'
+  }
+
+  if (normalizedType === 'accessory') {
+    return 'Vape Accessory'
+  }
+
+  return 'Vape'
+}
+
+function buildInventoryMetadataTitle(item: InventoryRecord) {
+  return `${item.title} Wholesale ${getSeoProductType(item.product_type)} Stock | VapeStockHub`
+}
+
+function buildInventoryJsonLd(item: InventoryRecord, unlocked: boolean) {
+  const pageUrl = `${siteConfig.url}/inventory/${item.slug}`
+  const image = getInventoryImageSrc(item.images)
+  const offer: Record<string, string | number> = {
+    '@type': 'Offer',
+    url: pageUrl,
+    availability: item.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+    itemCondition: 'https://schema.org/NewCondition',
+  }
+
+  if (unlocked) {
+    offer.price = Number(item.price.toFixed(2))
+    offer.priceCurrency = 'USD'
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: item.title,
+    brand: {
+      '@type': 'Brand',
+      name: item.brand,
+    },
+    category: item.product_type,
+    image: image.startsWith('http') ? image : `${siteConfig.url}${image}`,
+    description: buildInventoryMetadataDescription(item),
+    sku: item.slug,
+    url: pageUrl,
+    offers: offer,
+  }
 }
 
 // Dynamically generate SEO metadata based on the inventory item
@@ -103,6 +163,7 @@ export default async function InventoryDetailPage({
   const isInquiryOnly = item.pricing_mode === 'inquiry_only'
   const unlocked = item.contact_visibility === 'public' && !isInquiryOnly
   const hasRealImage = hasRealInventoryImage(item.images)
+  const inventoryJsonLd = buildInventoryJsonLd(item, unlocked)
 
   const isHot = item.is_featured || item.quantity < 5000
   const flavorList = item.flavor ? item.flavor.split(',').map((f: string) => f.trim()).filter(Boolean) : []
@@ -114,20 +175,28 @@ export default async function InventoryDetailPage({
   const marketSlug = primaryMarketLabel ? toSlug(primaryMarketLabel) : ''
   const inventoryFaqs = [
     {
-      question: `Can I buy ${item.brand} stock in bulk from this listing?`,
+      question: `Can I buy ${item.brand} ${item.product_type} stock in bulk from this listing?`,
       answer: 'Yes, if the listing is still active. Review quantity, MOQ, market fit, and price visibility, then use the inquiry button to confirm current availability.',
     },
     {
-      question: 'What details should I confirm before sending an inquiry?',
-      answer: 'Focus on available quantity, MOQ, warehouse location, target market, flavor coverage, and whether pricing is public or inquiry-only.',
-    },
-    {
-      question: 'How is pricing handled for this inventory offer?',
+      question: `How do I confirm the wholesale price for ${item.title}?`,
       answer: isInquiryOnly
         ? 'This listing uses inquiry-only pricing. Send a message with the listing context to request a live quote and confirm stock terms.'
         : unlocked
           ? 'The page shows the current visible wholesale price. You should still confirm live availability and final terms during direct contact.'
           : 'Pricing is unlocked during direct contact so current stock and trading terms can be confirmed together.',
+    },
+    {
+      question: 'What MOQ and warehouse details should I check?',
+      answer: `Check the MOQ, available quantity, warehouse location${item.warehouse_location ? ` (${item.warehouse_location})` : ''}, target market, and whether the listing supports your sourcing route.`,
+    },
+    {
+      question: 'Is this listing ready for immediate inquiry?',
+      answer: 'Yes, active listings are ready for direct inquiry. Confirm live availability before committing because stock and price can change quickly.',
+    },
+    {
+      question: 'Can I request mixed flavors or related stock?',
+      answer: 'Yes. Include flavor preferences, target quantity, and related product needs in your Telegram or WhatsApp inquiry so matching stock can be checked faster.',
     },
   ]
 
@@ -149,6 +218,12 @@ export default async function InventoryDetailPage({
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(inventoryJsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
       <div className="mb-8">
         <div className="flex items-center gap-2 text-sm text-muted mb-4">
           <Link href="/" className="hover:text-foreground transition-colors">Home</Link>
@@ -159,7 +234,7 @@ export default async function InventoryDetailPage({
         </div>
 
         <p className="text-sm font-medium uppercase tracking-[0.2em] text-teal-DEFAULT/80">
-          Inventory Offer
+          Wholesale Stock Offer
         </p>
 
         <h1 className="text-3xl md:text-4xl font-bold text-foreground flex items-center flex-wrap gap-4">
@@ -177,14 +252,14 @@ export default async function InventoryDetailPage({
         </h1>
         <p className="text-muted mt-4 max-w-3xl">
           {item.market && featuredMarkets.length > 0
-            ? `Active wholesale stock offer with ${item.market} availability, prioritized for ${featuredMarkets.join(', ')} buyers${item.warehouse_location ? ` and stocked in ${item.warehouse_location}` : ''}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+            ? `Active wholesale ${item.product_type} stock offer with ${item.market} availability, prioritized for ${featuredMarkets.join(', ')} buyers${item.warehouse_location ? ` and stocked in ${item.warehouse_location}` : ''}. Review quantity, MOQ, warehouse, and pricing terms before sending your inquiry.`
             : item.market && item.warehouse_location
-              ? `Active wholesale stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+              ? `Active wholesale ${item.product_type} stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
               : item.market
-                ? `Active wholesale stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+                ? `Active wholesale ${item.product_type} stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
                 : item.warehouse_location
-                  ? `Active wholesale stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-                  : 'Active wholesale stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.'}
+                  ? `Active wholesale ${item.product_type} stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
+                  : `Active wholesale ${item.product_type} stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.`}
         </p>
       </div>
 
@@ -353,9 +428,9 @@ export default async function InventoryDetailPage({
                       ? 'Request Live Quote via Telegram'
                       : unlocked
                         ? 'Request Availability via Telegram'
-                        : 'Contact for Price via Telegram'
+                        : 'Request Wholesale Price via Telegram'
                   }
-                  message={`Hi VapeStockHub, I'm interested in the [${item.title}] (Availability: ${item.market}${featuredMarkets.length > 0 ? ` | Featured Markets: ${featuredMarkets.join(', ')}` : ''}). Could you share the wholesale price and availability?`}
+                  message={`Hi VapeStockHub, I'm interested in ${item.title}. Please confirm live price, MOQ (${item.moq.toLocaleString()} pcs), available quantity (${item.quantity.toLocaleString()} pcs), and warehouse availability${item.warehouse_location ? ` for ${item.warehouse_location}` : ''}.${featuredMarkets.length > 0 ? ` Featured markets: ${featuredMarkets.join(', ')}.` : ''}`}
                 />
 
                 {(isInquiryOnly || !unlocked) && (
@@ -383,7 +458,7 @@ export default async function InventoryDetailPage({
 
       <section className="mt-16 border-t border-border pt-12">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold">Inventory Offer FAQ</h2>
+          <h2 className="text-2xl font-bold">Wholesale Stock Offer FAQ</h2>
           <p className="text-muted mt-2 max-w-3xl">
             Key questions buyers review before requesting live price and availability for this stock offer.
           </p>

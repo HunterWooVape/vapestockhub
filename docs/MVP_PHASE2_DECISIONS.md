@@ -645,6 +645,18 @@
   - 允许管理员继续在 edit 页面复核
 - 也就是说，导入入口只是“draft 生成入口”，不是“发布入口”。
 
+### 2.57.1 已确认的真实 LLM Provider 方向
+- 后续真实 API 接入优先兼容 DeepSeek API。
+- 实现时应采用 provider adapter，而不是把后台流程写死到某一个厂商 SDK。
+- 建议环境变量形态：
+  - `LLM_PROVIDER=deepseek`
+  - `DEEPSEEK_API_KEY`
+  - `DEEPSEEK_BASE_URL`
+  - `DEEPSEEK_MODEL`
+- API key 只允许服务端读取，不进入任何 `NEXT_PUBLIC_*` 变量。
+- LLM 调用只用于后台 AI Draft Package 生成或刷新，不用于公开页面实时 SEO 生成。
+- 模型输出必须进入人工可审查草稿层，不直接发布为 active。
+
 ### 2.58 已确认的 prompt 资产化形态
 - prompt 第一轮不以散落文本存在，而应作为代码侧可复用资产存在。
 - 第一轮 prompt 资产至少包含：

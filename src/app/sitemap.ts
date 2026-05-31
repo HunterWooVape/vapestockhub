@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next'
 
+import { blogArticles } from '@/lib/blog'
 import { buildInventoryFacets } from '@/lib/inventory'
 import { buildFeaturedMarketFacetsFromInventory, inventoryTargetsFeaturedMarket } from '@/lib/inventory-markets'
 import { siteConfig } from '@/lib/site'
@@ -53,6 +54,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
   ]
+
+  const indexableBlogArticles = blogArticles.filter((article) => article.indexable)
+
+  if (indexableBlogArticles.length > 0) {
+    routes.push({
+      url: `${siteConfig.url}/blog`,
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 0.7,
+    })
+  }
+
+  routes.push(
+    ...indexableBlogArticles.map((article) => ({
+      url: `${siteConfig.url}/blog/${article.slug}`,
+      lastModified: new Date(article.date),
+      changeFrequency: 'monthly' as const,
+      priority: 0.6,
+    }))
+  )
 
   // Fetch all active inventory slugs
   const { data: inventory } = await supabase

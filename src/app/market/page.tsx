@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 
 export const metadata = {
   title: 'Wholesale Vape Inventory by Target Market | VapeStockHub',
-  description: 'Browse wholesale vape inventory by target market and region to find active stock aligned with buyer destination, sourcing route, and inquiry priorities.',
+  description: 'Browse wholesale vape stock by target market and region to find active listings aligned with buyer destination, sourcing route, and inquiry priorities.',
 }
 
 export default async function MarketIndexPage() {
@@ -24,7 +24,7 @@ export default async function MarketIndexPage() {
           Browse Wholesale Inventory by <span className="text-teal-DEFAULT">Target Market</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Select a region to explore active wholesale stock aligned with your destination market, sourcing route, and current inquiry priorities.
+          Select a region to explore active wholesale stock aligned with buyer destination, sourcing route, warehouse context, and current inquiry priorities.
         </p>
       </div>
 

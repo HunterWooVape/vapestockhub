@@ -1,0 +1,1322 @@
+[
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214C 50mg Disposable Vape - Standard Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 1799\nMOQ: 1\nMarket: Global\nWarehouse: Headquarters, China\nNicotine: 50mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 5\nFlavor Breakdown:\nRaspberry Lemon: 399 pcs\nBlue Razz: 400 pcs\nPeach Orange: 400 pcs\nSour Watermelon Candy: 400 pcs\nMint Candy: 200 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214C 50mg Disposable Vape - Standard Version",
+      "slug": "ud214c-50mg-disposable-vape-standard-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "1799",
+      "moq": "1",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "50mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Raspberry Lemon",
+        "Blue Razz",
+        "Peach Orange",
+        "Sour Watermelon Candy",
+        "Mint Candy"
+      ],
+      "flavor_breakdown": "Raspberry Lemon: 399 pcs\nBlue Razz: 400 pcs\nPeach Orange: 400 pcs\nSour Watermelon Candy: 400 pcs\nMint Candy: 200 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214C standard version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214C standard version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nRaspberry Lemon: 399 pcs\nBlue Razz: 400 pcs\nPeach Orange: 400 pcs\nSour Watermelon Candy: 400 pcs\nMint Candy: 200 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214C一次性小烟",
+      "version": "Standard Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214C1 50mg Disposable Vape - Standard Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 700\nMOQ: 1\nMarket: Global\nWarehouse: Headquarters, China\nNicotine: 50mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 3\nFlavor Breakdown:\nWizard Lemon: 300 pcs\nCrystal Grape: 200 pcs\nBubble Cola: 200 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214C1 50mg Disposable Vape - Standard Version",
+      "slug": "ud214c1-50mg-disposable-vape-standard-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "700",
+      "moq": "1",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "50mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Wizard Lemon",
+        "Crystal Grape",
+        "Bubble Cola"
+      ],
+      "flavor_breakdown": "Wizard Lemon: 300 pcs\nCrystal Grape: 200 pcs\nBubble Cola: 200 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214C1 standard version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214C1 standard version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nWizard Lemon: 300 pcs\nCrystal Grape: 200 pcs\nBubble Cola: 200 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214C1一次性小烟",
+      "version": "Standard Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214C 50mg Disposable Vape - USA Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 3700\nMOQ: 1\nMarket: USA\nWarehouse: Headquarters, China\nNicotine: 50mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 5\nFlavor Breakdown:\nRaspberry Lemon: 700 pcs\nBlue Razz: 700 pcs\nPeach Orange: 900 pcs\nSour Watermelon Candy: 600 pcs\nMint Candy: 800 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214C 50mg Disposable Vape - USA Version",
+      "slug": "ud214c-50mg-disposable-vape-usa-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "3700",
+      "moq": "1",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "50mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Raspberry Lemon",
+        "Blue Razz",
+        "Peach Orange",
+        "Sour Watermelon Candy",
+        "Mint Candy"
+      ],
+      "flavor_breakdown": "Raspberry Lemon: 700 pcs\nBlue Razz: 700 pcs\nPeach Orange: 900 pcs\nSour Watermelon Candy: 600 pcs\nMint Candy: 800 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214C usa version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214C usa version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nRaspberry Lemon: 700 pcs\nBlue Razz: 700 pcs\nPeach Orange: 900 pcs\nSour Watermelon Candy: 600 pcs\nMint Candy: 800 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214C一次性小烟",
+      "version": "USA Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214-FR 20mg Disposable Vape - France Derived Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 2000\nMOQ: 1\nMarket: France\nWarehouse: Headquarters, China\nNicotine: 20mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 2\nFlavor Breakdown:\nStrawberry Ice Cream: 1,000 pcs\nTriple Melon: 1,000 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214-FR 20mg Disposable Vape - France Derived Version",
+      "slug": "ud214-fr-20mg-disposable-vape-france-derived-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "2000",
+      "moq": "1",
+      "market": "France",
+      "featured_markets": [
+        "Western Europe"
+      ],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "20mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Strawberry Ice Cream",
+        "Triple Melon"
+      ],
+      "flavor_breakdown": "Strawberry Ice Cream: 1,000 pcs\nTriple Melon: 1,000 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214-FR france derived version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214-FR france derived version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nStrawberry Ice Cream: 1,000 pcs\nTriple Melon: 1,000 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214-FR一次性小烟",
+      "version": "France Derived Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214 20mg Disposable Vape - France Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 100\nMOQ: 1\nMarket: France\nWarehouse: Headquarters, China\nNicotine: 20mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 1\nFlavor Breakdown:\nSour Apple Ice: 100 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214 20mg Disposable Vape - France Version",
+      "slug": "ud214-20mg-disposable-vape-france-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "100",
+      "moq": "1",
+      "market": "France",
+      "featured_markets": [
+        "Western Europe"
+      ],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "20mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Sour Apple Ice"
+      ],
+      "flavor_breakdown": "Sour Apple Ice: 100 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214 france version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214 france version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nSour Apple Ice: 100 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214一次性小烟",
+      "version": "France Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 总部-214口味明细\nBrand: Pending Brand\nTitle: UD214 20mg Disposable Vape - France Custom Version\nProduct Type: Disposable Vape\nPricing Mode: exact_price\nQuantity: 320\nMOQ: 1\nMarket: France\nWarehouse: Headquarters, China\nNicotine: 20mg/ml\nPuff: \nE-liquid: \nProduction Date: \nFlavor Count: 4\nFlavor Breakdown:\nBlue Razz Ice: 80 pcs\nTriple Berry: 80 pcs\nStrawberry Banana: 80 pcs\nCherry Storm: 80 pcs\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\nMarket Access Note:\nPackaging change is not available for the current finished stock batch."
+    },
+    "normalizedFields": {
+      "title": "UD214 20mg Disposable Vape - France Custom Version",
+      "slug": "ud214-20mg-disposable-vape-france-custom-version",
+      "brand": "Pending Brand",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "exact_price",
+      "pricing_note": "Current finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.",
+      "price": "1.8",
+      "quantity": "320",
+      "moq": "1",
+      "market": "France",
+      "featured_markets": [
+        "Western Europe"
+      ],
+      "market_access_note": "Packaging change is not available for the current finished stock batch.",
+      "warehouse_location": "Headquarters, China",
+      "nicotine": "20mg/ml",
+      "puff": "",
+      "e_liquid": "",
+      "production_date_text": "",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blue Razz Ice",
+        "Triple Berry",
+        "Strawberry Banana",
+        "Cherry Storm"
+      ],
+      "flavor_breakdown": "Blue Razz Ice: 80 pcs\nTriple Berry: 80 pcs\nStrawberry Banana: 80 pcs\nCherry Storm: 80 pcs",
+      "description_summary": "Finished stock available from headquarters inventory for UD214 france custom version. Packaging change is not supported for this batch.",
+      "manifest_notes": "Finished stock available from headquarters inventory for UD214 france custom version. Packaging change is not supported for this batch.\n\nPricing Note:\nCurrent finished stock is USD 1.80 per unit. New production can be quoted separately at USD 5.50 per unit.\n\nMarket Access Note:\nPackaging change is not available for the current finished stock batch.\n\nBlue Razz Ice: 80 pcs\nTriple Berry: 80 pcs\nStrawberry Banana: 80 pcs\nCherry Storm: 80 pcs"
+    },
+    "missingFields": [
+      "Brand"
+    ],
+    "riskFlags": [
+      {
+        "code": "brand-missing",
+        "severity": "high",
+        "message": "The sheet provides internal UD model codes but does not provide an explicit brand name."
+      },
+      {
+        "code": "warehouse-generalized",
+        "severity": "medium",
+        "message": "Warehouse location is generalized as Headquarters, China because the source sheet does not include a city."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "brand",
+        "reason": "Confirm the real public-facing brand before converting this preview into a final draft."
+      },
+      {
+        "field": "description",
+        "reason": "Check the original notes: 以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。 / 新做货按照原价5.5USD进行售卖。"
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "总部-214口味明细",
+      "group": "UD214一次性小烟",
+      "version": "France Custom Version",
+      "source_notes": [
+        "以下数量为总部的成品库存，价格1.8USD/PCS，不可更改包装。",
+        "新做货按照原价5.5USD进行售卖。"
+      ]
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-274口味明细\nBrand: NEXA\nTitle: NEXA FLEX KIT 40000 Disposable Vape - France Version\nProduct Type: Disposable Vape\nPricing Mode: inquiry_only\nQuantity: 12500\nMOQ: 100\nMarket: France\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000\nE-liquid: 18ml\nProduction Date: Mar 2026\nFlavor Count: 15\nFlavor Breakdown:\nLemon Freeze: 1,000 pcs\nStrawberry Pineapple Coconut Milk: 500 pcs\nSour Apple Ice: 1,000 pcs\nB-POP: 1,000 pcs\nBlue Razz Ice: 1,000 pcs\nWatermelon Ice: 1,000 pcs\nStrawberry Ice: 1,000 pcs\nBlueberry Watermelon: 1,000 pcs\nBlackberry Cherry: 1,000 pcs\nMiami Mint: 500 pcs\nWhite Gummy: 500 pcs\nStrawberry Banana: 500 pcs\nGeorgia Peach Ice: 1,000 pcs\nStrawberry Mango: 1,000 pcs\nFabulous: 500 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price.\nMarket Access Note:\nPricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX KIT 40000 Disposable Vape - France Version",
+      "slug": "nexa-flex-kit-40000-disposable-vape-france-version",
+      "brand": "NEXA",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price.",
+      "price": "0",
+      "quantity": "12500",
+      "moq": "100",
+      "market": "France",
+      "featured_markets": [
+        "Western Europe"
+      ],
+      "market_access_note": "Pricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale.",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000",
+      "e_liquid": "18ml",
+      "production_date_text": "Mar 2026",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Lemon Freeze",
+        "Strawberry Pineapple Coconut Milk",
+        "Sour Apple Ice",
+        "B-POP",
+        "Blue Razz Ice",
+        "Watermelon Ice",
+        "Strawberry Ice",
+        "Blueberry Watermelon",
+        "Blackberry Cherry",
+        "Miami Mint",
+        "White Gummy",
+        "Strawberry Banana",
+        "Georgia Peach Ice",
+        "Strawberry Mango",
+        "Fabulous"
+      ],
+      "flavor_breakdown": "Lemon Freeze: 1,000 pcs\nStrawberry Pineapple Coconut Milk: 500 pcs\nSour Apple Ice: 1,000 pcs\nB-POP: 1,000 pcs\nBlue Razz Ice: 1,000 pcs\nWatermelon Ice: 1,000 pcs\nStrawberry Ice: 1,000 pcs\nBlueberry Watermelon: 1,000 pcs\nBlackberry Cherry: 1,000 pcs\nMiami Mint: 500 pcs\nWhite Gummy: 500 pcs\nStrawberry Banana: 500 pcs\nGeorgia Peach Ice: 1,000 pcs\nStrawberry Mango: 1,000 pcs\nFabulous: 500 pcs",
+      "description_summary": "NEXA FLEX KIT France Version finished stock is available in the bonded warehouse. Batch production is Mar 2026 with 12,500 pcs across 15 flavors.",
+      "manifest_notes": "NEXA FLEX KIT France Version finished stock is available in the bonded warehouse. Batch production is Mar 2026 with 12,500 pcs across 15 flavors.\n\nPricing Note:\nPricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price.\n\nMarket Access Note:\nPricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale.\n\nLemon Freeze: 1,000 pcs\nStrawberry Pineapple Coconut Milk: 500 pcs\nSour Apple Ice: 1,000 pcs\nB-POP: 1,000 pcs\nBlue Razz Ice: 1,000 pcs\nWatermelon Ice: 1,000 pcs\nStrawberry Ice: 1,000 pcs\nBlueberry Watermelon: 1,000 pcs\nBlackberry Cherry: 1,000 pcs\nMiami Mint: 500 pcs\nWhite Gummy: 500 pcs\nStrawberry Banana: 500 pcs\nGeorgia Peach Ice: 1,000 pcs\nStrawberry Mango: 1,000 pcs\nFabulous: 500 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 14.34kg;\n carton size: 374*344*312mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-274口味明细",
+      "header_quantity": 518688,
+      "group_quantity": 12500,
+      "version": "France Version"
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-274口味明细\nBrand: NEXA\nTitle: NEXA FLEX KIT 40000 Disposable Vape - USA Version\nProduct Type: Disposable Vape\nPricing Mode: inquiry_only\nQuantity: 506188\nMOQ: 100\nMarket: USA\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000\nE-liquid: 18ml\nProduction Date: Oct 2025\nFlavor Count: 15\nFlavor Breakdown:\nLemon Freeze: 18,216 pcs\nStrawberry Pineapple Coconut Milk: 39,443 pcs\nSour Apple Ice: 37,752 pcs\nB-POP: 23,641 pcs\nBlue Razz Ice: 44,098 pcs\nWatermelon Ice: 33,049 pcs\nStrawberry Ice: 44,829 pcs\nBlueberry Watermelon: 30,205 pcs\nBlackberry Cherry: 28,262 pcs\nMiami Mint: 41,264 pcs\nWhite Gummy: 20,414 pcs\nStrawberry Banana: 39,359 pcs\nGeorgia Peach Ice: 37,627 pcs\nStrawberry Mango: 32,426 pcs\nFabulous: 35,603 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX KIT 40000 Disposable Vape - USA Version",
+      "slug": "nexa-flex-kit-40000-disposable-vape-usa-version",
+      "brand": "NEXA",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price.",
+      "price": "0",
+      "quantity": "506188",
+      "moq": "100",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000",
+      "e_liquid": "18ml",
+      "production_date_text": "Oct 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Lemon Freeze",
+        "Strawberry Pineapple Coconut Milk",
+        "Sour Apple Ice",
+        "B-POP",
+        "Blue Razz Ice",
+        "Watermelon Ice",
+        "Strawberry Ice",
+        "Blueberry Watermelon",
+        "Blackberry Cherry",
+        "Miami Mint",
+        "White Gummy",
+        "Strawberry Banana",
+        "Georgia Peach Ice",
+        "Strawberry Mango",
+        "Fabulous"
+      ],
+      "flavor_breakdown": "Lemon Freeze: 18,216 pcs\nStrawberry Pineapple Coconut Milk: 39,443 pcs\nSour Apple Ice: 37,752 pcs\nB-POP: 23,641 pcs\nBlue Razz Ice: 44,098 pcs\nWatermelon Ice: 33,049 pcs\nStrawberry Ice: 44,829 pcs\nBlueberry Watermelon: 30,205 pcs\nBlackberry Cherry: 28,262 pcs\nMiami Mint: 41,264 pcs\nWhite Gummy: 20,414 pcs\nStrawberry Banana: 39,359 pcs\nGeorgia Peach Ice: 37,627 pcs\nStrawberry Mango: 32,426 pcs\nFabulous: 35,603 pcs",
+      "description_summary": "NEXA FLEX KIT USA Version finished stock is available in the bonded warehouse. Batch production is Oct 2025 with 506,188 pcs across 15 flavors.",
+      "manifest_notes": "NEXA FLEX KIT USA Version finished stock is available in the bonded warehouse. Batch production is Oct 2025 with 506,188 pcs across 15 flavors.\n\nPricing Note:\nPricing is handled on inquiry because the workbook only contains mixed reference notes, not a clean publishable unit price.\n\nLemon Freeze: 18,216 pcs\nStrawberry Pineapple Coconut Milk: 39,443 pcs\nSour Apple Ice: 37,752 pcs\nB-POP: 23,641 pcs\nBlue Razz Ice: 44,098 pcs\nWatermelon Ice: 33,049 pcs\nStrawberry Ice: 44,829 pcs\nBlueberry Watermelon: 30,205 pcs\nBlackberry Cherry: 28,262 pcs\nMiami Mint: 41,264 pcs\nWhite Gummy: 20,414 pcs\nStrawberry Banana: 39,359 pcs\nGeorgia Peach Ice: 37,627 pcs\nStrawberry Mango: 32,426 pcs\nFabulous: 35,603 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 14.34kg;\n carton size: 374*344*312mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-274口味明细",
+      "header_quantity": 518688,
+      "group_quantity": 506188,
+      "version": "USA Version"
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-253口味明细\nBrand: NEXA\nTitle: NEXA FLEX KIT 40000 Kit - USA New Version\nProduct Type: Vape Kits\nPricing Mode: inquiry_only\nQuantity: 66800\nMOQ: 100\nMarket: USA\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000\nE-liquid: 18ml\nProduction Date: Late Oct 2025\nFlavor Count: 12\nFlavor Breakdown:\n蓝色+蓝色拉兹冰: 4,900 pcs\n粉色+西瓜冰: 5,000 pcs\n灰色+(焦糖)烟草: 6,700 pcs\n香槟色+小熊软糖: 5,500 pcs\n绿色+曼妥思薄荷糖: 6,000 pcs\n紫色+西瓜梨火龙果: 5,000 pcs\n蓝色+粉红蓝莓冰: 5,600 pcs\n粉色+草莓冰: 5,600 pcs\n蓝紫色+冰泉: 6,300 pcs\n粉色+樱桃树莓: 5,200 pcs\n香槟色+草莓香蕉: 5,800 pcs\n黄绿色+酸苹果冰: 5,200 pcs\nPricing Note:\nPricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.\nMarket Access Note:\nPricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX KIT 40000 Kit - USA New Version",
+      "slug": "nexa-flex-kit-40000-kit-usa-new-version",
+      "brand": "NEXA",
+      "product_type": "Vape Kits",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.",
+      "price": "0",
+      "quantity": "66800",
+      "moq": "100",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "Pricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale.",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000",
+      "e_liquid": "18ml",
+      "production_date_text": "Late Oct 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "蓝色+蓝色拉兹冰",
+        "粉色+西瓜冰",
+        "灰色+(焦糖)烟草",
+        "香槟色+小熊软糖",
+        "绿色+曼妥思薄荷糖",
+        "紫色+西瓜梨火龙果",
+        "蓝色+粉红蓝莓冰",
+        "粉色+草莓冰",
+        "蓝紫色+冰泉",
+        "粉色+樱桃树莓",
+        "香槟色+草莓香蕉",
+        "黄绿色+酸苹果冰"
+      ],
+      "flavor_breakdown": "蓝色+蓝色拉兹冰: 4,900 pcs\n粉色+西瓜冰: 5,000 pcs\n灰色+(焦糖)烟草: 6,700 pcs\n香槟色+小熊软糖: 5,500 pcs\n绿色+曼妥思薄荷糖: 6,000 pcs\n紫色+西瓜梨火龙果: 5,000 pcs\n蓝色+粉红蓝莓冰: 5,600 pcs\n粉色+草莓冰: 5,600 pcs\n蓝紫色+冰泉: 6,300 pcs\n粉色+樱桃树莓: 5,200 pcs\n香槟色+草莓香蕉: 5,800 pcs\n黄绿色+酸苹果冰: 5,200 pcs",
+      "description_summary": "NEXA FLEX KIT 40000 Kit - USA New Version stock is available in the bonded warehouse. Batch production is Late Oct 2025 with 66,800 pcs across 12 flavors.",
+      "manifest_notes": "NEXA FLEX KIT 40000 Kit - USA New Version stock is available in the bonded warehouse. Batch production is Late Oct 2025 with 66,800 pcs across 12 flavors.\n\nPricing Note:\nPricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.\n\nMarket Access Note:\nPricing remains case by case for this batch.\nThis version must be sold out of the US and is not allowed for domestic US resale.\n\n蓝色+蓝色拉兹冰: 4,900 pcs\n粉色+西瓜冰: 5,000 pcs\n灰色+(焦糖)烟草: 6,700 pcs\n香槟色+小熊软糖: 5,500 pcs\n绿色+曼妥思薄荷糖: 6,000 pcs\n紫色+西瓜梨火龙果: 5,000 pcs\n蓝色+粉红蓝莓冰: 5,600 pcs\n粉色+草莓冰: 5,600 pcs\n蓝紫色+冰泉: 6,300 pcs\n粉色+樱桃树莓: 5,200 pcs\n香槟色+草莓香蕉: 5,800 pcs\n黄绿色+酸苹果冰: 5,200 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 14.34kg;\n carton size: 374*344*312mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "header-quantity-broken",
+        "severity": "medium",
+        "message": "The top sheet quantity for FLEX KIT is broken as #REF!, so this preview uses the summed flavor rows instead."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "quantity",
+        "reason": "Confirm the summed flavor-row quantity against the supplier source because the sheet header contains a formula error."
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-253口味明细",
+      "version": "40000 Kit - USA New Version",
+      "quantity_from_rows": 66800
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-253口味明细\nBrand: NEXA\nTitle: NEXA FLEX KIT 40000 Kit - USA Mid Version\nProduct Type: Vape Kits\nPricing Mode: inquiry_only\nQuantity: 133800\nMOQ: 100\nMarket: USA\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000\nE-liquid: 18ml\nProduction Date: Late Nov 2025\nFlavor Count: 12\nFlavor Breakdown:\n蓝色+蓝色拉兹冰: 12,900 pcs\n粉色+西瓜冰: 12,900 pcs\n灰色+(焦糖)烟草: 2,400 pcs\n香槟色+小熊软糖: 12,900 pcs\n绿色+曼妥思薄荷糖: 12,900 pcs\n紫色+西瓜梨火龙果: 12,900 pcs\n蓝色+粉红蓝莓冰: 12,900 pcs\n粉色+草莓冰: 12,900 pcs\n蓝紫色+冰泉: 2,400 pcs\n粉色+樱桃树莓: 12,900 pcs\n香槟色+草莓香蕉: 12,900 pcs\n黄绿色+酸苹果冰: 12,900 pcs\nPricing Note:\nSource sheet shows internal tier references around USD 4.50-4.65 for the kit, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only.\nMarket Access Note:\nCross-market diversion to the US is not allowed for this version."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX KIT 40000 Kit - USA Mid Version",
+      "slug": "nexa-flex-kit-40000-kit-usa-mid-version",
+      "brand": "NEXA",
+      "product_type": "Vape Kits",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Source sheet shows internal tier references around USD 4.50-4.65 for the kit, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only.",
+      "price": "0",
+      "quantity": "133800",
+      "moq": "100",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "Cross-market diversion to the US is not allowed for this version.",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000",
+      "e_liquid": "18ml",
+      "production_date_text": "Late Nov 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "蓝色+蓝色拉兹冰",
+        "粉色+西瓜冰",
+        "灰色+(焦糖)烟草",
+        "香槟色+小熊软糖",
+        "绿色+曼妥思薄荷糖",
+        "紫色+西瓜梨火龙果",
+        "蓝色+粉红蓝莓冰",
+        "粉色+草莓冰",
+        "蓝紫色+冰泉",
+        "粉色+樱桃树莓",
+        "香槟色+草莓香蕉",
+        "黄绿色+酸苹果冰"
+      ],
+      "flavor_breakdown": "蓝色+蓝色拉兹冰: 12,900 pcs\n粉色+西瓜冰: 12,900 pcs\n灰色+(焦糖)烟草: 2,400 pcs\n香槟色+小熊软糖: 12,900 pcs\n绿色+曼妥思薄荷糖: 12,900 pcs\n紫色+西瓜梨火龙果: 12,900 pcs\n蓝色+粉红蓝莓冰: 12,900 pcs\n粉色+草莓冰: 12,900 pcs\n蓝紫色+冰泉: 2,400 pcs\n粉色+樱桃树莓: 12,900 pcs\n香槟色+草莓香蕉: 12,900 pcs\n黄绿色+酸苹果冰: 12,900 pcs",
+      "description_summary": "NEXA FLEX KIT 40000 Kit - USA Mid Version stock is available in the bonded warehouse. Batch production is Late Nov 2025 with 133,800 pcs across 12 flavors.",
+      "manifest_notes": "NEXA FLEX KIT 40000 Kit - USA Mid Version stock is available in the bonded warehouse. Batch production is Late Nov 2025 with 133,800 pcs across 12 flavors.\n\nPricing Note:\nSource sheet shows internal tier references around USD 4.50-4.65 for the kit, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only.\n\nMarket Access Note:\nCross-market diversion to the US is not allowed for this version.\n\n蓝色+蓝色拉兹冰: 12,900 pcs\n粉色+西瓜冰: 12,900 pcs\n灰色+(焦糖)烟草: 2,400 pcs\n香槟色+小熊软糖: 12,900 pcs\n绿色+曼妥思薄荷糖: 12,900 pcs\n紫色+西瓜梨火龙果: 12,900 pcs\n蓝色+粉红蓝莓冰: 12,900 pcs\n粉色+草莓冰: 12,900 pcs\n蓝紫色+冰泉: 2,400 pcs\n粉色+樱桃树莓: 12,900 pcs\n香槟色+草莓香蕉: 12,900 pcs\n黄绿色+酸苹果冰: 12,900 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 14.34kg;\n carton size: 374*344*312mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "header-quantity-broken",
+        "severity": "medium",
+        "message": "The top sheet quantity for FLEX KIT is broken as #REF!, so this preview uses the summed flavor rows instead."
+      },
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "quantity",
+        "reason": "Confirm the summed flavor-row quantity against the supplier source because the sheet header contains a formula error."
+      },
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-253口味明细",
+      "version": "40000 Kit - USA Mid Version",
+      "quantity_from_rows": 133800
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-253口味明细\nBrand: NEXA\nTitle: NEXA FLEX POD 40000 Pod - USA New Version\nProduct Type: Pod\nPricing Mode: inquiry_only\nQuantity: 77200\nMOQ: 200\nMarket: USA\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000*2\nE-liquid: 18ml*2\nProduction Date: Late Oct 2025\nFlavor Count: 12\nFlavor Breakdown:\nBlue Razz Ice: 6,200 pcs\nWatermelon Ice: 6,200 pcs\nCaramel Tobacco: 9,200 pcs\nGummy Bear: 6,200 pcs\nMint Candy: 4,600 pcs\nWatermelon Pear Dragon Fruit: 6,200 pcs\nPink Blueberry Ice: 6,200 pcs\nStrawberry Ice: 6,200 pcs\nIce Spring: 9,200 pcs\nCherry Raspberry: 6,200 pcs\nStrawberry Banana: 4,800 pcs\nSour Apple Ice: 6,000 pcs\nPricing Note:\nPricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.\nMarket Access Note:\nBonded warehouse shipments require full-carton handling.\nEach SKU should move in full-carton quantity without split cartons."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX POD 40000 Pod - USA New Version",
+      "slug": "nexa-flex-pod-40000-pod-usa-new-version",
+      "brand": "NEXA",
+      "product_type": "Pod",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.",
+      "price": "0",
+      "quantity": "77200",
+      "moq": "200",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "Bonded warehouse shipments require full-carton handling.\nEach SKU should move in full-carton quantity without split cartons.",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000*2",
+      "e_liquid": "18ml*2",
+      "production_date_text": "Late Oct 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blue Razz Ice",
+        "Watermelon Ice",
+        "Caramel Tobacco",
+        "Gummy Bear",
+        "Mint Candy",
+        "Watermelon Pear Dragon Fruit",
+        "Pink Blueberry Ice",
+        "Strawberry Ice",
+        "Ice Spring",
+        "Cherry Raspberry",
+        "Strawberry Banana",
+        "Sour Apple Ice"
+      ],
+      "flavor_breakdown": "Blue Razz Ice: 6,200 pcs\nWatermelon Ice: 6,200 pcs\nCaramel Tobacco: 9,200 pcs\nGummy Bear: 6,200 pcs\nMint Candy: 4,600 pcs\nWatermelon Pear Dragon Fruit: 6,200 pcs\nPink Blueberry Ice: 6,200 pcs\nStrawberry Ice: 6,200 pcs\nIce Spring: 9,200 pcs\nCherry Raspberry: 6,200 pcs\nStrawberry Banana: 4,800 pcs\nSour Apple Ice: 6,000 pcs",
+      "description_summary": "NEXA FLEX POD 40000 Pod - USA New Version stock is available in the bonded warehouse. Batch production is Late Oct 2025 with 77,200 pcs across 12 flavors.",
+      "manifest_notes": "NEXA FLEX POD 40000 Pod - USA New Version stock is available in the bonded warehouse. Batch production is Late Oct 2025 with 77,200 pcs across 12 flavors.\n\nPricing Note:\nPricing is handled on inquiry because the source workbook does not expose one clean unit price for direct publishing.\n\nMarket Access Note:\nBonded warehouse shipments require full-carton handling.\nEach SKU should move in full-carton quantity without split cartons.\n\nBlue Razz Ice: 6,200 pcs\nWatermelon Ice: 6,200 pcs\nCaramel Tobacco: 9,200 pcs\nGummy Bear: 6,200 pcs\nMint Candy: 4,600 pcs\nWatermelon Pear Dragon Fruit: 6,200 pcs\nPink Blueberry Ice: 6,200 pcs\nStrawberry Ice: 6,200 pcs\nIce Spring: 9,200 pcs\nCherry Raspberry: 6,200 pcs\nStrawberry Banana: 4,800 pcs\nSour Apple Ice: 6,000 pcs\n\nPackaging / Carton:\n200 pcs in a carton.\n each carton: 15.71kg;\n carton size: 374*344*289mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-253口味明细",
+      "version": "40000 Pod - USA New Version",
+      "quantity_from_rows": 77200
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: 保税仓-253口味明细\nBrand: NEXA\nTitle: NEXA FLEX POD 40000 Pod - USA Mid Version\nProduct Type: Pod\nPricing Mode: inquiry_only\nQuantity: 330000\nMOQ: 200\nMarket: USA\nWarehouse: Bonded Warehouse, China\nNicotine: 50mg/ml\nPuff: 40000*2\nE-liquid: 18ml*2\nProduction Date: Late Nov 2025\nFlavor Count: 12\nFlavor Breakdown:\nBlue Razz Ice: 32,000 pcs\nWatermelon Ice: 32,000 pcs\nCaramel Tobacco: 5,000 pcs\nGummy Bear: 32,000 pcs\nMint Candy: 32,000 pcs\nWatermelon Pear Dragon Fruit: 32,000 pcs\nPink Blueberry Ice: 32,000 pcs\nStrawberry Ice: 32,000 pcs\nIce Spring: 5,000 pcs\nCherry Raspberry: 32,000 pcs\nStrawberry Banana: 32,000 pcs\nSour Apple Ice: 32,000 pcs\nPricing Note:\nSource sheet shows internal tier references around USD 2.00-2.15 for the pod, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only."
+    },
+    "normalizedFields": {
+      "title": "NEXA FLEX POD 40000 Pod - USA Mid Version",
+      "slug": "nexa-flex-pod-40000-pod-usa-mid-version",
+      "brand": "NEXA",
+      "product_type": "Pod",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Source sheet shows internal tier references around USD 2.00-2.15 for the pod, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only.",
+      "price": "0",
+      "quantity": "330000",
+      "moq": "200",
+      "market": "USA",
+      "featured_markets": [
+        "USA"
+      ],
+      "market_access_note": "",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "50mg/ml",
+      "puff": "40000*2",
+      "e_liquid": "18ml*2",
+      "production_date_text": "Late Nov 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blue Razz Ice",
+        "Watermelon Ice",
+        "Caramel Tobacco",
+        "Gummy Bear",
+        "Mint Candy",
+        "Watermelon Pear Dragon Fruit",
+        "Pink Blueberry Ice",
+        "Strawberry Ice",
+        "Ice Spring",
+        "Cherry Raspberry",
+        "Strawberry Banana",
+        "Sour Apple Ice"
+      ],
+      "flavor_breakdown": "Blue Razz Ice: 32,000 pcs\nWatermelon Ice: 32,000 pcs\nCaramel Tobacco: 5,000 pcs\nGummy Bear: 32,000 pcs\nMint Candy: 32,000 pcs\nWatermelon Pear Dragon Fruit: 32,000 pcs\nPink Blueberry Ice: 32,000 pcs\nStrawberry Ice: 32,000 pcs\nIce Spring: 5,000 pcs\nCherry Raspberry: 32,000 pcs\nStrawberry Banana: 32,000 pcs\nSour Apple Ice: 32,000 pcs",
+      "description_summary": "NEXA FLEX POD 40000 Pod - USA Mid Version stock is available in the bonded warehouse. Batch production is Late Nov 2025 with 330,000 pcs across 12 flavors.",
+      "manifest_notes": "NEXA FLEX POD 40000 Pod - USA Mid Version stock is available in the bonded warehouse. Batch production is Late Nov 2025 with 330,000 pcs across 12 flavors.\n\nPricing Note:\nSource sheet shows internal tier references around USD 2.00-2.15 for the pod, but the pricing structure is incomplete, so this preview keeps the listing as inquiry-only.\n\nBlue Razz Ice: 32,000 pcs\nWatermelon Ice: 32,000 pcs\nCaramel Tobacco: 5,000 pcs\nGummy Bear: 32,000 pcs\nMint Candy: 32,000 pcs\nWatermelon Pear Dragon Fruit: 32,000 pcs\nPink Blueberry Ice: 32,000 pcs\nStrawberry Ice: 32,000 pcs\nIce Spring: 5,000 pcs\nCherry Raspberry: 32,000 pcs\nStrawberry Banana: 32,000 pcs\nSour Apple Ice: 32,000 pcs\n\nPackaging / Carton:\n200 pcs in a carton.\n each carton: 15.71kg;\n carton size: 374*344*289mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "保税仓-253口味明细",
+      "version": "40000 Pod - USA Mid Version",
+      "quantity_from_rows": 330000
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: Crystal Pro Suonon Switch 30K  \nBrand: SUONON&CRYSTAL\nTitle: SUONON&CRYSTAL Switch 30K KIT 30000 Kit\nProduct Type: Vape Kits\nPricing Mode: inquiry_only\nQuantity: 3086\nMOQ: 100\nMarket: Global\nWarehouse: Bonded Warehouse, China\nNicotine: 20mg/ml\nPuff: 30000\nE-liquid: 1+10ml*2\nProduction Date: Jul 2025\nFlavor Count: 12\nFlavor Breakdown:\nBlueberry Raspberry/Blue Sour Raspberry: 548 pcs\nBlue Razz Gummy Bear/Blue Razz Cherry Ice: 548 pcs\nMr Blue/Fizzy Blueberry: 548 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 548 pcs\nJuicy Peach/Juicy Raspberries: 549 pcs\nFizzy Cherry/Cherry Ice: 49 pcs\nLemon & Lime/Pink Lemonade: 49 pcs\nWatermelon Ice/Watermelon Bubblegum: 49 pcs\nCherry Berry/Fruit Bomb: 49 pcs\nGummy Bear/Hubba Bubba: 49 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 50 pcs\nBlueberry Raspberry: 50 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "SUONON&CRYSTAL Switch 30K KIT 30000 Kit",
+      "slug": "suonon-crystal-switch-30k-kit-30000-kit",
+      "brand": "SUONON&CRYSTAL",
+      "product_type": "Vape Kits",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.",
+      "price": "0",
+      "quantity": "3086",
+      "moq": "100",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "20mg/ml",
+      "puff": "30000",
+      "e_liquid": "1+10ml*2",
+      "production_date_text": "Jul 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blueberry Raspberry/Blue Sour Raspberry",
+        "Blue Razz Gummy Bear/Blue Razz Cherry Ice",
+        "Mr Blue/Fizzy Blueberry",
+        "Strawberry Raspberry Ice/Strawberry Kiwi",
+        "Juicy Peach/Juicy Raspberries",
+        "Fizzy Cherry/Cherry Ice",
+        "Lemon & Lime/Pink Lemonade",
+        "Watermelon Ice/Watermelon Bubblegum",
+        "Cherry Berry/Fruit Bomb",
+        "Gummy Bear/Hubba Bubba",
+        "Blueberry Cherry Cranberry/Blueberry Kiwi",
+        "Blueberry Raspberry"
+      ],
+      "flavor_breakdown": "Blueberry Raspberry/Blue Sour Raspberry: 548 pcs\nBlue Razz Gummy Bear/Blue Razz Cherry Ice: 548 pcs\nMr Blue/Fizzy Blueberry: 548 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 548 pcs\nJuicy Peach/Juicy Raspberries: 549 pcs\nFizzy Cherry/Cherry Ice: 49 pcs\nLemon & Lime/Pink Lemonade: 49 pcs\nWatermelon Ice/Watermelon Bubblegum: 49 pcs\nCherry Berry/Fruit Bomb: 49 pcs\nGummy Bear/Hubba Bubba: 49 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 50 pcs\nBlueberry Raspberry: 50 pcs",
+      "description_summary": "SUONON&CRYSTAL Switch 30K KIT stock is available with 3,086 pcs across 12 flavors. Production reference is Jul 2025 and the batch is ready for inquiry-based quoting.",
+      "manifest_notes": "SUONON&CRYSTAL Switch 30K KIT stock is available with 3,086 pcs across 12 flavors. Production reference is Jul 2025 and the batch is ready for inquiry-based quoting.\n\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.\n\nBlueberry Raspberry/Blue Sour Raspberry: 548 pcs\nBlue Razz Gummy Bear/Blue Razz Cherry Ice: 548 pcs\nMr Blue/Fizzy Blueberry: 548 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 548 pcs\nJuicy Peach/Juicy Raspberries: 549 pcs\nFizzy Cherry/Cherry Ice: 49 pcs\nLemon & Lime/Pink Lemonade: 49 pcs\nWatermelon Ice/Watermelon Bubblegum: 49 pcs\nCherry Berry/Fruit Bomb: 49 pcs\nGummy Bear/Hubba Bubba: 49 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 50 pcs\nBlueberry Raspberry: 50 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 14.77kg\n carton size: 366*328*318mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "Crystal Pro Suonon Switch 30K  ",
+      "header_quantity": 3086,
+      "flavor_row_count": 12
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: CP Pro Suonon Switch 30K POD\nBrand: SUONON&C.P PRO\nTitle: SUONON&C.P PRO Switch 30K POD 30000 Pod\nProduct Type: Pod\nPricing Mode: inquiry_only\nQuantity: 89500\nMOQ: 100\nMarket: Global\nWarehouse: Bonded Warehouse, China\nNicotine: 20mg/ml\nPuff: 30000\nE-liquid: 1+10ml*2\nProduction Date: Jul 2025\nFlavor Count: 23\nFlavor Breakdown:\nBlueberry Raspberry/Blue Sour Raspberry: 4,500 pcs\nBlue Razz G.B/Blue Razz Cherry Ice: 4,500 pcs\nMr Blue/Fizzy Blueberry: 4,500 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 4,400 pcs\nJuicy Peach/Juicy Raspberries: 4,500 pcs\nFizzy Cherry/Cherry Ice: 4,500 pcs\nLemon & Lime/ Pink Lemonade: 4,600 pcs\nWatermelon Ice/Watermelon Bubblegum: 4,400 pcs\nCherry Berry/Fruit Bomb: 4,500 pcs\nG.Bear/H.Bubba: 4,500 pcs\nBlueberry Cotton. C/Raspberry Cotton. C: 4,500 pcs\nFresh Mint/Menthol: 4,500 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 4,400 pcs\nBanana Ice/Strawberry Banana: 4,600 pcs\nRed Apple Ice/Summer Dream: 4,700 pcs\nBlue Razz G. B: 1,500 pcs\nBlueberry Raspberry: 1,700 pcs\nMr Blue: 1,700 pcs\nLemon & Lime: 1,900 pcs\nStrawberry Raspberry Ice: 1,500 pcs\nBlue Razz Lemonade/ Cherry Peach \nLemonade: 4,600 pcs\nRaspberry Cola/Cherry Cola: 4,400 pcs\nBerry Coconut/Vanilla Berry lce: 4,600 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "SUONON&C.P PRO Switch 30K POD 30000 Pod",
+      "slug": "suonon-c-p-pro-switch-30k-pod-30000-pod",
+      "brand": "SUONON&C.P PRO",
+      "product_type": "Pod",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.",
+      "price": "0",
+      "quantity": "89500",
+      "moq": "100",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "",
+      "warehouse_location": "Bonded Warehouse, China",
+      "nicotine": "20mg/ml",
+      "puff": "30000",
+      "e_liquid": "1+10ml*2",
+      "production_date_text": "Jul 2025",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blueberry Raspberry/Blue Sour Raspberry",
+        "Blue Razz G.B/Blue Razz Cherry Ice",
+        "Mr Blue/Fizzy Blueberry",
+        "Strawberry Raspberry Ice/Strawberry Kiwi",
+        "Juicy Peach/Juicy Raspberries",
+        "Fizzy Cherry/Cherry Ice",
+        "Lemon & Lime/ Pink Lemonade",
+        "Watermelon Ice/Watermelon Bubblegum",
+        "Cherry Berry/Fruit Bomb",
+        "G.Bear/H.Bubba",
+        "Blueberry Cotton. C/Raspberry Cotton. C",
+        "Fresh Mint/Menthol",
+        "Blueberry Cherry Cranberry/Blueberry Kiwi",
+        "Banana Ice/Strawberry Banana",
+        "Red Apple Ice/Summer Dream",
+        "Blue Razz G. B",
+        "Blueberry Raspberry",
+        "Mr Blue",
+        "Lemon & Lime",
+        "Strawberry Raspberry Ice",
+        "Blue Razz Lemonade/ Cherry Peach \nLemonade",
+        "Raspberry Cola/Cherry Cola",
+        "Berry Coconut/Vanilla Berry lce"
+      ],
+      "flavor_breakdown": "Blueberry Raspberry/Blue Sour Raspberry: 4,500 pcs\nBlue Razz G.B/Blue Razz Cherry Ice: 4,500 pcs\nMr Blue/Fizzy Blueberry: 4,500 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 4,400 pcs\nJuicy Peach/Juicy Raspberries: 4,500 pcs\nFizzy Cherry/Cherry Ice: 4,500 pcs\nLemon & Lime/ Pink Lemonade: 4,600 pcs\nWatermelon Ice/Watermelon Bubblegum: 4,400 pcs\nCherry Berry/Fruit Bomb: 4,500 pcs\nG.Bear/H.Bubba: 4,500 pcs\nBlueberry Cotton. C/Raspberry Cotton. C: 4,500 pcs\nFresh Mint/Menthol: 4,500 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 4,400 pcs\nBanana Ice/Strawberry Banana: 4,600 pcs\nRed Apple Ice/Summer Dream: 4,700 pcs\nBlue Razz G. B: 1,500 pcs\nBlueberry Raspberry: 1,700 pcs\nMr Blue: 1,700 pcs\nLemon & Lime: 1,900 pcs\nStrawberry Raspberry Ice: 1,500 pcs\nBlue Razz Lemonade/ Cherry Peach \nLemonade: 4,600 pcs\nRaspberry Cola/Cherry Cola: 4,400 pcs\nBerry Coconut/Vanilla Berry lce: 4,600 pcs",
+      "description_summary": "SUONON&C.P PRO Switch 30K POD stock is available with 89,500 pcs across 23 flavors. Production reference is Jul 2025 and the batch is ready for inquiry-based quoting.",
+      "manifest_notes": "SUONON&C.P PRO Switch 30K POD stock is available with 89,500 pcs across 23 flavors. Production reference is Jul 2025 and the batch is ready for inquiry-based quoting.\n\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.\n\nBlueberry Raspberry/Blue Sour Raspberry: 4,500 pcs\nBlue Razz G.B/Blue Razz Cherry Ice: 4,500 pcs\nMr Blue/Fizzy Blueberry: 4,500 pcs\nStrawberry Raspberry Ice/Strawberry Kiwi: 4,400 pcs\nJuicy Peach/Juicy Raspberries: 4,500 pcs\nFizzy Cherry/Cherry Ice: 4,500 pcs\nLemon & Lime/ Pink Lemonade: 4,600 pcs\nWatermelon Ice/Watermelon Bubblegum: 4,400 pcs\nCherry Berry/Fruit Bomb: 4,500 pcs\nG.Bear/H.Bubba: 4,500 pcs\nBlueberry Cotton. C/Raspberry Cotton. C: 4,500 pcs\nFresh Mint/Menthol: 4,500 pcs\nBlueberry Cherry Cranberry/Blueberry Kiwi: 4,400 pcs\nBanana Ice/Strawberry Banana: 4,600 pcs\nRed Apple Ice/Summer Dream: 4,700 pcs\nBlue Razz G. B: 1,500 pcs\nBlueberry Raspberry: 1,700 pcs\nMr Blue: 1,700 pcs\nLemon & Lime: 1,900 pcs\nStrawberry Raspberry Ice: 1,500 pcs\nBlue Razz Lemonade/ Cherry Peach \nLemonade: 4,600 pcs\nRaspberry Cola/Cherry Cola: 4,400 pcs\nBerry Coconut/Vanilla Berry lce: 4,600 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 8.7kg\n carton size: 340*327*247mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "CP Pro Suonon Switch 30K POD",
+      "header_quantity": 89500,
+      "flavor_row_count": 23
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: Monster 25000\nBrand: ETS\nTitle: ETS Monster 25000 Disposable Vape\nProduct Type: Disposable Vape\nPricing Mode: inquiry_only\nQuantity: 63800\nMOQ: 100\nMarket: Global\nWarehouse: Factory Stock, China\nNicotine: 20&50mg/ml\nPuff: 25000\nE-liquid: 18ml\nProduction Date: 新生产\nFlavor Count: 38\nFlavor Breakdown:\nWatermelon Ice: 1,700 pcs\nLemon Lime: 1,000 pcs\nStrawberry Raspberry Cherry: 1,400 pcs\nPink Lemonade: 1,200 pcs\nBlueberry Raspberry: 1,600 pcs\nSummer Dream: 1,500 pcs\nFresh Mint: 1,500 pcs\nBlueberry Sour Raspberry: 1,500 pcs\nFanta: 1,600 pcs\nStrawberry Banana: 1,200 pcs\nRED BULL: 1,600 pcs\nALOE GRAPE: 1,700 pcs\nMOJITO: 1,000 pcs\nBLACK DRAGON ICE: 2,000 pcs\nFIZZY CHERRY: 1,800 pcs\nSTRAWBERRY ICE: 1,200 pcs\nBLUE RAZZ ICE: 1,200 pcs\nJUICY PEACH: 1,500 pcs\nCOLA ICE: 1,200 pcs\nDOUBLE APPLE: 3,500 pcs\nLYCHEE MINT: 3,500 pcs\nKIWI PASSION FRUIT GUAVA: 1,500 pcs\nBLUEBERRY POMEGRANATE: 1,300 pcs\nSKITTLES: 2,700 pcs\nBlackberry Blueberry Raspberry: 1,500 pcs\nMr Black: 1,400 pcs\nJagermeister: 6,000 pcs\nSour Apple: 2,800 pcs\nOrange Ice Kiwi: 2,800 pcs\nGrape Lemon: 4,000 pcs\nCherry Cola: 2,800 pcs\nLemon Lime: 500 pcs\nFresh Mint: 500 pcs\nFanta: 200 pcs\nRED BULL: 200 pcs\nDOUBLE APPLE: 500 pcs\nLYCHEE MINT: 500 pcs\nSKITTLES: 200 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "ETS Monster 25000 Disposable Vape",
+      "slug": "ets-monster-25000-disposable-vape",
+      "brand": "ETS",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.",
+      "price": "0",
+      "quantity": "63800",
+      "moq": "100",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "",
+      "warehouse_location": "Factory Stock, China",
+      "nicotine": "20&50mg/ml",
+      "puff": "25000",
+      "e_liquid": "18ml",
+      "production_date_text": "新生产",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Watermelon Ice",
+        "Lemon Lime",
+        "Strawberry Raspberry Cherry",
+        "Pink Lemonade",
+        "Blueberry Raspberry",
+        "Summer Dream",
+        "Fresh Mint",
+        "Blueberry Sour Raspberry",
+        "Fanta",
+        "Strawberry Banana",
+        "RED BULL",
+        "ALOE GRAPE",
+        "MOJITO",
+        "BLACK DRAGON ICE",
+        "FIZZY CHERRY",
+        "STRAWBERRY ICE",
+        "BLUE RAZZ ICE",
+        "JUICY PEACH",
+        "COLA ICE",
+        "DOUBLE APPLE",
+        "LYCHEE MINT",
+        "KIWI PASSION FRUIT GUAVA",
+        "BLUEBERRY POMEGRANATE",
+        "SKITTLES",
+        "Blackberry Blueberry Raspberry",
+        "Mr Black",
+        "Jagermeister",
+        "Sour Apple",
+        "Orange Ice Kiwi",
+        "Grape Lemon",
+        "Cherry Cola",
+        "Lemon Lime",
+        "Fresh Mint",
+        "Fanta",
+        "RED BULL",
+        "DOUBLE APPLE",
+        "LYCHEE MINT",
+        "SKITTLES"
+      ],
+      "flavor_breakdown": "Watermelon Ice: 1,700 pcs\nLemon Lime: 1,000 pcs\nStrawberry Raspberry Cherry: 1,400 pcs\nPink Lemonade: 1,200 pcs\nBlueberry Raspberry: 1,600 pcs\nSummer Dream: 1,500 pcs\nFresh Mint: 1,500 pcs\nBlueberry Sour Raspberry: 1,500 pcs\nFanta: 1,600 pcs\nStrawberry Banana: 1,200 pcs\nRED BULL: 1,600 pcs\nALOE GRAPE: 1,700 pcs\nMOJITO: 1,000 pcs\nBLACK DRAGON ICE: 2,000 pcs\nFIZZY CHERRY: 1,800 pcs\nSTRAWBERRY ICE: 1,200 pcs\nBLUE RAZZ ICE: 1,200 pcs\nJUICY PEACH: 1,500 pcs\nCOLA ICE: 1,200 pcs\nDOUBLE APPLE: 3,500 pcs\nLYCHEE MINT: 3,500 pcs\nKIWI PASSION FRUIT GUAVA: 1,500 pcs\nBLUEBERRY POMEGRANATE: 1,300 pcs\nSKITTLES: 2,700 pcs\nBlackberry Blueberry Raspberry: 1,500 pcs\nMr Black: 1,400 pcs\nJagermeister: 6,000 pcs\nSour Apple: 2,800 pcs\nOrange Ice Kiwi: 2,800 pcs\nGrape Lemon: 4,000 pcs\nCherry Cola: 2,800 pcs\nLemon Lime: 500 pcs\nFresh Mint: 500 pcs\nFanta: 200 pcs\nRED BULL: 200 pcs\nDOUBLE APPLE: 500 pcs\nLYCHEE MINT: 500 pcs\nSKITTLES: 200 pcs",
+      "description_summary": "ETS Monster 25000 stock is available with 63,800 pcs across 38 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.",
+      "manifest_notes": "ETS Monster 25000 stock is available with 63,800 pcs across 38 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.\n\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.\n\nWatermelon Ice: 1,700 pcs\nLemon Lime: 1,000 pcs\nStrawberry Raspberry Cherry: 1,400 pcs\nPink Lemonade: 1,200 pcs\nBlueberry Raspberry: 1,600 pcs\nSummer Dream: 1,500 pcs\nFresh Mint: 1,500 pcs\nBlueberry Sour Raspberry: 1,500 pcs\nFanta: 1,600 pcs\nStrawberry Banana: 1,200 pcs\nRED BULL: 1,600 pcs\nALOE GRAPE: 1,700 pcs\nMOJITO: 1,000 pcs\nBLACK DRAGON ICE: 2,000 pcs\nFIZZY CHERRY: 1,800 pcs\nSTRAWBERRY ICE: 1,200 pcs\nBLUE RAZZ ICE: 1,200 pcs\nJUICY PEACH: 1,500 pcs\nCOLA ICE: 1,200 pcs\nDOUBLE APPLE: 3,500 pcs\nLYCHEE MINT: 3,500 pcs\nKIWI PASSION FRUIT GUAVA: 1,500 pcs\nBLUEBERRY POMEGRANATE: 1,300 pcs\nSKITTLES: 2,700 pcs\nBlackberry Blueberry Raspberry: 1,500 pcs\nMr Black: 1,400 pcs\nJagermeister: 6,000 pcs\nSour Apple: 2,800 pcs\nOrange Ice Kiwi: 2,800 pcs\nGrape Lemon: 4,000 pcs\nCherry Cola: 2,800 pcs\nLemon Lime: 500 pcs\nFresh Mint: 500 pcs\nFanta: 200 pcs\nRED BULL: 200 pcs\nDOUBLE APPLE: 500 pcs\nLYCHEE MINT: 500 pcs\nSKITTLES: 200 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 13.47kg;\n carton size: 615*359*162mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      },
+      {
+        "field": "nicotine",
+        "reason": "The sheet lists 20mg/ml and 50mg/ml together, so confirm whether this should become one mixed draft or split by nicotine version later."
+      }
+    ],
+    "meta": {
+      "sheet": "Monster 25000",
+      "header_quantity": 63800,
+      "flavor_row_count": 38
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: Dual Galaxy 30000\nBrand: ETS\nTitle: ETS Dual Galaxy 30000 Disposable Vape\nProduct Type: Disposable Vape\nPricing Mode: inquiry_only\nQuantity: 32000\nMOQ: 100\nMarket: Global\nWarehouse: Dongguan, China\nNicotine: 50mg/ml\nPuff: 30000\nE-liquid: 18ml\nProduction Date: 新生产\nFlavor Count: 16\nFlavor Breakdown:\nBlueberry Sour Raspberry & Blackberry Ice: 2,000 pcs\nLemon Lime & Pink Lemon: 2,000 pcs\nMr Black & Blue Razz Ice: 2,000 pcs\nSummer Dream & Aloe Grape: 2,400 pcs\nBlueberry Raspberry & Strawberry Ice: 2,000 pcs\nJuicy Peach & Double Apple: 2,000 pcs\nRed Bull & Fizzy Fanta: 2,400 pcs\nWatermelon Ice & Triple Melon: 2,000 pcs\nBlackberry Gum & Fresh Mint Gum: 1,800 pcs\nPassion Berry & Cherry Ice: 2,000 pcs\nApple Peach & Mango Peach: 1,800 pcs\nKiwi Guava & Strawberry Kiwi: 2,000 pcs\nBlueberry Cherry Cranberry & Strawberry Raspberry Cherry lce: 1,800 pcs\nStrawberry Pomegranate & Strawberry Kiwi Pomegranate: 1,800 pcs\nSkittles & Orange Melon: 2,000 pcs\nCherry Cola lce & Watermelon Cherry: 2,000 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "ETS Dual Galaxy 30000 Disposable Vape",
+      "slug": "ets-dual-galaxy-30000-disposable-vape",
+      "brand": "ETS",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.",
+      "price": "0",
+      "quantity": "32000",
+      "moq": "100",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "",
+      "warehouse_location": "Dongguan, China",
+      "nicotine": "50mg/ml",
+      "puff": "30000",
+      "e_liquid": "18ml",
+      "production_date_text": "新生产",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Blueberry Sour Raspberry & Blackberry Ice",
+        "Lemon Lime & Pink Lemon",
+        "Mr Black & Blue Razz Ice",
+        "Summer Dream & Aloe Grape",
+        "Blueberry Raspberry & Strawberry Ice",
+        "Juicy Peach & Double Apple",
+        "Red Bull & Fizzy Fanta",
+        "Watermelon Ice & Triple Melon",
+        "Blackberry Gum & Fresh Mint Gum",
+        "Passion Berry & Cherry Ice",
+        "Apple Peach & Mango Peach",
+        "Kiwi Guava & Strawberry Kiwi",
+        "Blueberry Cherry Cranberry & Strawberry Raspberry Cherry lce",
+        "Strawberry Pomegranate & Strawberry Kiwi Pomegranate",
+        "Skittles & Orange Melon",
+        "Cherry Cola lce & Watermelon Cherry"
+      ],
+      "flavor_breakdown": "Blueberry Sour Raspberry & Blackberry Ice: 2,000 pcs\nLemon Lime & Pink Lemon: 2,000 pcs\nMr Black & Blue Razz Ice: 2,000 pcs\nSummer Dream & Aloe Grape: 2,400 pcs\nBlueberry Raspberry & Strawberry Ice: 2,000 pcs\nJuicy Peach & Double Apple: 2,000 pcs\nRed Bull & Fizzy Fanta: 2,400 pcs\nWatermelon Ice & Triple Melon: 2,000 pcs\nBlackberry Gum & Fresh Mint Gum: 1,800 pcs\nPassion Berry & Cherry Ice: 2,000 pcs\nApple Peach & Mango Peach: 1,800 pcs\nKiwi Guava & Strawberry Kiwi: 2,000 pcs\nBlueberry Cherry Cranberry & Strawberry Raspberry Cherry lce: 1,800 pcs\nStrawberry Pomegranate & Strawberry Kiwi Pomegranate: 1,800 pcs\nSkittles & Orange Melon: 2,000 pcs\nCherry Cola lce & Watermelon Cherry: 2,000 pcs",
+      "description_summary": "ETS Dual Galaxy 30000 stock is available with 32,000 pcs across 16 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.",
+      "manifest_notes": "ETS Dual Galaxy 30000 stock is available with 32,000 pcs across 16 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.\n\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.\n\nBlueberry Sour Raspberry & Blackberry Ice: 2,000 pcs\nLemon Lime & Pink Lemon: 2,000 pcs\nMr Black & Blue Razz Ice: 2,000 pcs\nSummer Dream & Aloe Grape: 2,400 pcs\nBlueberry Raspberry & Strawberry Ice: 2,000 pcs\nJuicy Peach & Double Apple: 2,000 pcs\nRed Bull & Fizzy Fanta: 2,400 pcs\nWatermelon Ice & Triple Melon: 2,000 pcs\nBlackberry Gum & Fresh Mint Gum: 1,800 pcs\nPassion Berry & Cherry Ice: 2,000 pcs\nApple Peach & Mango Peach: 1,800 pcs\nKiwi Guava & Strawberry Kiwi: 2,000 pcs\nBlueberry Cherry Cranberry & Strawberry Raspberry Cherry lce: 1,800 pcs\nStrawberry Pomegranate & Strawberry Kiwi Pomegranate: 1,800 pcs\nSkittles & Orange Melon: 2,000 pcs\nCherry Cola lce & Watermelon Cherry: 2,000 pcs\n\nPackaging / Carton:\n200 pcs in a carton.\n each carton: 12.85kg;\n carton size: 610*360*160mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "Dual Galaxy 30000",
+      "header_quantity": 32000,
+      "flavor_row_count": 16
+    }
+  },
+  {
+    "version": "v1",
+    "rawInput": {
+      "sourceType": "excel",
+      "supplierName": "信息明细0522",
+      "submittedAt": null,
+      "sourceLabel": "信息明细0522.xlsx",
+      "rawText": "Source Sheet: ARGUSBAR NEON 2K\nBrand: ARGUSBAR\nTitle: ARGUSBAR NEON 2K Disposable Vape\nProduct Type: Disposable Vape\nPricing Mode: inquiry_only\nQuantity: 90790\nMOQ: 100\nMarket: Global\nWarehouse: Dongguan, China\nNicotine: 20mg/ml\nPuff: 2000\nE-liquid: 2+3ml\nProduction Date: 新生产\nFlavor Count: 10\nFlavor Breakdown:\nLemon Lime: 10,480 pcs\nTriple Mango: 7,780 pcs\nBanana lce: 10,080 pcs\nPineapple Ice: 9,080 pcs\nStrawberry Raspberry: 7,580 pcs\nJuicy Peach: 9,080 pcs\nCherry lce: 10,080 pcs\nWatermelon lce: 7,570 pcs\nMr.Blue: 11,480 pcs\nBlueberry Sour Raspberry: 7,580 pcs\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price."
+    },
+    "normalizedFields": {
+      "title": "ARGUSBAR NEON 2K Disposable Vape",
+      "slug": "argusbar-neon-2k-disposable-vape",
+      "brand": "ARGUSBAR",
+      "product_type": "Disposable Vape",
+      "pricing_mode": "inquiry_only",
+      "pricing_note": "Pricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.",
+      "price": "0",
+      "quantity": "90790",
+      "moq": "100",
+      "market": "Global",
+      "featured_markets": [],
+      "market_access_note": "",
+      "warehouse_location": "Dongguan, China",
+      "nicotine": "20mg/ml",
+      "puff": "2000",
+      "e_liquid": "2+3ml",
+      "production_date_text": "新生产",
+      "contact_visibility": "contact_required",
+      "images": [],
+      "flavor_tags": [
+        "Lemon Lime",
+        "Triple Mango",
+        "Banana lce",
+        "Pineapple Ice",
+        "Strawberry Raspberry",
+        "Juicy Peach",
+        "Cherry lce",
+        "Watermelon lce",
+        "Mr.Blue",
+        "Blueberry Sour Raspberry"
+      ],
+      "flavor_breakdown": "Lemon Lime: 10,480 pcs\nTriple Mango: 7,780 pcs\nBanana lce: 10,080 pcs\nPineapple Ice: 9,080 pcs\nStrawberry Raspberry: 7,580 pcs\nJuicy Peach: 9,080 pcs\nCherry lce: 10,080 pcs\nWatermelon lce: 7,570 pcs\nMr.Blue: 11,480 pcs\nBlueberry Sour Raspberry: 7,580 pcs",
+      "description_summary": "ARGUSBAR NEON 2K stock is available with 90,790 pcs across 10 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.",
+      "manifest_notes": "ARGUSBAR NEON 2K stock is available with 90,790 pcs across 10 flavors. Production reference is 新生产 and the batch is ready for inquiry-based quoting.\n\nPricing Note:\nPricing is handled on inquiry because the workbook provides stock only and no clean publishable unit price.\n\nLemon Lime: 10,480 pcs\nTriple Mango: 7,780 pcs\nBanana lce: 10,080 pcs\nPineapple Ice: 9,080 pcs\nStrawberry Raspberry: 7,580 pcs\nJuicy Peach: 9,080 pcs\nCherry lce: 10,080 pcs\nWatermelon lce: 7,570 pcs\nMr.Blue: 11,480 pcs\nBlueberry Sour Raspberry: 7,580 pcs\n\nPackaging / Carton:\n100 pcs in a carton.\n each carton: 9.75kg\n carton size: 468*341*181mm"
+    },
+    "missingFields": [],
+    "riskFlags": [
+      {
+        "code": "image-missing",
+        "severity": "low",
+        "message": "Image URL is intentionally left blank for manual completion."
+      }
+    ],
+    "humanReviewFocus": [
+      {
+        "field": "images",
+        "reason": "Fill in the real product image URL before import or publish review."
+      }
+    ],
+    "meta": {
+      "sheet": "ARGUSBAR NEON 2K",
+      "header_quantity": 90790,
+      "flavor_row_count": 10
+    }
+  }
+]

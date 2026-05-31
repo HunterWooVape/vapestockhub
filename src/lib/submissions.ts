@@ -4,6 +4,7 @@ import {
   getBrandNamingRiskTerms,
   normalizeELiquidValue,
   normalizeNicotineValue,
+  normalizeProductTypeValue,
   normalizeWarehouseLocation,
 } from '@/lib/admin-inventory'
 import { normalizeFeaturedMarketLabels, normalizeMarketLabel } from '@/lib/entry-standards'
@@ -196,7 +197,7 @@ export function normalizeSupplierSubmissionValues(values: SupplierSubmissionValu
     pricingNote: normalizeSubmissionMultilineText(values.pricingNote),
     brand: values.brand.trim(),
     modelName: values.modelName.trim(),
-    productType: values.productType.trim(),
+    productType: normalizeProductTypeValue(values.productType),
     unitPriceText: values.unitPriceText.trim(),
     availableQtyText: values.availableQtyText.trim(),
     moqText: values.moqText.trim(),

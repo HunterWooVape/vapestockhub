@@ -148,17 +148,26 @@
 
 ### 6.1 当前正式拍板
 
-`product_type` 统一使用：
+当前 SEO 主战场优先围绕 `Disposable Vape`，但发布层 `product_type` 不再强制统一为唯一值。
+
+`product_type` 使用固定标准枚举：
 
 - `Disposable Vape`
-
-这是当前阶段你最新明确拍板的结果。
+- `Pod Kit`
+- `Pod System`
+- `Vape Kit`
+- `E-liquid`
+- `Accessory`
+- `Device`
+- `Other`
 
 ### 6.2 当前执行原则
 
-- 对外输入允许出现近义表达
-- 对内标准化后，凡是本质属于一次性电子烟，都统一收口为：
+- 对外输入允许出现近义表达。
+- 对内标准化后，明显属于一次性电子烟的统一收口为：
   - `Disposable Vape`
+- 明显属于其他产品类型的，归一到对应标准枚举。
+- 无法稳定判断的，不静默硬改，进入 warning 或人工确认。
 
 ### 6.3 当前常见脏值示例
 
@@ -168,31 +177,41 @@
 - ` disposable vape `
 - `Disposable Device`
 - `one-time vape`
+- `pod`
+- `pod system`
+- `podkit`
+- `vape kit`
+- `starter kit`
+- `eliquid`
+- `e liquid`
+- `accessories`
 
 ### 6.4 处理口径
 
 - 明显属于一次性电子烟：
   - 一律归一到 `Disposable Vape`
-- 不能稳定判定是否仍属于一次性电子烟：
+- 明显属于 `Pod Kit`、`Pod System`、`Vape Kit`、`E-liquid`、`Accessory`、`Device`：
+  - 归一到对应标准值
+- 不能稳定判定产品类型：
   - 不静默改写
   - 进入人工确认
 
 ### 6.5 当前需要注意的冲突点
 
-当前项目里存在一处历史口径未完全统一：
+当前项目曾存在口径冲突：
 
 - 文档早期版本里曾出现：
   - `Disposable`
-- 代码历史选项里也曾出现：
-  - `Pod`
-  - `Device`
-  - `Other`
+- 旧决策中曾将当前主通道收口为：
+  - `Disposable Vape`
 
-但本轮你已明确：
+本轮已修正为：
 
-- `product_type` 统一使用 `Disposable Vape`
+- SEO 主攻方向优先 disposable
+- 真实库存发布层允许多产品类型
+- `product_type` 使用固定标准枚举，不使用自由发散值
 
-因此，后续所有与当前阶段主通道相关的标准化工作，应以此为准。
+因此，后续标准化工作应以本节枚举为准。
 
 ---
 
@@ -223,7 +242,7 @@
 
 处理方式：
 
-- 使用固定标准值
+- 使用固定标准枚举
 - 不允许自由发散到发布层
 
 ### 8.2 半约束
@@ -281,16 +300,21 @@ LLM 负责：
 当前代码里已经有以下基础能力：
 
 - `normalizeKnownValue()`
+- `normalizeProductTypeValue()`
 - `knownBrands`
 - `knownMarkets`
 - `brand-not-standard` warning
 - `market-not-standard` warning
+- `product_type` aliases 会归一到 canonical value，例如：
+  - `Vape Kits` / `starter kit` → `Vape Kit`
+  - `podkit` → `Pod Kit`
+  - `eliquid` / `e liquid` → `E-liquid`
+  - `disposable` / `disposable devices` → `Disposable Vape`
 
 ### 10.2 还未完全收口的点
 
 当前仍未完全收口的点：
 
-- `product_type` 历史选项仍带有旧口径
 - `brand` / `market` 尚无独立 synonym mapping 表
 - 文档已有标准写法，但还没完全转成代码层固定映射
 
@@ -302,7 +326,7 @@ LLM 负责：
 
 - `brand`：半约束，归一化处理
 - `market`：半约束，归一化处理
-- `product_type`：强约束，统一使用 `Disposable Vape`
+- `product_type`：强约束，使用固定标准枚举
 - `contact_visibility`：强约束，仅 `contact_required / public`
 
 ---

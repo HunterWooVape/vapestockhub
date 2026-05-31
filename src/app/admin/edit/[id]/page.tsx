@@ -16,6 +16,7 @@ import {
   normalizeELiquidValue,
   normalizeKnownValue,
   normalizeNicotineValue,
+  normalizeProductTypeValue,
   normalizeWarehouseLocation,
   placeholderInventoryImage,
   pricingModeOptions,
@@ -226,11 +227,7 @@ export default async function EditInventoryPage({
 
     const title = String(formData.get('title') || '').trim()
     const brand = normalizeKnownValue(String(formData.get('brand') || '').trim(), knownBrands)
-    const productType = getSelectedValue(
-      String(formData.get('product_type') || '').trim(),
-      productTypeOptions,
-      'Other'
-    )
+    const productType = normalizeProductTypeValue(String(formData.get('product_type') || ''), 'Other')
     const pricingMode = getSelectedValue(
       String(formData.get('pricing_mode') || item.pricing_mode || 'exact_price').trim(),
       pricingModeOptions,

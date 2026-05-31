@@ -30,7 +30,7 @@ export function getTrackedContactHref({
   message,
 }: {
   channel: 'telegram' | 'whatsapp'
-  sourcePageType: 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact'
+  sourcePageType: 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact' | 'blog'
   sourcePageSlug: string
   itemSlug?: string
   message?: string

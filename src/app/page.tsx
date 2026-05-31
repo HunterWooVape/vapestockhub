@@ -6,8 +6,8 @@ import type { InventoryRecord } from '@/lib/inventory'
 import { getTrackedContactHref } from '@/lib/site'
 
 export const metadata: Metadata = {
-  title: 'Global Wholesale Vape Inventory | VapeStockHub',
-  description: 'Browse verified wholesale vape inventory, bulk disposable vape stock, and inquiry-ready listings by brand, market, and price range.',
+  title: 'Wholesale Disposable Vapes & Clearance Stock | VapeStockHub',
+  description: 'Source wholesale disposable vapes, clearance stock, and bulk vape offers by brand, price range, market, and warehouse. Request live price and availability via Telegram or WhatsApp.',
 }
 
 export default async function Home() {
@@ -49,20 +49,20 @@ export default async function Home() {
       <section className="w-full py-20 px-4 flex flex-col items-center justify-center text-center bg-surface border-b border-border">
         <div className="max-w-3xl space-y-6">
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-            Global <span className="text-teal-DEFAULT">Wholesale Vape Inventory</span>
+            Wholesale Disposable Vapes & <span className="text-teal-DEFAULT">Clearance Stock</span>
           </h1>
           <p className="text-xl text-muted">
-            Browse verified wholesale vape inventory, bulk disposable vape stock, and inquiry-ready listings by brand, market, and price range.
+            Browse active disposable vape stock, clearance-ready offers, and bulk wholesale listings by brand, price range, market, and warehouse.
           </p>
           <p className="text-sm text-muted max-w-2xl mx-auto">
-            Built for B2B buyers who need live stock visibility, MOQ clarity, and fast WhatsApp or Telegram inquiry.
+            Send a direct inquiry to confirm live price, MOQ, and availability through WhatsApp or Telegram.
           </p>
           <div className="flex justify-center gap-4 pt-4">
             <Link href="/inventory" className="px-6 py-3 rounded-lg bg-teal-DEFAULT text-background font-semibold hover:bg-teal-hover transition-colors">
-              Browse Inventory
+              Browse Wholesale Stock
             </Link>
             <a href={getTrackedContactHref({ channel: 'telegram', sourcePageType: 'home', sourcePageSlug: 'hero' })} className="px-6 py-3 rounded-lg border border-border text-foreground font-semibold hover:bg-background transition-colors">
-              Request via Telegram
+              Request Bulk Quote
             </a>
           </div>
         </div>
@@ -168,20 +168,26 @@ export default async function Home() {
         </div>
         <div className="space-y-6">
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">Where can I find wholesale disposable vapes in bulk?</h3>
-            <p className="text-muted">Use the inventory index, brand hubs, and price-band pages to review active wholesale disposable vape listings before sending a direct inquiry.</p>
+            <h3 className="text-lg font-bold mb-2">Where can I find cheap disposable vapes in bulk?</h3>
+            <p className="text-muted">
+              Start from the <Link href="/price/under-3" className="text-teal-DEFAULT hover:text-teal-hover">budget and clearance price band</Link>, then confirm MOQ, live price, remaining quantity, and warehouse availability before sourcing.
+            </p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">How do I request live price and availability for wholesale vape stock?</h3>
-            <p className="text-muted">Open the Telegram or WhatsApp inquiry button on any inventory page. Your message includes the listing context so price and availability can be confirmed faster.</p>
+            <h3 className="text-lg font-bold mb-2">Do you offer wholesale disposable vapes for bulk buyers?</h3>
+            <p className="text-muted">Yes. VapeStockHub is built for B2B buyers reviewing wholesale disposable vape stock, MOQ, price visibility, market fit, and direct inquiry options.</p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">What is the MOQ for wholesale vape inventory?</h3>
-            <p className="text-muted">MOQs vary by listing. Review each inventory page for the current minimum order quantity before deciding which stock to pursue.</p>
+            <h3 className="text-lg font-bold mb-2">Why do some vape listings mention Shenzhen, China, or overseas warehouses?</h3>
+            <p className="text-muted">Warehouse and supply-side context helps buyers understand where active stock is held before asking about live availability, lead time, and sourcing fit.</p>
           </div>
           <div className="p-6 bg-surface border border-border rounded-xl">
-            <h3 className="text-lg font-bold mb-2">Can I browse wholesale vape stock by brand, market, or price range?</h3>
-            <p className="text-muted">Yes. VapeStockHub organizes active inventory by brand, market, and price band so buyers can move from broad sourcing intent into listing-level inquiry quickly.</p>
+            <h3 className="text-lg font-bold mb-2">Can I request live price and availability before ordering?</h3>
+            <p className="text-muted">Yes. Open Telegram or WhatsApp from any listing to confirm live price, MOQ, remaining stock, warehouse location, and final commercial terms.</p>
+          </div>
+          <div className="p-6 bg-surface border border-border rounded-xl">
+            <h3 className="text-lg font-bold mb-2">Are these listings for retail checkout?</h3>
+            <p className="text-muted">No. VapeStockHub is an inventory discovery and inquiry-routing platform for lawful B2B sourcing conversations, not a retail cart or checkout store.</p>
           </div>
         </div>
       </section>

@@ -38,8 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     .find((market) => market.slug === resolvedParams.slug)?.count ?? 0
   
   return {
-    title: `Wholesale Vape Inventory for ${marketName} | VapeStockHub`,
-    description: `Browse active wholesale vape stock suitable for the ${marketName} market, including verified listings, target-market aligned inventory, and inquiry-ready bulk offers.`,
+    title: `Wholesale Vape Stock for ${marketName} Buyers | VapeStockHub`,
+    description: `Browse active wholesale vape stock prioritized for ${marketName} buyers, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings. Confirm live availability before sourcing.`,
     alternates: {
       canonical: `${siteConfig.url}/market/${resolvedParams.slug}`,
     },
@@ -79,16 +79,24 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
 
   const marketFaqs = [
     {
-      question: `Can I source wholesale vape inventory for ${marketName} through this page?`,
+      question: `Can I source wholesale vape stock for ${marketName} through this page?`,
       answer: `Yes. This page groups active listings prioritized for ${marketName} buyers so you can review current stock and move into direct inquiry faster.`,
+    },
+    {
+      question: 'Does this page only show local warehouse stock?',
+      answer: 'No. It can include local warehouse stock or globally available inventory that may fit this market route. Always confirm warehouse availability before sourcing.',
     },
     {
       question: `What should I compare before sending an inquiry for ${marketName}?`,
       answer: 'Check MOQ, available quantity, warehouse location, price visibility, and whether the listing matches your target market route before contacting the supplier.',
     },
     {
-      question: `Does this market page only show local stock?`,
-      answer: `No. It can include globally available inventory that is still prioritized or suitable for ${marketName} demand and shipping paths.`,
+      question: `Can I request cheaper or clearance stock for ${marketName}?`,
+      answer: 'Yes. Include your target price range, quantity, and warehouse preference in the inquiry so matching budget or clearance stock can be checked.',
+    },
+    {
+      question: `Do you guarantee compliance or import clearance for ${marketName}?`,
+      answer: 'No. VapeStockHub organizes inventory discovery and inquiry routing only. Buyers and suppliers must independently confirm local rules, import requirements, and commercial terms.',
     },
   ]
 
@@ -100,10 +108,10 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
-          Wholesale Vape Inventory for <span className="text-teal-DEFAULT">{marketName}</span>
+          Wholesale Vape Stock for <span className="text-teal-DEFAULT">{marketName}</span> Buyers
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Browse active wholesale stock curated for buyers targeting {marketName}, including globally available listings prioritized for this market. Compare listings by brand, MOQ, stock depth, price visibility, and warehouse readiness before sending your inquiry.
+          Review active vape stock prioritized for {marketName} buyers. Listings may include local warehouse stock or globally available inventory suitable for this market route. Compare brand, MOQ, price visibility, warehouse location, and availability before sending an inquiry.
         </p>
       </div>
 

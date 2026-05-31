@@ -4,7 +4,7 @@ import { siteConfig } from '@/lib/site'
 
 export const metadata = {
   title: 'Contact VapeStockHub | Wholesale Inventory Inquiries',
-  description: 'Contact VapeStockHub for wholesale inventory inquiries through Telegram, WhatsApp, or email, with faster replies when product, market, and quantity details are included.',
+  description: 'Contact VapeStockHub for wholesale inventory inquiries through Telegram, WhatsApp, or email, with faster replies when product link, brand, model, market, warehouse, and quantity details are included.',
 }
 
 export default function ContactPage() {
@@ -18,7 +18,7 @@ export default function ContactPage() {
           Contact <span className="text-teal-DEFAULT">VapeStockHub</span>
         </h1>
         <p className="text-lg text-muted max-w-3xl">
-          Use this page for wholesale inventory inquiries, listing follow-up, partnership questions, or compliance-related communication. For the fastest response, start on Telegram with your product, target market, and quantity target.
+          Use this page for wholesale inventory inquiries, listing follow-up, partnership questions, or compliance-related communication. For the fastest response, start on Telegram with your product link, brand or model, target market, warehouse preference, and quantity target.
         </p>
       </section>
 
@@ -30,7 +30,7 @@ export default function ContactPage() {
           </p>
           <ContactButtons sourcePageType="contact" sourcePageSlug="contact-page" primaryLabel="Start Business Inquiry on Telegram" />
           <p className="text-sm text-muted">
-            Include the listing URL, brand, target market, and expected quantity so the receiving side can respond with better speed and context.
+            Include the listing URL, brand, model, product type, target market, warehouse preference, and expected quantity so the receiving side can respond with better speed and context.
           </p>
         </div>
 
@@ -56,9 +56,10 @@ export default function ContactPage() {
           <h2 className="text-xl font-bold">What to Include in Your Inquiry</h2>
           <div className="space-y-3 text-muted">
             <p>1. The product link or inventory page you are reviewing.</p>
-            <p>2. Brand, product type, or puff range if you do not have a direct URL yet.</p>
-            <p>3. Target market, destination country, or warehouse preference.</p>
-            <p>4. Quantity expectation, MOQ tolerance, and whether you need visible or inquiry-only pricing.</p>
+            <p>2. Brand, model name, product type, puff range, or flavor mix if you do not have a direct URL yet.</p>
+            <p>3. Target market, destination country, and warehouse preference such as China, US, UK, EU, or UAE.</p>
+            <p>4. Quantity expectation, MOQ tolerance, and whether you need visible-price stock or inquiry-only offers.</p>
+            <p>5. Any timing constraint, clearance-stock interest, or requirement for local warehouse availability.</p>
           </div>
         </div>
         <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">

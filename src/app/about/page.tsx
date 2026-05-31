@@ -3,14 +3,15 @@ import Link from 'next/link'
 import TrustCenterLinks from '@/components/site/TrustCenterLinks'
 
 export const metadata = {
-  title: 'About VapeStockHub | B2B Wholesale Inventory Platform',
-  description: 'Learn how VapeStockHub helps B2B buyers discover active wholesale vape inventory, review stock context, and move into direct Telegram or WhatsApp inquiry.',
+  title: 'About VapeStockHub | Source-Side Wholesale Inventory Platform',
+  description: 'Learn how VapeStockHub helps B2B buyers discover active wholesale vape inventory, review source-side stock context, and move into direct Telegram or WhatsApp inquiry.',
 }
 
 const operatingPrinciples = [
   'Inventory-first: we organize active stock, not generic catalog copy.',
   'B2B-only: the platform is designed for wholesalers, distributors, and trade buyers rather than retail consumers.',
   'Inquiry-driven: Telegram, WhatsApp, and email are used to move qualified interest into direct discussion.',
+  'Source-side context: Shenzhen and China supply chain visibility helps buyers understand where many stock opportunities originate.',
   'Operational clarity: pages emphasize MOQ, availability, market fit, and inventory context over hype.',
 ]
 
@@ -28,7 +29,7 @@ export default function AboutPage() {
           VapeStockHub is a B2B wholesale inventory platform built for trade buyers who need faster access to active vape stock, clearer inventory context, and a direct inquiry path to suppliers.
         </p>
         <p className="mt-4 text-muted max-w-3xl">
-          We focus on wholesale listings, clearance opportunities, and market-aware inventory discovery. The goal is simple: help legitimate business buyers review stock signals quickly and move into private negotiation with better context.
+          We focus on wholesale listings, clearance opportunities, and market-aware inventory discovery. Because much of the vape supply chain is connected to Shenzhen and wider China manufacturing networks, the platform also helps buyers understand source-side stock context before moving into private negotiation.
         </p>
       </section>
 
@@ -81,6 +82,19 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
+      </section>
+
+      <section className="bg-surface border border-border rounded-2xl p-8 space-y-5">
+        <h2 className="text-2xl font-bold">Source-Side Inventory Access</h2>
+        <p className="text-muted">
+          VapeStockHub is not positioned as a single vape supplier or checkout store. The platform is built around active stock discovery, direct inquiry routing, and supplier-provided inventory context.
+        </p>
+        <p className="text-muted">
+          Many opportunities begin with factory-side, brand-side, distributor, or warehouse inventory signals. Shenzhen and China supply chain access matters because it can reveal wholesale clearance stock, bulk disposable vape offers, and short-window sourcing opportunities before they are widely distributed through retail channels.
+        </p>
+        <p className="text-muted">
+          Buyers should still confirm stock identity, quantity, pricing, warehouse location, and market suitability directly before making any commercial decision.
+        </p>
       </section>
 
       <section className="bg-surface border border-border rounded-2xl p-8 space-y-4">

@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
 import Script from "next/script";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import { siteConfig } from "@/lib/site";
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: 'swap',
-});
 
 const gaMeasurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim() || '';
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION?.trim() || '';
@@ -44,7 +37,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} h-full antialiased bg-background text-foreground`}
+      className="h-full antialiased bg-background text-foreground"
     >
       <body className="min-h-full flex flex-col">
         {gaMeasurementId ? (

@@ -5,7 +5,7 @@ export const placeholderInventoryImage = '/images/inventory-placeholder.svg'
 
 export const productTypeOptions = [
   'Disposable Vape',
-  'Vape Kits',
+  'Vape Kit',
   'Pod System',
   'Pod Kit',
   'Pod',
@@ -27,6 +27,55 @@ export const pricingModeLabels = {
 
 export function formatPricingModeLabel(mode: (typeof pricingModeOptions)[number]) {
   return pricingModeLabels[mode]
+}
+
+const productTypeAliasMap = new Map<string, typeof productTypeOptions[number]>([
+  ['disposable', 'Disposable Vape'],
+  ['disposables', 'Disposable Vape'],
+  ['disposable vape', 'Disposable Vape'],
+  ['disposable vapes', 'Disposable Vape'],
+  ['disposable device', 'Disposable Vape'],
+  ['disposable devices', 'Disposable Vape'],
+  ['one-time vape', 'Disposable Vape'],
+  ['one time vape', 'Disposable Vape'],
+  ['podkit', 'Pod Kit'],
+  ['pod kit', 'Pod Kit'],
+  ['pod kits', 'Pod Kit'],
+  ['pod system', 'Pod System'],
+  ['pod systems', 'Pod System'],
+  ['pod', 'Pod'],
+  ['pods', 'Pod'],
+  ['vape kit', 'Vape Kit'],
+  ['vape kits', 'Vape Kit'],
+  ['starter kit', 'Vape Kit'],
+  ['starter kits', 'Vape Kit'],
+  ['e liquid', 'E-liquid'],
+  ['eliquid', 'E-liquid'],
+  ['e-liquid', 'E-liquid'],
+  ['e-liquids', 'E-liquid'],
+  ['accessory', 'Accessory'],
+  ['accessories', 'Accessory'],
+  ['device', 'Device'],
+  ['devices', 'Device'],
+  ['other', 'Other'],
+])
+
+export function normalizeProductTypeValue(value: string, fallback: typeof productTypeOptions[number] = 'Other') {
+  const trimmedValue = value.trim().replace(/\s+/g, ' ')
+
+  if (!trimmedValue) {
+    return fallback
+  }
+
+  const exactOption = productTypeOptions.find(
+    (option) => option.toLowerCase() === trimmedValue.toLowerCase()
+  )
+
+  if (exactOption) {
+    return exactOption
+  }
+
+  return productTypeAliasMap.get(trimmedValue.toLowerCase()) ?? fallback
 }
 
 export const inventoryStatusOptions = [
@@ -139,6 +188,10 @@ export const aiDraftRiskSeverityOptions = [
 
 export const aiDraftReviewFieldOptions = [
   'title',
+  'model_name',
+  'seo_title_suggestion',
+  'seo_description_suggestion',
+  'product_features',
   'brand',
   'product_type',
   'price',
@@ -167,6 +220,9 @@ export type InventoryAiDraftRawInput = {
 
 export type InventoryAiDraftFieldSet = {
   title: string
+  model_name: string
+  seo_title_suggestion: string
+  seo_description_suggestion: string
   slug: string
   brand: string
   product_type: string
@@ -187,6 +243,7 @@ export type InventoryAiDraftFieldSet = {
   images: string[]
   flavor_tags: string[]
   flavor_breakdown: string
+  product_features: string[]
   description_summary: string
   manifest_notes: string
 }
@@ -558,6 +615,9 @@ export function createEmptyInventoryAiDraftPackage(
     },
     normalizedFields: {
       title: '',
+      model_name: '',
+      seo_title_suggestion: '',
+      seo_description_suggestion: '',
       slug: '',
       brand: '',
       product_type: 'Disposable Vape',
@@ -578,6 +638,7 @@ export function createEmptyInventoryAiDraftPackage(
       images: [],
       flavor_tags: [],
       flavor_breakdown: '',
+      product_features: [],
       description_summary: '',
       manifest_notes: '',
     },
@@ -614,6 +675,10 @@ export function buildInventoryAiPromptAsset(options?: {
     `Preferred product_type values: ${productTypes.join(', ')}.`,
     knownBrands.length > 0 ? `Known brand references: ${knownBrands.join(', ')}.` : '',
     knownMarkets.length > 0 ? `Known market references: ${knownMarkets.join(', ')}.` : '',
+    'model_name should be the product model only, without brand stuffing or promotional words.',
+    'seo_title_suggestion should be a truthful B2B wholesale stock title. Respect product_type and do not force non-disposable products into disposable vape wording.',
+    'seo_description_suggestion should mention product type, quantity, MOQ, warehouse, market fit, and live price or availability confirmation when supported.',
+    'product_features should be short factual feature bullets extracted from source specs, not invented marketing claims.',
     'description_summary should be a short English B2B stock summary.',
     'manifest_notes should preserve inventory detail, flavor split, packaging notes, or trade notes in factual English.',
     'flavor_tags are short tags for quick display.',
@@ -645,6 +710,9 @@ export function buildInventoryAiPromptAsset(options?: {
     '- version must be "v1".',
     '- rawInput.rawText must contain the original source text.',
     '- normalizedFields.title, brand, market, and product_type should be filled when the source supports them.',
+    '- normalizedFields.model_name should contain only the model name when supported by the source.',
+    '- normalizedFields.seo_title_suggestion and normalizedFields.seo_description_suggestion should be truthful suggestions for human review, not automatically published.',
+    '- normalizedFields.product_features should be an array of factual feature strings supported by the source.',
     '- normalizedFields.pricing_mode must be exact_price or inquiry_only.',
     '- normalizedFields.contact_visibility must be contact_required or public.',
     '- missingFields is an array of field names that are still absent.',
@@ -753,9 +821,15 @@ export function parseInventoryAiDraftPackage(input: string):
     },
     normalizedFields: {
       title: getStringValue(normalizedFields.title),
+      model_name: getStringValue(normalizedFields.model_name),
+      seo_title_suggestion: getStringValue(normalizedFields.seo_title_suggestion),
+      seo_description_suggestion: getStringValue(normalizedFields.seo_description_suggestion),
       slug: getStringValue(normalizedFields.slug),
       brand: getStringValue(normalizedFields.brand),
-      product_type: getStringValue(normalizedFields.product_type) || 'Disposable Vape',
+      product_type: normalizeProductTypeValue(
+        getStringValue(normalizedFields.product_type),
+        'Disposable Vape'
+      ),
       pricing_mode: pricingMode,
       pricing_note: getStringValue(normalizedFields.pricing_note),
       price: getStringValue(normalizedFields.price),
@@ -773,6 +847,7 @@ export function parseInventoryAiDraftPackage(input: string):
       images: getStringArrayValue(normalizedFields.images),
       flavor_tags: getStringArrayValue(normalizedFields.flavor_tags),
       flavor_breakdown: getStringValue(normalizedFields.flavor_breakdown),
+      product_features: getStringArrayValue(normalizedFields.product_features),
       description_summary: getStringValue(normalizedFields.description_summary),
       manifest_notes: getStringValue(normalizedFields.manifest_notes),
     },
@@ -847,7 +922,7 @@ export function convertAiDraftPackageToInventoryDraft(
     title: draftPackage.normalizedFields.title.trim(),
     slug: draftPackage.normalizedFields.slug.trim(),
     brand: draftPackage.normalizedFields.brand.trim(),
-    productType: draftPackage.normalizedFields.product_type.trim(),
+    productType: normalizeProductTypeValue(draftPackage.normalizedFields.product_type, 'Other'),
     pricingMode: draftPackage.normalizedFields.pricing_mode,
     pricingNote: draftPackage.normalizedFields.pricing_note.trim(),
     price: Number(draftPackage.normalizedFields.price) || 0,

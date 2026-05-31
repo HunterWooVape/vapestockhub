@@ -1,8 +1,8 @@
 import Link from 'next/link'
 
 export const metadata = {
-  title: 'Wholesale Disposable Vape Inventory by Price Range | VapeStockHub',
-  description: 'Browse wholesale disposable vape stock by unit price to find budget-friendly, clearance-ready, and margin-aligned inventory for bulk buying.',
+  title: 'Disposable Vape Wholesale Prices by Range | VapeStockHub',
+  description: 'Browse disposable vape wholesale prices by range, from clearance and budget stock to higher-ticket bulk offers. Compare MOQ, warehouse, and availability before requesting a live quote.',
 }
 
 export default function PriceIndexPage() {
@@ -16,12 +16,11 @@ export default function PriceIndexPage() {
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
       <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-DEFAULT/5 rounded-full blur-3xl -mr-32 -mt-32"></div>
         <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4 relative z-10">
-          Find Inventory by <span className="text-teal-DEFAULT">Price Range</span>
+          Browse Disposable Vape <span className="text-teal-DEFAULT">Wholesale Prices</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto relative z-10">
-          Browse wholesale disposable vape stock by unit price so you can quickly find budget-friendly, clearance-ready, and margin-aligned inventory for bulk buying.
+          Browse disposable vape wholesale prices by range, from clearance and budget stock to higher-ticket bulk offers. Compare MOQ, warehouse, and availability before requesting a live quote.
         </p>
       </div>
 
@@ -34,7 +33,7 @@ export default function PriceIndexPage() {
           >
             {tier.isHot && (
               <div className="absolute top-4 right-4 text-xs font-bold bg-teal-DEFAULT text-background px-2 py-1 rounded">
-                HOT DEALS
+                Clearance Focus
               </div>
             )}
             <h2 className="text-2xl font-bold group-hover:text-teal-DEFAULT transition-colors mb-2">

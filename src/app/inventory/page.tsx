@@ -35,12 +35,14 @@ function buildInventoryHref({
   q,
   brand,
   market,
+  warehouse,
   sort,
   page,
 }: {
   q?: string
   brand?: string
   market?: string
+  warehouse?: string
   sort?: string
   page?: number
 }) {
@@ -56,6 +58,10 @@ function buildInventoryHref({
 
   if (market) {
     searchParams.set('market', market)
+  }
+
+  if (warehouse) {
+    searchParams.set('warehouse', warehouse)
   }
 
   if (sort && sort !== 'newest') {
@@ -174,13 +180,14 @@ export async function generateMetadata({
     normalizeSearchQuery(params.q) ||
     getSingleParam(params.brand) ||
     getSingleParam(params.market) ||
+    getSingleParam(params.warehouse) ||
     getSingleParam(params.sort) ||
     getPageNumber(params.page) > 1
   )
 
   return {
-    title: 'Active Wholesale Disposable Vape Inventory | VapeStockHub',
-    description: 'Browse verified wholesale disposable vape listings by brand, market, and price band. Review MOQ, stock level, and inquiry options before buying vapes in bulk.',
+    title: 'Wholesale Disposable Vapes in Bulk | VapeStockHub',
+    description: 'Browse wholesale disposable vapes in bulk by brand, market, price range, MOQ, and warehouse location. Compare active stock offers and request live price and availability via Telegram or WhatsApp.',
     alternates: {
       canonical: `${siteConfig.url}/inventory`,
     },
@@ -202,22 +209,27 @@ export default async function InventoryPage({
   const supabase = await createClient()
   const { data: facetOptions } = await supabase
     .from('inventory')
-    .select('brand, market, featured_markets')
+    .select('brand, market, featured_markets, warehouse_location')
     .eq('status', 'active')
 
   const searchQuery = normalizeSearchQuery(params.q)
   const brandSlug = getSingleParam(params.brand)
   const marketSlug = getSingleParam(params.market)
+  const warehouseSlug = getSingleParam(params.warehouse)
   const sort = getSingleParam(params.sort)
   const page = getPageNumber(params.page)
 
   const availableBrands = buildInventoryFacets((facetOptions ?? []).map((item) => item.brand))
   const availableMarkets = buildFeaturedMarketFacetsFromInventory(facetOptions ?? [])
+  const availableWarehouses = buildInventoryFacets((facetOptions ?? []).map((item) => item.warehouse_location))
   const brand = brandSlug
     ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.brand), brandSlug) ?? undefined
     : undefined
   const market = marketSlug
     ? resolveFeaturedMarketLabelBySlug(facetOptions ?? [], marketSlug) ?? undefined
+    : undefined
+  const warehouse = warehouseSlug
+    ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.warehouse_location), warehouseSlug) ?? undefined
     : undefined
 
   let query = supabase
@@ -227,6 +239,10 @@ export default async function InventoryPage({
 
   if (brand) {
     query = query.eq('brand', brand)
+  }
+
+  if (warehouse) {
+    query = query.eq('warehouse_location', warehouse)
   }
 
   const { data: inventory, error } = await query
@@ -263,12 +279,13 @@ export default async function InventoryPage({
   const currentPage = Math.min(page, totalPages)
   const from = (currentPage - 1) * ITEMS_PER_PAGE
   const items = filteredItems.slice(from, from + ITEMS_PER_PAGE)
-  const newestHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug })
-  const priceAscHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort: 'price_asc' })
+  const newestHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, warehouse: warehouseSlug })
+  const priceAscHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, warehouse: warehouseSlug, sort: 'price_asc' })
   const clearFiltersHref = '/inventory'
-  const clearBrandHref = buildInventoryHref({ q: searchQuery, market: marketSlug, sort })
-  const clearMarketHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, sort })
-  const clearSearchHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, sort })
+  const clearBrandHref = buildInventoryHref({ q: searchQuery, market: marketSlug, warehouse: warehouseSlug, sort })
+  const clearMarketHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, warehouse: warehouseSlug, sort })
+  const clearWarehouseHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort })
+  const clearSearchHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, warehouse: warehouseSlug, sort })
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
@@ -276,10 +293,10 @@ export default async function InventoryPage({
         <div>
           <h2 className="text-xl font-bold mb-4">Filters</h2>
           <p className="text-sm text-muted mb-6">
-            Filter live wholesale inventory by brand and market before opening product-level inquiries.
+            Filter active wholesale stock by brand, market, and warehouse before opening product-level inquiries.
           </p>
 
-          {(searchQuery || brand || market) && (
+          {(searchQuery || brand || market || warehouse) && (
             <div className="flex flex-wrap gap-2 mb-6">
               {searchQuery && (
                 <span className="text-xs bg-surface border border-border px-2 py-1 rounded-md flex items-center gap-1">
@@ -299,6 +316,12 @@ export default async function InventoryPage({
                   <Link href={clearMarketHref} className="text-muted hover:text-foreground ml-1">×</Link>
                 </span>
               )}
+              {warehouse && (
+                <span className="text-xs bg-surface border border-border px-2 py-1 rounded-md flex items-center gap-1">
+                  Warehouse: {warehouse}
+                  <Link href={clearWarehouseHref} className="text-muted hover:text-foreground ml-1">×</Link>
+                </span>
+              )}
               <Link href={clearFiltersHref} className="text-xs text-teal-DEFAULT hover:underline py-1">Clear all</Link>
             </div>
           )}
@@ -308,7 +331,7 @@ export default async function InventoryPage({
               title="Brands"
               items={availableBrands}
               activeSlug={brandSlug}
-              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: slug, market: marketSlug, sort })}
+              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: slug, market: marketSlug, warehouse: warehouseSlug, sort })}
               emptyLabel="No brands available yet."
             />
 
@@ -316,8 +339,16 @@ export default async function InventoryPage({
               title="Markets"
               items={availableMarkets}
               activeSlug={marketSlug}
-              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: brandSlug, market: slug, sort })}
+              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: brandSlug, market: slug, warehouse: warehouseSlug, sort })}
               emptyLabel="No markets available yet."
+            />
+
+            <FacetList
+              title="Warehouses"
+              items={availableWarehouses}
+              activeSlug={warehouseSlug}
+              buildHref={(slug) => buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, warehouse: slug, sort })}
+              emptyLabel="No warehouse locations available yet."
             />
           </div>
         </div>
@@ -325,9 +356,9 @@ export default async function InventoryPage({
 
       <div className="flex-1">
         <div className="mb-8 border-b border-border pb-6">
-          <h1 className="text-3xl font-bold">Browse Active Wholesale Disposable Vape Inventory</h1>
+          <h1 className="text-3xl font-bold">Wholesale Disposable Vapes in Bulk</h1>
           <p className="text-muted mt-3 max-w-3xl">
-            Explore verified wholesale disposable vape listings across brands, markets, and price bands. Use filters to find bulk inventory, compare MOQ and stock depth, and move quickly into direct inquiry.
+            Explore active disposable vape offers for wholesale and bulk buyers. Filter by brand, market, warehouse, and price visibility, then open a listing to confirm MOQ, live price, available quantity, and shipping-ready stock.
           </p>
         </div>
 
@@ -335,10 +366,11 @@ export default async function InventoryPage({
           <form action="/inventory" method="get" className="flex flex-col gap-3 lg:flex-row lg:items-center">
             {brandSlug ? <input type="hidden" name="brand" value={brandSlug} /> : null}
             {marketSlug ? <input type="hidden" name="market" value={marketSlug} /> : null}
+            {warehouseSlug ? <input type="hidden" name="warehouse" value={warehouseSlug} /> : null}
             {sort && sort !== 'newest' ? <input type="hidden" name="sort" value={sort} /> : null}
             <div className="flex-1">
               <label htmlFor="inventory-search" className="mb-2 block text-sm font-medium text-foreground">
-                Search inventory
+                Search wholesale stock
               </label>
               <input
                 id="inventory-search"
@@ -355,7 +387,7 @@ export default async function InventoryPage({
               >
                 Search
               </button>
-              {(searchQuery || brand || market || sort) && (
+              {(searchQuery || brand || market || warehouse || sort) && (
                 <Link
                   href={clearFiltersHref}
                   className="rounded-xl border border-border px-5 py-3 text-sm font-medium text-foreground hover:bg-background transition-colors"
@@ -372,7 +404,7 @@ export default async function InventoryPage({
             </p>
           ) : (
             <p className="mt-3 text-sm text-muted">
-              Search active listings by brand, model keywords, flavor, target market, or warehouse location.
+              Search active wholesale listings by brand, model keywords, flavor, target market, or warehouse location.
             </p>
           )}
         </div>
@@ -383,7 +415,7 @@ export default async function InventoryPage({
             <p className="text-sm text-muted mt-1">
               {searchQuery
                 ? 'Search results stay compatible with your current filters and sorting so you can move faster into supplier inquiry.'
-                : 'Use filters to find bulk disposable vape stock, compare active listings, and move quickly into supplier inquiry.'}
+                : 'Use filters to find bulk disposable vapes, compare MOQ, warehouse, and active stock depth, then move quickly into supplier inquiry.'}
             </p>
           </div>
 
@@ -408,7 +440,7 @@ export default async function InventoryPage({
               <div className="flex justify-center items-center gap-2 mt-12 pt-8 border-t border-border">
                 {currentPage > 1 && (
                   <Link
-                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort, page: currentPage - 1 })}
+                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, warehouse: warehouseSlug, sort, page: currentPage - 1 })}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
                   >
                     Previous
@@ -419,7 +451,7 @@ export default async function InventoryPage({
                 </span>
                 {currentPage < totalPages && (
                   <Link
-                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort, page: currentPage + 1 })}
+                    href={buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, warehouse: warehouseSlug, sort, page: currentPage + 1 })}
                     className="px-4 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
                   >
                     Next
@@ -470,9 +502,21 @@ export default async function InventoryPage({
               </p>
             </div>
             <div className="rounded-xl border border-border bg-surface p-6">
-              <h3 className="text-lg font-bold mb-2">How often is wholesale vape inventory updated?</h3>
+              <h3 className="text-lg font-bold mb-2">Can I find cheap disposable vapes here?</h3>
               <p className="text-sm text-muted">
-                Inventory changes frequently. We highlight active listings and verification timestamps so buyers can focus on currently available stock.
+                Yes. Use the <Link href="/price/under-3" className="text-teal-DEFAULT hover:text-teal-hover">budget clearance price band</Link> to review low-cost wholesale offers, then confirm live price and availability by inquiry.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">Do listings include warehouse location or local stock?</h3>
+              <p className="text-sm text-muted">
+                Listings show warehouse location when available. Use the warehouse filter to narrow active stock, then confirm local or overseas availability during direct contact.
+              </p>
+            </div>
+            <div className="rounded-xl border border-border bg-surface p-6">
+              <h3 className="text-lg font-bold mb-2">How do I request live availability?</h3>
+              <p className="text-sm text-muted">
+                Open a listing and use Telegram or WhatsApp to confirm MOQ, live price, remaining quantity, warehouse location, and final terms.
               </p>
             </div>
           </div>

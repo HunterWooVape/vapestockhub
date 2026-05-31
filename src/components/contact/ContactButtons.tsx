@@ -1,7 +1,7 @@
 import { getTrackedContactHref } from '@/lib/site'
 
 type ContactButtonsProps = {
-  sourcePageType: 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact'
+  sourcePageType: 'inventory' | 'market' | 'brand' | 'price' | 'home' | 'contact' | 'blog'
   sourcePageSlug: string
   itemSlug?: string
   primaryLabel?: string

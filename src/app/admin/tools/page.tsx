@@ -7,9 +7,11 @@ import {
   contactVisibilityOptions,
   convertAiDraftPackageToInventoryDraft,
   formatPricingModeLabel,
+  getInventoryAiDraftPackageExample,
   normalizeELiquidValue,
   normalizeKnownValue,
   normalizeNicotineValue,
+  normalizeProductTypeValue,
   normalizeWarehouseLocation,
   parseInventoryAiDraftPackage,
   pricingModeOptions,
@@ -174,11 +176,7 @@ export default async function AdminToolsPage({
 
     const title = String(formData.get('title') || '').trim()
     const brand = normalizeKnownValue(String(formData.get('brand') || '').trim(), knownBrands)
-    const productType = getSelectedValue(
-      String(formData.get('product_type') || '').trim(),
-      productTypeOptions,
-      'Other'
-    )
+    const productType = normalizeProductTypeValue(String(formData.get('product_type') || ''), 'Other')
     const pricingMode = getSelectedValue(
       String(formData.get('pricing_mode') || 'exact_price').trim(),
       pricingModeOptions,
@@ -258,11 +256,7 @@ export default async function AdminToolsPage({
     const draftValues = convertAiDraftPackageToInventoryDraft(parsedDraftPackage.draftPackage)
     const title = draftValues.title?.trim() || parsedDraftPackage.draftPackage.normalizedFields.title.trim()
     const brand = normalizeKnownValue(draftValues.brand?.trim() || '', knownBrands)
-    const productType = getSelectedValue(
-      draftValues.productType?.trim() || '',
-      productTypeOptions,
-      'Other'
-    )
+    const productType = normalizeProductTypeValue(draftValues.productType || '', 'Other')
     const market = normalizeKnownValue(draftValues.market?.trim() || '', knownMarkets)
     const slugSeed = draftValues.slug?.trim() || title
     const slug = await buildUniqueInventorySlug(adminClient, slugSeed)
@@ -467,7 +461,7 @@ export default async function AdminToolsPage({
           <form action={importAiDraftPackageAction} className="space-y-4">
             <textarea
               name="ai_draft_package_json"
-              placeholder={'{\n  "version": "v1",\n  "rawInput": { "sourceType": "excel", "rawText": "..." },\n  "normalizedFields": { "title": "...", "brand": "...", "market": "...", "product_type": "Disposable Vape", "description_summary": "...", "manifest_notes": "..." },\n  "missingFields": [],\n  "riskFlags": [],\n  "humanReviewFocus": []\n}'}
+              placeholder={getInventoryAiDraftPackageExample()}
               className="min-h-80 w-full rounded-lg border border-border bg-background px-4 py-3 font-mono text-sm"
             />
             <button className="rounded-lg bg-teal-DEFAULT px-4 py-3 font-semibold text-background">
