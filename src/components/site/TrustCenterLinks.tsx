@@ -26,6 +26,12 @@ const trustPageItems = [
     description: 'See the platform rules, role boundaries, and responsibility limits for B2B use.',
   },
   {
+    key: 'shipping-returns',
+    href: '/shipping-returns',
+    label: 'Shipping & Returns',
+    description: 'Review quote-based B2B shipping context and direct return-term confirmation.',
+  },
+  {
     key: 'compliance',
     href: '/compliance',
     label: 'Compliance',

@@ -46,8 +46,9 @@ export default function Footer() {
         
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-muted">
           <p>© {new Date().getFullYear()} VapeStockHub. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
+            <Link href="/shipping-returns" className="hover:text-foreground transition-colors">Shipping & Returns</Link>
             <Link href="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
             <Link href="/compliance" className="hover:text-foreground transition-colors">Compliance</Link>
           </div>

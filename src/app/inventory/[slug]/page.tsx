@@ -99,11 +99,24 @@ function buildInventoryMetadataTitle(item: InventoryRecord) {
 function buildInventoryJsonLd(item: InventoryRecord, unlocked: boolean) {
   const pageUrl = `${siteConfig.url}/inventory/${item.slug}`
   const image = getInventoryImageSrc(item.images)
-  const offer: Record<string, string | number> = {
+  const policyUrl = `${siteConfig.url}/shipping-returns`
+  const offer: Record<string, unknown> = {
     '@type': 'Offer',
     url: pageUrl,
     availability: item.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
     itemCondition: 'https://schema.org/NewCondition',
+    seller: {
+      '@id': `${siteConfig.url}#organization`,
+    },
+    hasMerchantReturnPolicy: {
+      '@id': `${policyUrl}#return-policy`,
+    },
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      hasShippingService: {
+        '@id': `${policyUrl}#shipping-policy`,
+      },
+    },
   }
 
   if (unlocked) {
