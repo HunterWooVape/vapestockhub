@@ -20,7 +20,6 @@ import {
 import { dataEntryGuidelines, normalizeMarketLabel } from '@/lib/entry-standards'
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import {
   adminSessionCookieName,
   buildBackofficeLoginRedirect,
@@ -146,7 +145,8 @@ export default async function AdminToolsPage({
     redirect('/admin?error=insufficient-role')
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  if (!supabase) redirect('/admin?error=missing-service-role-key')
   const { data: inventoryOptions } = await supabase.from('inventory').select('brand, market')
   const knownBrands = getUniqueValues((inventoryOptions ?? []).map((item) => item.brand))
   const knownMarkets = getUniqueValues((inventoryOptions ?? []).map((item) => item.market))

@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
-import InventoryCard from '@/components/inventory/InventoryCard'
+import { getPublicInventory } from '@/lib/public-inventory'
+import InventoryCollection from '@/components/inventory/InventoryCollection'
 import { Metadata } from 'next'
-import { InventoryRecord, resolveFacetLabelBySlug } from '@/lib/inventory'
+import { resolveFacetLabelBySlug, toSlug } from '@/lib/inventory'
 import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
 import { notFound } from 'next/navigation'
@@ -10,12 +10,7 @@ export const revalidate = 3600
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
-  const supabase = await createClient()
-
-  const { data: brandOptions } = await supabase
-    .from('inventory')
-    .select('brand')
-    .eq('status', 'active')
+  const brandOptions = await getPublicInventory()
 
   const brandName = resolveFacetLabelBySlug((brandOptions ?? []).map((item) => item.brand), resolvedParams.slug)
 
@@ -29,15 +24,11 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 
-  const { count } = await supabase
-    .from('inventory')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'active')
-    .eq('brand', brandName)
-  
+  const count = brandOptions.filter((item) => toSlug(item.brand) === resolvedParams.slug).length
+
   return {
     title: `${brandName} Wholesale Vape Stock | VapeStockHub`,
-    description: `Browse active ${brandName} wholesale vape stock, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings for B2B buyers.`,
+    description: `Browse ${brandName} wholesale vape inventory, specifications, MOQ and warehouse details. Check available stock or request restock and alternatives.`,
     alternates: {
       canonical: `${siteConfig.url}/brand/${resolvedParams.slug}`,
     },
@@ -50,11 +41,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params
-  const supabase = await createClient()
-  const { data: brandOptions } = await supabase
-    .from('inventory')
-    .select('brand')
-    .eq('status', 'active')
+  const brandOptions = await getPublicInventory()
 
   const brandName = resolveFacetLabelBySlug((brandOptions ?? []).map((item) => item.brand), resolvedParams.slug)
 
@@ -62,22 +49,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
     notFound()
   }
 
-  const { data: inventory, error } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-    .eq('brand', brandName)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching brand inventory:', error)
-  }
-
-  const items = (inventory ?? []) as InventoryRecord[]
-
-  if (items.length === 0) {
-    notFound()
-  }
+  const items = brandOptions.filter((item) => toSlug(item.brand) === resolvedParams.slug)
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
@@ -86,31 +58,15 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
           <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Vape Stock
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Browse active {brandName} wholesale vape stock, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings for B2B buyers.
+          Browse {brandName} wholesale inventory. Check available lots or request restock and alternatives.
         </p>
       </div>
 
-      <div>
-        <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
-          <div>
-            <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Compare live {brandName} wholesale listings by MOQ, warehouse, market fit, price visibility, and stock depth before sending your inquiry.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => (
-            <InventoryCard key={item.id} item={item} />
-          ))}
-        </div>
-      </div>
+      <InventoryCollection items={items} sourcePageType="brand" sourcePageSlug={resolvedParams.slug} sourcingContext={`${brandName} wholesale vape stock`} />
 
       <section className="border-t border-border pt-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{brandName} Wholesale FAQ</h2>
-          <p className="text-muted mt-2 max-w-3xl">
-            Key questions buyers review before requesting live price and availability for {brandName} stock.
-          </p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="rounded-xl border border-border bg-surface p-6">

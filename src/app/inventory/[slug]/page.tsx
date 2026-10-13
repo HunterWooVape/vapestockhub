@@ -1,11 +1,13 @@
-import { createClient } from '@/lib/supabase/server'
+import { getPublicInventory } from '@/lib/public-inventory'
+import { buildInventoryInquiry, formatVerifiedDate, hasPublicPrice, isSoldOut, needsAvailabilityConfirmation } from '@/lib/inventory-lifecycle'
+import { buildInventoryJsonLd, buildInventoryMetadataDescription } from '@/lib/inventory-seo'
 import ContactButtons from '@/components/contact/ContactButtons'
 import { getInventoryFeaturedMarkets } from '@/lib/inventory-markets'
 import {
   buildInventoryImageAlt,
   getInventoryImageSrc,
   hasRealInventoryImage,
-  InventoryRecord,
+  type InventoryRecord,
   toSlug,
 } from '@/lib/inventory'
 import { siteConfig } from '@/lib/site'
@@ -16,43 +18,10 @@ import { Metadata } from 'next'
 import InventoryCard from '@/components/inventory/InventoryCard'
 import { cache } from 'react'
 
-// Add cache control to ensure we get fresh data but don't overwhelm the DB
-export const revalidate = 3600 // revalidate every hour
-
+// 同一次请求共用查询结果；公开读取不跨请求缓存库存状态。
 const getInventoryItem = cache(async (slug: string) => {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('slug', slug)
-    .single()
-
-  return (data ?? null) as InventoryRecord | null
+  return (await getPublicInventory()).find((item) => item.slug === slug) ?? null
 })
-
-function buildInventoryMetadataDescription(item: InventoryRecord) {
-  const featuredMarkets = getInventoryFeaturedMarkets(item)
-  const marketFit = featuredMarkets.length > 0
-    ? featuredMarkets.join(', ')
-    : item.market || 'qualified buyers'
-  const summaryParts = [
-    `Active wholesale ${item.product_type} stock offer`,
-    `${item.quantity.toLocaleString()} pcs available`,
-    `MOQ ${item.moq.toLocaleString()} pcs`,
-    item.warehouse_location ? `warehouse in ${item.warehouse_location}` : '',
-    `market fit for ${marketFit}`,
-  ].filter(Boolean)
-
-  if (item.pricing_mode === 'inquiry_only') {
-    summaryParts.push('Pricing is available on request')
-  }
-
-  if (item.is_urgent_clearance) {
-    summaryParts.push('Clearance stock may move quickly; confirm remaining quantity before ordering')
-  }
-
-  return `${summaryParts.join(', ')}. Request live price and availability before committing.`
-}
 
 function getSeoProductType(productType: string) {
   const normalizedType = productType.trim().toLowerCase()
@@ -96,51 +65,6 @@ function buildInventoryMetadataTitle(item: InventoryRecord) {
   return `${item.title} Wholesale ${getSeoProductType(item.product_type)} Stock | VapeStockHub`
 }
 
-function buildInventoryJsonLd(item: InventoryRecord, unlocked: boolean) {
-  const pageUrl = `${siteConfig.url}/inventory/${item.slug}`
-  const image = getInventoryImageSrc(item.images)
-  const policyUrl = `${siteConfig.url}/shipping-returns`
-  const offer: Record<string, unknown> = {
-    '@type': 'Offer',
-    url: pageUrl,
-    availability: item.quantity > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
-    itemCondition: 'https://schema.org/NewCondition',
-    seller: {
-      '@id': `${siteConfig.url}#organization`,
-    },
-    hasMerchantReturnPolicy: {
-      '@id': `${policyUrl}#return-policy`,
-    },
-    shippingDetails: {
-      '@type': 'OfferShippingDetails',
-      hasShippingService: {
-        '@id': `${policyUrl}#shipping-policy`,
-      },
-    },
-  }
-
-  if (unlocked) {
-    offer.price = Number(item.price.toFixed(2))
-    offer.priceCurrency = 'USD'
-  }
-
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: item.title,
-    brand: {
-      '@type': 'Brand',
-      name: item.brand,
-    },
-    category: item.product_type,
-    image: image.startsWith('http') ? image : `${siteConfig.url}${image}`,
-    description: buildInventoryMetadataDescription(item),
-    sku: item.slug,
-    url: pageUrl,
-    offers: offer,
-  }
-}
-
 // Dynamically generate SEO metadata based on the inventory item
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
@@ -171,14 +95,15 @@ export default async function InventoryDetailPage({
     notFound()
   }
 
-  const supabase = await createClient()
-
   const isInquiryOnly = item.pricing_mode === 'inquiry_only'
-  const unlocked = item.contact_visibility === 'public' && !isInquiryOnly
+  const unlocked = hasPublicPrice(item)
+  const soldOut = isSoldOut(item)
+  const reconfirm = needsAvailabilityConfirmation(item)
+  const verifiedDate = formatVerifiedDate(item.last_verified_at)
   const hasRealImage = hasRealInventoryImage(item.images)
-  const inventoryJsonLd = buildInventoryJsonLd(item, unlocked)
+  const inventoryJsonLd = buildInventoryJsonLd(item)
 
-  const isHot = item.is_featured || item.quantity < 5000
+  const isFeatured = !soldOut && !reconfirm && item.is_featured
   const flavorList = item.flavor ? item.flavor.split(',').map((f: string) => f.trim()).filter(Boolean) : []
   const displayFlavors = flavorList.slice(0, 6)
   const extraFlavorsCount = flavorList.length - 6
@@ -188,46 +113,27 @@ export default async function InventoryDetailPage({
   const marketSlug = primaryMarketLabel ? toSlug(primaryMarketLabel) : ''
   const inventoryFaqs = [
     {
-      question: `Can I buy ${item.brand} ${item.product_type} stock in bulk from this listing?`,
-      answer: 'Yes, if the listing is still active. Review quantity, MOQ, market fit, and price visibility, then use the inquiry button to confirm current availability.',
+      question: soldOut ? 'Can I request this product again?' : 'How do I confirm availability?',
+      answer: soldOut
+        ? 'This lot is sold out. Send your required quantity and warehouse preference to check restock or alternatives.'
+        : 'Contact us with the listing details to confirm available quantity, MOQ and dispatch terms.',
     },
     {
-      question: `How do I confirm the wholesale price for ${item.title}?`,
-      answer: isInquiryOnly
-        ? 'This listing uses inquiry-only pricing. Send a message with the listing context to request a live quote and confirm stock terms.'
-        : unlocked
-          ? 'The page shows the current visible wholesale price. You should still confirm live availability and final terms during direct contact.'
-          : 'Pricing is unlocked during direct contact so current stock and trading terms can be confirmed together.',
+      question: soldOut ? 'Does the previous price apply to new stock?' : 'How do I request a quote?',
+      answer: soldOut
+        ? 'Previous prices apply to the original lot. Request a new quote for restock or alternative stock.'
+        : 'Send your target quantity, delivery destination and warehouse preference via Telegram or WhatsApp.',
     },
     {
-      question: 'What MOQ and warehouse details should I check?',
-      answer: `Check the MOQ, available quantity, warehouse location${item.warehouse_location ? ` (${item.warehouse_location})` : ''}, target market, and whether the listing supports your sourcing route.`,
-    },
-    {
-      question: 'Is this listing ready for immediate inquiry?',
-      answer: 'Yes, active listings are ready for direct inquiry. Confirm live availability before committing because stock and price can change quickly.',
-    },
-    {
-      question: 'Can I request mixed flavors or related stock?',
-      answer: 'Yes. Include flavor preferences, target quantity, and related product needs in your Telegram or WhatsApp inquiry so matching stock can be checked faster.',
+      question: 'Can I request specific flavors?',
+      answer: 'Include your flavor list and quantities in your inquiry. Availability is confirmed for each lot.',
     },
   ]
-
-  let relatedQuery = supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-    .neq('id', item.id)
-    .order('created_at', { ascending: false })
-    .limit(3)
-
-  relatedQuery = item.market
-    ? relatedQuery.or(`brand.ilike.%${item.brand}%,market.ilike.%${item.market}%`)
-    : relatedQuery.ilike('brand', `%${item.brand}%`)
-
-  const { data: relatedInventory } = await relatedQuery
-    
-  const relatedItems = (relatedInventory ?? []) as InventoryRecord[]
+  const relatedItems = (await getPublicInventory())
+    .filter((other) => other.status === 'active' && other.id !== item.id)
+    .filter((other) => toSlug(other.brand) === brandSlug || (item.market && toSlug(other.market) === toSlug(item.market)))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at))
+    .slice(0, 3)
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
@@ -257,22 +163,15 @@ export default async function InventoryDetailPage({
               Active Stock
             </span>
           )}
-          {isHot && (
-            <span className="text-sm font-bold px-3 py-1 bg-orange-500 text-background rounded-full animate-pulse shadow-lg flex items-center gap-1">
-              🔥 High Demand
-            </span>
+          {soldOut && (
+            <span className="rounded-full border border-border bg-surface px-3 py-1 text-sm font-semibold text-muted">Sold out</span>
+          )}
+          {isFeatured && (
+            <span className="rounded-full bg-teal-DEFAULT/10 px-3 py-1 text-sm font-medium text-teal-DEFAULT">Featured</span>
           )}
         </h1>
         <p className="text-muted mt-4 max-w-3xl">
-          {item.market && featuredMarkets.length > 0
-            ? `Active wholesale ${item.product_type} stock offer with ${item.market} availability, prioritized for ${featuredMarkets.join(', ')} buyers${item.warehouse_location ? ` and stocked in ${item.warehouse_location}` : ''}. Review quantity, MOQ, warehouse, and pricing terms before sending your inquiry.`
-            : item.market && item.warehouse_location
-              ? `Active wholesale ${item.product_type} stock offer for the ${item.market} market with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-              : item.market
-                ? `Active wholesale ${item.product_type} stock offer for the ${item.market} market. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-                : item.warehouse_location
-                  ? `Active wholesale ${item.product_type} stock offer with warehouse availability in ${item.warehouse_location}. Review quantity, MOQ, and pricing terms before sending your inquiry.`
-                  : `Active wholesale ${item.product_type} stock offer. Review quantity, MOQ, and pricing terms before sending your inquiry.`}
+          {soldOut ? 'This lot is sold out. Ask about restock or alternative stock.' : `${item.product_type}${item.warehouse_location ? ` · Warehouse: ${item.warehouse_location}` : ''}`}
         </p>
       </div>
 
@@ -335,7 +234,7 @@ export default async function InventoryDetailPage({
             {flavorList.length > 0 && (
               <div className="border-t border-border pt-6">
                 <div className="text-sm text-muted mb-3 flex items-center justify-between">
-                  <span>Available Flavors ({flavorList.length})</span>
+                  <span>{soldOut ? 'Original flavors' : 'Listed flavors'} ({flavorList.length})</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {displayFlavors.map((flavor: string, idx: number) => (
@@ -368,20 +267,22 @@ export default async function InventoryDetailPage({
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
             <div className="bg-surface rounded-2xl border border-border p-6 sm:p-8">
-              {isHot && (
-                <div className="mb-6 flex items-center gap-3 text-sm font-medium text-orange-500 bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
-                  <span>Hot</span>
-                  <span>Fast-moving inventory offer. Send your inquiry early to confirm remaining availability.</span>
+              {soldOut ? (
+                <div className="mb-6 rounded-lg border border-border bg-background p-4">
+                  <p className="font-semibold">Sold out</p>
+                  <p className="mt-1 text-sm text-muted">Restock and alternatives on inquiry.</p>
                 </div>
-              )}
+              ) : reconfirm ? (
+                <div className="mb-6 rounded-lg border border-amber-400/25 bg-amber-400/5 p-4 text-sm text-amber-200">Availability to reconfirm</div>
+              ) : null}
 
               <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-muted mb-1">Available Stock</div>
+                  <div className="text-sm text-muted mb-1">{soldOut ? 'Original lot quantity' : 'Listed stock'}</div>
                   <div className="text-2xl font-bold">{item.quantity.toLocaleString()} pcs</div>
                 </div>
                 <div>
-                  <div className="text-sm text-muted mb-1">Minimum Order (MOQ)</div>
+                  <div className="text-sm text-muted mb-1">{soldOut ? 'Previous MOQ' : 'Minimum order (MOQ)'}</div>
                   <div className="text-lg font-semibold">{item.moq.toLocaleString()} pcs</div>
                 </div>
                 <div>
@@ -407,25 +308,25 @@ export default async function InventoryDetailPage({
                   </div>
                 )}
                 <div>
-                  <div className="text-sm text-muted mb-1">Warehouse</div>
+                  <div className="text-sm text-muted mb-1">{soldOut ? 'Original warehouse' : 'Warehouse'}</div>
                   <div className="text-lg font-semibold">
                     {item.warehouse_location || 'Available on inquiry'}
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-border">
-                  <div className="text-sm text-muted mb-1">Wholesale Price</div>
+                  <div className="text-sm text-muted mb-1">{soldOut ? 'Previous unit price' : 'Wholesale price'}</div>
                   {isInquiryOnly ? (
                     <div className="text-2xl font-bold text-foreground">
                       Pricing on Request
                     </div>
                   ) : unlocked ? (
                     <div className="text-4xl font-bold text-teal-DEFAULT">
-                      ${item.price.toFixed(2)}
+                      ${item.price!.toFixed(2)}
                     </div>
                   ) : (
                     <div className="text-2xl font-bold text-foreground">
-                      Contact to Unlock
+                      {soldOut ? 'On inquiry' : 'Contact for price'}
                     </div>
                   )}
                 </div>
@@ -436,23 +337,9 @@ export default async function InventoryDetailPage({
                   sourcePageType="inventory"
                   sourcePageSlug={item.slug}
                   itemSlug={item.slug}
-                  primaryLabel={
-                    isInquiryOnly
-                      ? 'Request Live Quote via Telegram'
-                      : unlocked
-                        ? 'Request Availability via Telegram'
-                        : 'Request Wholesale Price via Telegram'
-                  }
-                  message={`Hi VapeStockHub, I'm interested in ${item.title}. Please confirm live price, MOQ (${item.moq.toLocaleString()} pcs), available quantity (${item.quantity.toLocaleString()} pcs), and warehouse availability${item.warehouse_location ? ` for ${item.warehouse_location}` : ''}.${featuredMarkets.length > 0 ? ` Featured markets: ${featuredMarkets.join(', ')}.` : ''}`}
+                  primaryLabel={soldOut ? 'Ask about restock via Telegram' : 'Request quote via Telegram'}
+                  message={buildInventoryInquiry(item)}
                 />
-
-                {(isInquiryOnly || !unlocked) && (
-                  <p className="text-xs text-center text-muted">
-                    {isInquiryOnly
-                      ? 'This listing uses inquiry-only pricing. Live quote, flavor details, and current availability are confirmed during direct contact.'
-                      : 'Pricing is shared during direct contact so current stock and terms can be confirmed together.'}
-                  </p>
-                )}
 
                 {item.pricing_note && (
                   <p className="text-xs text-center text-muted">
@@ -460,9 +347,9 @@ export default async function InventoryDetailPage({
                   </p>
                 )}
 
-                <p className="text-xs text-center text-muted mt-4">
-                  Last verified on {new Date(item.last_verified_at).toLocaleDateString()}
-                </p>
+                {verifiedDate && (
+                  <p className="text-xs text-center text-muted mt-4">{soldOut ? 'Original lot last confirmed' : 'Last confirmed'}: {verifiedDate}</p>
+                )}
               </div>
             </div>
           </div>
@@ -472,9 +359,6 @@ export default async function InventoryDetailPage({
       <section className="mt-16 border-t border-border pt-12">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">Wholesale Stock Offer FAQ</h2>
-          <p className="text-muted mt-2 max-w-3xl">
-            Key questions buyers review before requesting live price and availability for this stock offer.
-          </p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {inventoryFaqs.map((faq) => (

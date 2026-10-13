@@ -1,21 +1,12 @@
-import { createClient } from '@/lib/supabase/server'
-import InventoryCard from '@/components/inventory/InventoryCard'
+import { getPublicInventory } from '@/lib/public-inventory'
+import { getPriceTierItems, PRICE_TIER_SLUGS } from '@/lib/inventory-price'
+import InventoryCollection from '@/components/inventory/InventoryCollection'
 import { Metadata } from 'next'
-import Link from 'next/link'
-import { InventoryRecord } from '@/lib/inventory'
 import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
 import { notFound } from 'next/navigation'
 
 export const revalidate = 3600
-
-type PriceRangeQuery<T> = {
-  lte: (column: string, value: number) => T
-  gt: (column: string, value: number) => T
-  gte: (column: string, value: number) => T
-}
-
-const allowedPriceTierSlugs = new Set(['under-3', '3-to-5', '5-to-8', 'over-8'])
 
 const priceTierCopy: Record<string, {
   h1: string
@@ -28,64 +19,34 @@ const priceTierCopy: Record<string, {
     h1: 'Cheap Disposable Vapes for Wholesale Clearance',
     title: 'Cheap Disposable Vapes for Wholesale Clearance | VapeStockHub',
     description: 'Review low-cost disposable vape stock, clearance-ready offers, and budget wholesale listings. Compare MOQ, unit price, warehouse, and live availability before sending an inquiry.',
-    intro: 'Use this price band to screen low-cost disposable vape offers for wholesale and clearance sourcing. Listings may move quickly, so confirm live price, MOQ, remaining quantity, and warehouse location before committing.',
+    intro: 'Wholesale and clearance lots at $3 or less. Sold-out lots show previous prices; current quotes are available by inquiry.',
     listingSummary: 'Use this clearance-focused price band to compare budget stock, MOQ, warehouse, and live availability before opening product-level inquiries.',
   },
   '3-to-5': {
     h1: 'Wholesale Disposable Vapes from $3 to $5',
     title: 'Wholesale Disposable Vapes from $3 to $5 | VapeStockHub',
     description: 'Review wholesale disposable vape stock from $3 to $5, including bulk offers, MOQ, warehouse location, and live availability before requesting a quote.',
-    intro: 'Use this price band to screen mainstream wholesale disposable vape offers with balanced margin potential, stable bulk sourcing fit, and clear MOQ signals.',
+    intro: 'Wholesale lots listed from $3 to $5. Sold-out lots show previous prices; confirm current terms by inquiry.',
     listingSummary: 'Use this price-band inventory hub to compare balanced wholesale offers before opening product-level inquiries.',
   },
   '5-to-8': {
     h1: 'Disposable Vape Wholesale Stock from $5 to $8',
     title: 'Disposable Vape Wholesale Stock from $5 to $8 | VapeStockHub',
     description: 'Browse disposable vape wholesale stock from $5 to $8 by MOQ, warehouse, and availability before requesting live price confirmation.',
-    intro: 'Use this price band to review higher-ticket wholesale disposable vape offers with stronger feature sets and clear sourcing context.',
+    intro: 'Wholesale lots listed from $5 to $8. Sold-out lots show previous prices; confirm current terms by inquiry.',
     listingSummary: 'Use this price-band inventory hub to compare active wholesale stock before opening product-level inquiries.',
   },
   'over-8': {
     h1: 'Disposable Vape Wholesale Stock Over $8',
     title: 'Disposable Vape Wholesale Stock Over $8 | VapeStockHub',
     description: 'Browse higher-ticket disposable vape wholesale stock over $8 by MOQ, warehouse, and availability before requesting live price confirmation.',
-    intro: 'Use this price band to review higher-ticket wholesale stock, advanced hardware, specialty inventory lines, and live availability context.',
+    intro: 'Wholesale lots listed above $8. Sold-out lots show previous prices; confirm current terms by inquiry.',
     listingSummary: 'Use this price-band inventory hub to compare active wholesale stock before opening product-level inquiries.',
   },
 }
 
 function isSupportedPriceTierSlug(slug: string) {
-  return allowedPriceTierSlugs.has(slug)
-}
-
-function applyPriceRangeQuery<T extends PriceRangeQuery<T>>(slug: string, query: T) {
-  const priceDesc = ''
-
-  if (slug.startsWith('under-')) {
-    const maxPrice = parseFloat(slug.split('-')[1])
-    return {
-      query: query.lte('price', maxPrice),
-      priceDesc: `Under $${maxPrice.toFixed(2)}`,
-    }
-  }
-
-  if (slug.startsWith('over-')) {
-    const minPrice = parseFloat(slug.split('-')[1])
-    return {
-      query: query.gt('price', minPrice),
-      priceDesc: `Over $${minPrice.toFixed(2)}`,
-    }
-  }
-
-  if (slug.includes('-to-')) {
-    const [min, max] = slug.split('-to-')
-    return {
-      query: query.gte('price', parseFloat(min)).lte('price', parseFloat(max)),
-      priceDesc: `Between $${parseFloat(min).toFixed(2)} - $${parseFloat(max).toFixed(2)}`,
-    }
-  }
-
-  return { query, priceDesc }
+  return PRICE_TIER_SLUGS.some((value) => value === slug)
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -101,16 +62,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     }
   }
 
-  const supabase = await createClient()
-  const { query } = applyPriceRangeQuery(
-    resolvedParams.slug,
-    supabase
-      .from('inventory')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .eq('pricing_mode', 'exact_price')
-  )
-  const { count } = await query
+  const count = getPriceTierItems(await getPublicInventory(), resolvedParams.slug).length
   const tierCopy = priceTierCopy[resolvedParams.slug]
   
   return {
@@ -133,25 +85,8 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
     notFound()
   }
 
-  const supabase = await createClient()
-  
-  let query = supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-    .eq('pricing_mode', 'exact_price')
-    .order('price', { ascending: true })
-  const rangeResult = applyPriceRangeQuery(resolvedParams.slug, query)
-  query = rangeResult.query
+  const items = getPriceTierItems(await getPublicInventory(), resolvedParams.slug)
   const tierCopy = priceTierCopy[resolvedParams.slug]
-
-  const { data: inventory, error } = await query
-
-  if (error) {
-    console.error('Error fetching price inventory:', error)
-  }
-
-  const items = (inventory ?? []) as InventoryRecord[]
 
   return (
     <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
@@ -164,30 +99,7 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
         </p>
       </div>
 
-      <div>
-        <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
-          <div>
-            <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">{tierCopy.listingSummary}</p>
-          </div>
-        </div>
-
-        {items.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {items.map((item) => (
-              <InventoryCard key={item.id} item={item} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 bg-surface rounded-xl border border-border">
-            <h3 className="text-lg font-bold mb-2">No active wholesale stock in this range</h3>
-            <p className="text-muted mb-6">No active wholesale stock is currently available in this price range. Try another band or return to the full inventory index.</p>
-            <Link href="/inventory" className="px-6 py-2 bg-teal-DEFAULT text-background rounded-lg font-medium hover:bg-teal-hover transition-colors">
-              View All Inventory
-            </Link>
-          </div>
-        )}
-      </div>
+      <InventoryCollection items={items} sourcePageType="price" sourcePageSlug={resolvedParams.slug} sourcingContext={tierCopy.h1.toLowerCase()} />
 
       {resolvedParams.slug === 'under-3' && (
         <section className="border-t border-border pt-12">
@@ -201,7 +113,7 @@ export default async function PricePage({ params }: { params: Promise<{ slug: st
             <div className="rounded-xl border border-border bg-surface p-6">
               <h3 className="text-lg font-bold mb-2">Where can I find cheap disposable vapes in bulk?</h3>
               <p className="text-sm text-muted">
-                This price band shows active exact-price listings under $3. Confirm MOQ, remaining quantity, warehouse, and live availability before sourcing.
+                Available lots show current listed prices. Sold-out lots show previous prices for reference. Confirm a new quote before sourcing.
               </p>
             </div>
             <div className="rounded-xl border border-border bg-surface p-6">

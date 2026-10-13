@@ -19,7 +19,6 @@ import {
   type SupplierSubmissionValues,
 } from '@/lib/submissions'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import {
   adminLoginGuardCookieName,
   adminSessionCookieName,
@@ -248,10 +247,10 @@ export default async function AdminPage({
     redirect(returnTo)
   }
 
-  const supabase = await createClient()
+  const supabase = isAuthenticated ? createAdminClient() : null
+  if (isAuthenticated && !supabase) throw new Error('后台数据库配置缺失。')
 
-  const inventoryQuery = supabase
-    .from('inventory')
+  const inventoryQuery = supabase?.from('inventory')
     .select(
       'id, slug, title, status, contact_visibility, brand, market, created_at, product_type, pricing_mode, pricing_note, price, quantity, moq, warehouse_location, description, images, flavor',
       { count: 'exact' }
@@ -261,7 +260,7 @@ export default async function AdminPage({
 
   if (searchQuery) {
     const searchPattern = `%${searchQuery.replace(/\s+/g, '%')}%`
-    inventoryQuery.or([
+    inventoryQuery?.or([
       `title.ilike.${searchPattern}`,
       `slug.ilike.${searchPattern}`,
       `brand.ilike.${searchPattern}`,
@@ -271,8 +270,8 @@ export default async function AdminPage({
   }
 
   const [{ count }, { data: inventoryOptions }] = await Promise.all([
-    inventoryQuery,
-    supabase.from('inventory').select('brand, market'),
+    inventoryQuery ?? { count: 0 },
+    supabase?.from('inventory').select('brand, market') ?? { data: [] },
   ])
 
   const totalItems = count ?? 0
@@ -281,7 +280,7 @@ export default async function AdminPage({
   const from = (currentPage - 1) * ITEMS_PER_PAGE
   const to = from + ITEMS_PER_PAGE - 1
 
-  const { data: inventory } = await inventoryQuery.range(from, to)
+  const { data: inventory } = await (inventoryQuery?.range(from, to) ?? { data: [] })
 
   const knownBrands = getUniqueValues((inventoryOptions ?? []).map((item) => item.brand))
   const knownMarkets = getUniqueValues((inventoryOptions ?? []).map((item) => item.market))

@@ -1,8 +1,7 @@
-import { createClient } from '@/lib/supabase/server'
+import { getPublicInventory } from '@/lib/public-inventory'
 import Link from 'next/link'
 import type { Metadata } from 'next'
 import InventoryCard from '@/components/inventory/InventoryCard'
-import type { InventoryRecord } from '@/lib/inventory'
 import { getTrackedContactHref } from '@/lib/site'
 
 export const metadata: Metadata = {
@@ -11,37 +10,16 @@ export const metadata: Metadata = {
 }
 
 export default async function Home() {
-  const supabase = await createClient()
-  
-  // Fetch featured active inventory
-  const { data: featuredInventory } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-    .eq('is_featured', true)
-    .order('last_verified_at', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(3)
-
-  const featuredItems = (featuredInventory ?? []) as InventoryRecord[]
-  const featuredIds = featuredItems.map((item) => item.id)
-
-  // Fetch latest active inventory
-  const { data: latestInventory, error } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-    .order('last_verified_at', { ascending: false })
-    .order('created_at', { ascending: false })
-    .limit(6)
-
-  if (error) {
-    console.error('Error fetching inventory (check RLS policies):', error)
-  }
-
-  const latestItems = ((latestInventory ?? []) as InventoryRecord[])
-    .filter((item) => !featuredIds.includes(item.id))
+  const inventory = await getPublicInventory()
+  const activeItems = inventory.filter((item) => item.status === 'active')
+  const featuredItems = activeItems.filter((item) => item.is_featured)
+    .sort((left, right) => (right.last_verified_at ?? '').localeCompare(left.last_verified_at ?? ''))
     .slice(0, 3)
+  const featuredIds = new Set(featuredItems.map((item) => item.id))
+  const latestItems = activeItems.filter((item) => !featuredIds.has(item.id))
+    .sort((left, right) => right.created_at.localeCompare(left.created_at)).slice(0, 3)
+  const pastItems = inventory.filter((item) => item.status === 'sold')
+    .sort((left, right) => right.created_at.localeCompare(left.created_at)).slice(0, 6)
 
   return (
     <main className="flex-1 flex flex-col items-center">
@@ -80,7 +58,7 @@ export default async function Home() {
             <p className="text-muted text-sm mt-2">Compare active wholesale inventory from brands currently available for inquiry and bulk sourcing.</p>
           </Link>
           <Link href="/price" className="p-6 rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/5 hover:border-teal-DEFAULT transition-colors group relative overflow-hidden">
-            <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-teal-DEFAULT animate-pulse"></div>
+            <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-teal-DEFAULT"></div>
             <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Price →</h3>
             <p className="text-muted text-sm mt-2">Screen bulk disposable vape stock by unit price, margin target, and clearance potential.</p>
           </Link>
@@ -93,9 +71,9 @@ export default async function Home() {
           <div className="flex justify-between items-end mb-8">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
-                <span className="text-orange-500">🔥</span> Featured Inventory
+                Featured inventory
               </h2>
-              <p className="text-muted mt-1">Selected wholesale vape listings with active stock, clear MOQ signals, and strong inquiry potential.</p>
+              <p className="text-muted mt-1">Selected wholesale lots.</p>
             </div>
             <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
               View All →
@@ -109,12 +87,25 @@ export default async function Home() {
         </section>
       )}
 
+      {activeItems.length === 0 && (
+        <section className="mx-auto w-full max-w-7xl px-4 py-12">
+          <div className="rounded-2xl border border-teal-DEFAULT/25 bg-surface p-8 sm:p-12">
+            <h2 className="text-2xl font-bold">Request wholesale stock</h2>
+            <p className="mt-3 text-muted">Send your model, quantity and warehouse requirements.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <a href={getTrackedContactHref({channel:'telegram',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg bg-teal-DEFAULT px-6 py-3 font-semibold text-background hover:bg-teal-hover">Request via Telegram</a>
+              <a href={getTrackedContactHref({channel:'whatsapp',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-background">Request via WhatsApp</a>
+            </div>
+          </div>
+        </section>
+      )}
       {/* Latest Inventory Section */}
+      {activeItems.length > 0 && (
       <section className="w-full py-12 px-4 max-w-7xl mx-auto">
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-2xl font-bold">Latest Active Inventory</h2>
-            <p className="text-muted mt-1">Recently verified wholesale listings with current availability, MOQ, market fit, and inquiry-ready stock.</p>
+            <p className="text-muted mt-1">Recently added wholesale lots.</p>
           </div>
           <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
             View All →
@@ -133,6 +124,18 @@ export default async function Home() {
         </div>
       </section>
 
+      )}
+      {pastItems.length > 0 && (
+        <section className="mx-auto w-full max-w-7xl px-4 py-12">
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <h2 className="text-2xl font-bold">Past stock</h2>
+            <Link href="/inventory" className="text-sm font-medium text-teal-DEFAULT hover:text-teal-hover">View all →</Link>
+          </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {pastItems.map((item) => <InventoryCard key={item.id} item={item} />)}
+          </div>
+        </section>
+      )}
       {/* How it Works Section */}
       <section className="w-full py-16 px-4 bg-surface border-t border-b border-border">
         <div className="max-w-7xl mx-auto">

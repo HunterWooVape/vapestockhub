@@ -24,7 +24,6 @@ import {
 } from '@/lib/admin-inventory'
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import {
   adminSessionCookieName,
   getBackofficeRole,
@@ -160,7 +159,8 @@ export default async function EditInventoryPage({
     redirect('/admin')
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  if (!supabase) redirect('/admin?error=missing-service-role-key')
   const [{ data: item }, { data: inventoryOptions }, { data: linkedSubmission }] = await Promise.all([
     supabase
       .from('inventory')
