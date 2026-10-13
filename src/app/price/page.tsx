@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { siteConfig } from '@/lib/site'
 
 export const metadata = {
+  alternates: { canonical: `${siteConfig.url}/price` },
   title: 'Disposable Vape Wholesale Prices by Range | VapeStockHub',
   description: 'Browse disposable vape wholesale prices by range, from clearance and budget stock to higher-ticket bulk offers. Compare MOQ, warehouse, and availability before requesting a live quote.',
 }

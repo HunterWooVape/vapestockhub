@@ -1,19 +1,17 @@
 import Link from 'next/link'
 
-import { buildFeaturedMarketFacetsFromInventory } from '@/lib/inventory-markets'
-import { createClient } from '@/lib/supabase/server'
+import { buildFeaturedMarketFacetsFromInventory, inventoryTargetsFeaturedMarket } from '@/lib/inventory-markets'
+import { getPublicInventory } from '@/lib/public-inventory'
+import { siteConfig } from '@/lib/site'
 
 export const metadata = {
   title: 'Wholesale Vape Inventory by Target Market | VapeStockHub',
-  description: 'Browse wholesale vape stock by target market and region to find active listings aligned with buyer destination, sourcing route, and inquiry priorities.',
+  alternates: { canonical: `${siteConfig.url}/market` },
+  description: 'Browse wholesale vape inventory by target market. Review available and past lots by brand, MOQ and warehouse, or request matching stock.',
 }
 
 export default async function MarketIndexPage() {
-  const supabase = await createClient()
-  const { data: inventory } = await supabase
-    .from('inventory')
-    .select('market, featured_markets')
-    .eq('status', 'active')
+  const inventory = await getPublicInventory()
 
   const markets = buildFeaturedMarketFacetsFromInventory(inventory ?? [])
 
@@ -24,7 +22,7 @@ export default async function MarketIndexPage() {
           Browse Wholesale Inventory by <span className="text-teal-DEFAULT">Target Market</span>
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Select a region to explore active wholesale stock aligned with buyer destination, sourcing route, warehouse context, and current inquiry priorities.
+          Select your target market to review available and past wholesale lots.
         </p>
       </div>
 
@@ -41,11 +39,11 @@ export default async function MarketIndexPage() {
                   {market.label}
                 </h2>
                 <span className="rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted">
-                  {market.count} listings
+                  {inventory.filter((item) => inventoryTargetsFeaturedMarket(item, market.label) && item.status === 'active').length} available · {inventory.filter((item) => inventoryTargetsFeaturedMarket(item, market.label) && item.status === 'sold').length} sold out
                 </span>
               </div>
               <p className="text-muted">
-                Review active wholesale stock curated for {market.label} buyers, including globally available inventory prioritized for this target market.
+                Wholesale inventory for {market.label} buyers. Review warehouse locations and confirm destination requirements.
               </p>
             </Link>
           ))}

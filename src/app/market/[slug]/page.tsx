@@ -1,9 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
-import InventoryCard from '@/components/inventory/InventoryCard'
+import { getPublicInventory } from '@/lib/public-inventory'
+import InventoryCollection from '@/components/inventory/InventoryCollection'
 import { Metadata } from 'next'
 import { TAXONOMY_INDEX_THRESHOLDS } from '@/lib/seo'
 import { siteConfig } from '@/lib/site'
-import { InventoryRecord } from '@/lib/inventory'
 import {
   buildFeaturedMarketFacetsFromInventory,
   inventoryTargetsFeaturedMarket,
@@ -15,12 +14,7 @@ export const revalidate = 3600
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const resolvedParams = await params
-  const supabase = await createClient()
-
-  const { data: marketOptions } = await supabase
-    .from('inventory')
-    .select('market, featured_markets')
-    .eq('status', 'active')
+  const marketOptions = await getPublicInventory()
 
   const marketName = resolveFeaturedMarketLabelBySlug(marketOptions ?? [], resolvedParams.slug)
 
@@ -39,7 +33,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   
   return {
     title: `Wholesale Vape Stock for ${marketName} Buyers | VapeStockHub`,
-    description: `Browse active wholesale vape stock prioritized for ${marketName} buyers, including bulk offers, MOQ, warehouse location, price visibility, and inquiry-ready listings. Confirm live availability before sourcing.`,
+    description: `Browse wholesale vape inventory for ${marketName} buyers. Review available and past lots by brand, MOQ and warehouse, or request matching stock.`,
     alternates: {
       canonical: `${siteConfig.url}/market/${resolvedParams.slug}`,
     },
@@ -52,11 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function MarketPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params
-  const supabase = await createClient()
-  const { data: marketOptions } = await supabase
-    .from('inventory')
-    .select('market, featured_markets')
-    .eq('status', 'active')
+  const marketOptions = await getPublicInventory()
 
   const marketName = resolveFeaturedMarketLabelBySlug(marketOptions ?? [], resolvedParams.slug)
 
@@ -64,23 +54,12 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
     notFound()
   }
 
-  const { data: inventory, error } = await supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-
-  if (error) {
-    console.error('Error fetching market inventory:', error)
-  }
-
-  const items = ((inventory ?? []) as InventoryRecord[])
-    .filter((item) => inventoryTargetsFeaturedMarket(item, marketName))
-    .sort((left, right) => right.created_at.localeCompare(left.created_at))
+  const items = marketOptions.filter((item) => inventoryTargetsFeaturedMarket(item, marketName))
 
   const marketFaqs = [
     {
       question: `Can I source wholesale vape stock for ${marketName} through this page?`,
-      answer: `Yes. This page groups active listings prioritized for ${marketName} buyers so you can review current stock and move into direct inquiry faster.`,
+      answer: `Browse available and past lots for ${marketName} buyers. For sold-out listings, ask about restock or alternatives.`,
     },
     {
       question: 'Does this page only show local warehouse stock?',
@@ -111,31 +90,15 @@ export default async function MarketPage({ params }: { params: Promise<{ slug: s
           Wholesale Vape Stock for <span className="text-teal-DEFAULT">{marketName}</span> Buyers
         </h1>
         <p className="text-lg text-muted max-w-2xl mx-auto">
-          Review active vape stock prioritized for {marketName} buyers. Listings may include local warehouse stock or globally available inventory suitable for this market route. Compare brand, MOQ, price visibility, warehouse location, and availability before sending an inquiry.
+          Wholesale inventory for {marketName} buyers, including local and overseas warehouse lots. Confirm availability and destination requirements by inquiry.
         </p>
       </div>
 
-      <div>
-        <div className="flex justify-between items-end mb-6 pb-4 border-b border-border">
-          <div>
-            <h2 className="text-2xl font-bold">{items.length} Active Listings</h2>
-            <p className="text-sm text-muted mt-1">Use this market hub to review target-market aligned stock before moving into product-level inquiry.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => (
-            <InventoryCard key={item.id} item={item} />
-          ))}
-        </div>
-      </div>
+      <InventoryCollection items={items} sourcePageType="market" sourcePageSlug={resolvedParams.slug} sourcingContext={`wholesale vape stock for ${marketName}`} />
 
       <section className="border-t border-border pt-8">
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{marketName} Market FAQ</h2>
-          <p className="text-muted mt-2 max-w-3xl">
-            Key questions buyers review when using this regional inventory hub to identify suitable stock and send a direct inquiry.
-          </p>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {marketFaqs.map((faq) => (

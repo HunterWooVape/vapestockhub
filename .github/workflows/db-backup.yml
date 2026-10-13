@@ -12,6 +12,8 @@ env:
 
 jobs:
   backup:
+    # 完整数据库含内部资料，禁止上传到公开仓库的 Artifact。
+    if: ${{ github.event.repository.private == true }}
     runs-on: ubuntu-latest
 
     steps:

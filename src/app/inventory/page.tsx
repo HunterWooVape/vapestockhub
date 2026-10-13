@@ -1,4 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { getPublicInventory } from '@/lib/public-inventory'
+import { sortInventoryByAvailability } from '@/lib/inventory-lifecycle'
+import { getTrackedContactHref } from '@/lib/site'
 import InventoryCard from '@/components/inventory/InventoryCard'
 import {
   buildInventoryFacets,
@@ -187,7 +189,7 @@ export async function generateMetadata({
 
   return {
     title: 'Wholesale Disposable Vapes in Bulk | VapeStockHub',
-    description: 'Browse wholesale disposable vapes in bulk by brand, market, price range, MOQ, and warehouse location. Compare active stock offers and request live price and availability via Telegram or WhatsApp.',
+    description: 'Browse wholesale disposable vapes in bulk by brand, market, price range, MOQ, and warehouse location. Review available and past lots, or request stock and pricing via Telegram or WhatsApp.',
     alternates: {
       canonical: `${siteConfig.url}/inventory`,
     },
@@ -206,11 +208,7 @@ export default async function InventoryPage({
   searchParams: Promise<InventorySearchParams>
 }) {
   const params = await searchParams
-  const supabase = await createClient()
-  const { data: facetOptions } = await supabase
-    .from('inventory')
-    .select('brand, market, featured_markets, warehouse_location')
-    .eq('status', 'active')
+  const facetOptions = await getPublicInventory()
 
   const searchQuery = normalizeSearchQuery(params.q)
   const brandSlug = getSingleParam(params.brand)
@@ -232,48 +230,26 @@ export default async function InventoryPage({
     ? resolveFacetLabelBySlug((facetOptions ?? []).map((item) => item.warehouse_location), warehouseSlug) ?? undefined
     : undefined
 
-  let query = supabase
-    .from('inventory')
-    .select('*')
-    .eq('status', 'active')
-
-  if (brand) {
-    query = query.eq('brand', brand)
-  }
-
-  if (warehouse) {
-    query = query.eq('warehouse_location', warehouse)
-  }
-
-  const { data: inventory, error } = await query
-
-  if (error) {
-    console.error('Error fetching inventory:', error)
-  }
-
-  const filteredItems = ((inventory ?? []) as InventoryRecord[])
+  const filteredItems = sortInventoryByAvailability(facetOptions)
+    .filter((item) => !brandSlug || (brand && item.brand === brand))
+    .filter((item) => !warehouseSlug || (warehouse && item.warehouse_location === warehouse))
     .filter((item) => inventoryMatchesSearchQuery(item, searchQuery))
-    .filter((item) => (market ? inventoryTargetsFeaturedMarket(item, market) : true))
+    .filter((item) => !marketSlug || (market && inventoryTargetsFeaturedMarket(item, market)))
     .sort((left, right) => {
-      if (sort === 'price_asc') {
-        if (left.pricing_mode !== right.pricing_mode) {
-          return left.pricing_mode.localeCompare(right.pricing_mode)
+      const statusOrder = Number(left.status === 'sold') - Number(right.status === 'sold')
+      if (statusOrder) return statusOrder
+      if (sort === 'price_asc' || sort === 'price_desc') {
+        if (left.price === null || right.price === null) {
+          return Number(left.price === null) - Number(right.price === null)
         }
-
-        return left.price - right.price
-      }
-
-      if (sort === 'price_desc') {
-        if (left.pricing_mode !== right.pricing_mode) {
-          return left.pricing_mode.localeCompare(right.pricing_mode)
-        }
-
-        return right.price - left.price
+        return sort === 'price_asc' ? left.price - right.price : right.price - left.price
       }
 
       return right.created_at.localeCompare(left.created_at)
     })
 
+  const availableCount = filteredItems.filter((item) => item.status === 'active').length
+  const soldCount = filteredItems.filter((item) => item.status === 'sold').length
   const totalItems = filteredItems.length
   const totalPages = totalItems > 0 ? Math.ceil(totalItems / ITEMS_PER_PAGE) : 1
   const currentPage = Math.min(page, totalPages)
@@ -358,7 +334,7 @@ export default async function InventoryPage({
         <div className="mb-8 border-b border-border pb-6">
           <h1 className="text-3xl font-bold">Wholesale Disposable Vapes in Bulk</h1>
           <p className="text-muted mt-3 max-w-3xl">
-            Explore active disposable vape offers for wholesale and bulk buyers. Filter by brand, market, warehouse, and price visibility, then open a listing to confirm MOQ, live price, available quantity, and shipping-ready stock.
+            Wholesale lots by brand, market and warehouse. Review available stock or ask about restock and alternatives.
           </p>
         </div>
 
@@ -404,18 +380,16 @@ export default async function InventoryPage({
             </p>
           ) : (
             <p className="mt-3 text-sm text-muted">
-              Search active wholesale listings by brand, model keywords, flavor, target market, or warehouse location.
+              Search by brand, model, flavor, market or warehouse.
             </p>
           )}
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b border-border pb-4">
           <div>
-            <p className="text-lg font-semibold">{totalItems} Active Listings</p>
+            <p className="text-lg font-semibold">{availableCount} available · {soldCount} sold out</p>
             <p className="text-sm text-muted mt-1">
-              {searchQuery
-                ? 'Search results stay compatible with your current filters and sorting so you can move faster into supplier inquiry.'
-                : 'Use filters to find bulk disposable vapes, compare MOQ, warehouse, and active stock depth, then move quickly into supplier inquiry.'}
+              {totalItems} listings
             </p>
           </div>
 
@@ -428,6 +402,13 @@ export default async function InventoryPage({
           </div>
         </div>
 
+        {availableCount === 0 && (
+          <div className="mb-8 rounded-xl border border-teal-DEFAULT/25 bg-surface p-6">
+            <h2 className="text-lg font-semibold">Request stock</h2>
+            <p className="mt-2 text-sm text-muted">Send your model, quantity and warehouse requirements.</p>
+            <a href={getTrackedContactHref({channel:'telegram', sourcePageType:'inventory', sourcePageSlug:'index', message:`Hi VapeStockHub, I'm sourcing wholesale vape stock${brand ? ` from ${brand}` : ''}${market ? ` for ${market}` : ''}${searchQuery ? ` matching ${searchQuery}` : ''}. Please confirm available options, quantity, MOQ and pricing.`})} className="mt-4 inline-flex rounded-lg bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background hover:bg-teal-hover">Request via Telegram</a>
+          </div>
+        )}
         {items.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -465,8 +446,8 @@ export default async function InventoryPage({
             <h3 className="text-lg font-bold mb-2">No inventory found</h3>
             <p className="text-muted mb-6">
               {searchQuery
-                ? `No wholesale vape inventory matches "${searchQuery}" with your current filters. Try another keyword or return to all active listings.`
-                : 'No wholesale vape inventory matches your current filters. Clear filters to view all active bulk listings.'}
+                ? `No wholesale vape inventory matches "${searchQuery}" with your current filters. Try another keyword or browse all listings.`
+                : 'No wholesale vape inventory matches your current filters. Clear filters to browse all listings.'}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               {searchQuery ? (

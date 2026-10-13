@@ -15,7 +15,6 @@ import {
   productTypeOptions,
 } from '@/lib/admin-inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import {
   adminSessionCookieName,
   buildBackofficeLoginRedirect,
@@ -95,7 +94,8 @@ export default async function SubmitStockPage({
     redirect(buildBackofficeLoginRedirect('/submit-stock'))
   }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
+  if (!supabase) redirect('/admin?error=missing-service-role-key')
   const { data: inventoryOptions } = await supabase.from('inventory').select('brand, market')
   const knownBrands = getUniqueValues((inventoryOptions ?? []).map((item) => item.brand))
   const knownMarkets = getUniqueValues(['Global', ...((inventoryOptions ?? []).map((item) => item.market))])

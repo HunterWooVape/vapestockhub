@@ -12,7 +12,7 @@ export type InventoryRecord = {
   puff: number | null
   e_liquid: string | null
   production_date_text: string | null
-  price: number
+  price: number | null
   quantity: number
   moq: number
   market: string
@@ -24,8 +24,13 @@ export type InventoryRecord = {
   contact_visibility: 'public' | 'contact_required'
   is_featured: boolean | null
   is_urgent_clearance: boolean | null
-  last_verified_at: string
+  last_verified_at: string | null
   created_at: string
+  updated_at: string
+}
+
+export type PublicInventoryRecord = Omit<InventoryRecord, 'status'> & {
+  status: 'active' | 'sold'
 }
 
 export type InventoryFacet = {
