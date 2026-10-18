@@ -17,10 +17,10 @@ export default function InventoryCollection({ items, sourcePageType, sourcePageS
     <div className="space-y-10">
       <section aria-labelledby="available-stock-title">
         <div className="mb-6 border-b border-border pb-4">
-          <h2 id="available-stock-title" className="text-2xl font-bold">Available stock <span className="text-muted">({available.length})</span></h2>
+          <h2 id="available-stock-title" className="text-2xl font-semibold tracking-tight">Available stock <span className="text-muted">({available.length})</span></h2>
         </div>
         {available.length ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {available.map((item) => <InventoryCard key={item.id} item={item} />)}
           </div>
         ) : (
@@ -38,10 +38,10 @@ export default function InventoryCollection({ items, sourcePageType, sourcePageS
       {sold.length > 0 && (
         <section aria-labelledby="past-stock-title">
           <div className="mb-6 border-b border-border pb-4">
-            <h2 id="past-stock-title" className="text-2xl font-bold">Past stock <span className="text-muted">({sold.length})</span></h2>
+            <h2 id="past-stock-title" className="text-2xl font-semibold tracking-tight">Past stock <span className="text-muted">({sold.length})</span></h2>
             <p className="mt-2 text-sm text-muted">Sold-out lots. Restock and alternatives on inquiry.</p>
           </div>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {sold.map((item) => <InventoryCard key={item.id} item={item} />)}
           </div>
         </section>

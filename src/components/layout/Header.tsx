@@ -6,9 +6,9 @@ import { getTrackedContactHref } from '@/lib/site'
 export default function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+      <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <div className="w-8 h-8 bg-teal-DEFAULT rounded-md flex items-center justify-center">
             <span className="text-background font-bold text-lg">V</span>
           </div>
@@ -18,7 +18,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden items-center gap-6 whitespace-nowrap lg:flex xl:gap-8">
           <Link href="/inventory" className="text-sm font-medium text-muted hover:text-foreground transition-colors">
             Inventory
           </Link>
@@ -37,7 +37,7 @@ export default function Header() {
         </nav>
 
         {/* Actions */}
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-4">
           <a
             href={getTrackedContactHref({
               channel: 'telegram',
@@ -50,7 +50,7 @@ export default function Header() {
           </a>
           <Link 
             href="/inventory"
-            className="inline-flex items-center gap-2 text-sm font-medium bg-surface border border-border px-4 py-2 rounded-lg hover:bg-border transition-colors"
+            className="inline-flex items-center gap-2 whitespace-nowrap text-sm font-medium bg-surface border border-border px-4 py-2 rounded-lg hover:bg-border transition-colors"
           >
             <Search className="h-4 w-4" />
             Search Inventory
