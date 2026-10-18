@@ -14,10 +14,10 @@ export default async function Home() {
   const activeItems = inventory.filter((item) => item.status === 'active')
   const featuredItems = activeItems.filter((item) => item.is_featured)
     .sort((left, right) => (right.last_verified_at ?? '').localeCompare(left.last_verified_at ?? ''))
-    .slice(0, 3)
+    .slice(0, 5)
   const featuredIds = new Set(featuredItems.map((item) => item.id))
   const latestItems = activeItems.filter((item) => !featuredIds.has(item.id))
-    .sort((left, right) => right.created_at.localeCompare(left.created_at)).slice(0, 3)
+    .sort((left, right) => right.created_at.localeCompare(left.created_at)).slice(0, 6)
   const pastItems = inventory.filter((item) => item.status === 'sold')
     .sort((left, right) => right.created_at.localeCompare(left.created_at)).slice(0, 6)
 
@@ -46,62 +46,53 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Featured inventory uses the existing manual selection and public data. */}
+      {(featuredItems.length > 0 || activeItems.length === 0) && (
+        <section aria-labelledby="featured-inventory-heading" className="mx-auto w-full max-w-[1160px] px-4 pt-10 sm:px-6 lg:px-8">
+          <div className="relative overflow-hidden rounded-2xl border border-teal-DEFAULT/25 bg-surface/35 p-3 sm:p-6">
+            <div aria-hidden="true" className="absolute inset-x-6 top-0 h-px bg-teal-DEFAULT/60" />
+            <div className="flex flex-wrap items-end justify-between gap-4 px-2 pb-6 pt-3 sm:px-0 sm:pt-1">
+              <div><h2 id="featured-inventory-heading" className="text-2xl font-semibold tracking-tight sm:text-3xl">Featured inventory</h2><p className="mt-2 text-sm text-muted">Selected wholesale lots.</p></div>
+              <div className="flex items-center gap-4"><span className="rounded-md border border-teal-DEFAULT/20 bg-teal-DEFAULT/5 px-2.5 py-1.5 text-xs tabular-nums text-teal-DEFAULT">{featuredItems.length} listings</span><Link href="/inventory" className="text-sm text-muted hover:text-teal-DEFAULT">View All →</Link></div>
+            </div>
+            {featuredItems.length > 0 ? (
+              <div data-home-featured className="flex flex-col gap-3 sm:gap-4">{featuredItems.map((item) => <InventoryCard key={item.id} item={item} layout="row" />)}</div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-border bg-background/30 px-5 py-8 sm:p-10">
+                <h3 className="text-xl font-semibold">Request wholesale stock</h3>
+                <p className="mt-3 text-sm text-muted">Send your model, quantity and warehouse requirements.</p>
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <a href={getTrackedContactHref({channel:'telegram',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg bg-teal-DEFAULT px-5 py-3 text-sm font-semibold text-background hover:bg-teal-hover">Request via Telegram</a>
+                  <a href={getTrackedContactHref({channel:'whatsapp',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg border border-border px-5 py-3 text-sm font-semibold hover:bg-background">Request via WhatsApp</a>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* Quick Links Section */}
-      <section className="w-full py-12 px-4 max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Link href="/market" className="p-6 rounded-2xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
-            <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Market →</h3>
+      <section className="mx-auto w-full max-w-[1160px] px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Link href="/market" className="p-4 rounded-xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
+            <h3 className="text-sm font-semibold group-hover:text-teal-DEFAULT transition-colors">Browse by Market →</h3>
             <p className="text-muted text-sm mt-2">Find wholesale vape stock for your target market, sourcing route, and current regional demand.</p>
           </Link>
-          <Link href="/brand" className="p-6 rounded-2xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
-            <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Brand →</h3>
+          <Link href="/brand" className="p-4 rounded-xl border border-border bg-surface hover:border-teal-DEFAULT/50 transition-colors group">
+            <h3 className="text-sm font-semibold group-hover:text-teal-DEFAULT transition-colors">Browse by Brand →</h3>
             <p className="text-muted text-sm mt-2">Compare active wholesale inventory from brands currently available for inquiry and bulk sourcing.</p>
           </Link>
-          <Link href="/price" className="p-6 rounded-2xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/5 hover:border-teal-DEFAULT transition-colors group relative overflow-hidden">
+          <Link href="/price" className="p-4 rounded-xl border border-teal-DEFAULT/30 bg-teal-DEFAULT/5 hover:border-teal-DEFAULT transition-colors group relative overflow-hidden">
             <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-teal-DEFAULT"></div>
-            <h3 className="text-lg font-bold group-hover:text-teal-DEFAULT transition-colors">Browse by Price →</h3>
+            <h3 className="text-sm font-semibold group-hover:text-teal-DEFAULT transition-colors">Browse by Price →</h3>
             <p className="text-muted text-sm mt-2">Screen bulk disposable vape stock by unit price, margin target, and clearance potential.</p>
           </Link>
         </div>
       </section>
       
-      {/* Featured Deals Section */}
-      {featuredItems.length > 0 && (
-        <section className="w-full py-12 px-4 max-w-7xl mx-auto border-b border-border">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-2xl font-bold flex items-center gap-2">
-                Featured inventory
-              </h2>
-              <p className="text-muted mt-1">Selected wholesale lots.</p>
-            </div>
-            <Link href="/inventory" className="text-teal-DEFAULT font-medium hover:text-teal-hover hidden sm:block">
-              View All →
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {featuredItems.map((item) => (
-              <InventoryCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      {activeItems.length === 0 && (
-        <section className="mx-auto w-full max-w-7xl px-4 py-12">
-          <div className="rounded-2xl border border-teal-DEFAULT/25 bg-surface p-8 sm:p-12">
-            <h2 className="text-2xl font-bold">Request wholesale stock</h2>
-            <p className="mt-3 text-muted">Send your model, quantity and warehouse requirements.</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <a href={getTrackedContactHref({channel:'telegram',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg bg-teal-DEFAULT px-6 py-3 font-semibold text-background hover:bg-teal-hover">Request via Telegram</a>
-              <a href={getTrackedContactHref({channel:'whatsapp',sourcePageType:'home',sourcePageSlug:'stock-request',message:"Hi VapeStockHub, I'm sourcing wholesale vape stock. Please help me find available lots."})} className="rounded-lg border border-border px-6 py-3 font-semibold hover:bg-background">Request via WhatsApp</a>
-            </div>
-          </div>
-        </section>
-      )}
       {/* Latest Inventory Section */}
-      {activeItems.length > 0 && (
-      <section className="w-full py-12 px-4 max-w-7xl mx-auto">
+      {latestItems.length > 0 && (
+      <section className="mx-auto w-full max-w-[1160px] px-4 py-10 sm:px-6 lg:px-8">
         <div className="flex justify-between items-end mb-8">
           <div>
             <h2 className="text-2xl font-bold">Latest Active Inventory</h2>
@@ -111,27 +102,21 @@ export default async function Home() {
             View All →
           </Link>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div data-home-latest className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {latestItems.map((item) => (
             <InventoryCard key={item.id} item={item} />
           ))}
-          
-          {latestItems.length === 0 && (
-            <div className="col-span-3 text-center py-12 text-muted border border-dashed border-border rounded-xl">
-              No active inventory is available right now. Please check back later.
-            </div>
-          )}
         </div>
       </section>
 
       )}
       {pastItems.length > 0 && (
-        <section className="mx-auto w-full max-w-7xl px-4 py-12">
+        <section className="mx-auto w-full max-w-[1160px] px-4 py-10 sm:px-6 lg:px-8">
           <div className="mb-6 flex items-center justify-between gap-4">
             <h2 className="text-2xl font-bold">Past stock</h2>
             <Link href="/inventory" className="text-sm font-medium text-teal-DEFAULT hover:text-teal-hover">View all →</Link>
           </div>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pastItems.map((item) => <InventoryCard key={item.id} item={item} />)}
           </div>
         </section>

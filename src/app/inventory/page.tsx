@@ -263,9 +263,7 @@ export default async function InventoryPage({
   const clearWarehouseHref = buildInventoryHref({ q: searchQuery, brand: brandSlug, market: marketSlug, sort })
   const clearSearchHref = buildInventoryHref({ brand: brandSlug, market: marketSlug, warehouse: warehouseSlug, sort })
 
-  return (
-    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
-      <aside className="w-full md:w-64 shrink-0 space-y-8">
+  const filterContent = (
         <div>
           <h2 className="text-xl font-bold mb-4">Filters</h2>
           <p className="text-sm text-muted mb-6">
@@ -328,15 +326,24 @@ export default async function InventoryPage({
             />
           </div>
         </div>
-      </aside>
+  )
 
-      <div className="flex-1">
+  return (
+    <main className="mx-auto flex min-h-screen w-full max-w-[1160px] flex-col gap-6 px-4 py-10 sm:px-6 lg:flex-row lg:gap-8 lg:px-8">
+      <aside className="hidden w-52 shrink-0 lg:block">{filterContent}</aside>
+
+      <div className="min-w-0 flex-1">
         <div className="mb-8 border-b border-border pb-6">
-          <h1 className="text-3xl font-bold">Wholesale Disposable Vapes in Bulk</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">Wholesale Disposable Vapes in Bulk</h1>
           <p className="text-muted mt-3 max-w-3xl">
             Wholesale lots by brand, market and warehouse. Review available stock or ask about restock and alternatives.
           </p>
         </div>
+
+        <details className="mb-5 rounded-xl border border-border bg-surface lg:hidden">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">Filters</summary>
+          <div className="border-t border-border p-4">{filterContent}</div>
+        </details>
 
         <div className="mb-8 rounded-2xl border border-border bg-surface p-4 sm:p-5">
           <form action="/inventory" method="get" className="flex flex-col gap-3 lg:flex-row lg:items-center">
@@ -411,7 +418,7 @@ export default async function InventoryPage({
         )}
         {items.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
               {items.map((item) => (
                 <InventoryCard key={item.id} item={item} />
               ))}

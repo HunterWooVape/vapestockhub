@@ -52,12 +52,12 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
   const items = brandOptions.filter((item) => toSlug(item.brand) === resolvedParams.slug)
 
   return (
-    <main className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col gap-8">
-      <div className="bg-surface border border-border rounded-2xl p-8 sm:p-12 text-center">
-        <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1160px] flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+      <div className="rounded-2xl border border-border bg-surface/40 p-6 text-left sm:p-8">
+        <h1 className="text-3xl font-semibold tracking-tight md:text-4xl text-foreground mb-4">
           <span className="text-teal-DEFAULT">{brandName}</span> Wholesale Vape Stock
         </h1>
-        <p className="text-lg text-muted max-w-2xl mx-auto">
+        <p className="max-w-2xl text-base leading-7 text-muted">
           Browse {brandName} wholesale inventory. Check available lots or request restock and alternatives.
         </p>
       </div>
@@ -68,7 +68,7 @@ export default async function BrandPage({ params }: { params: Promise<{ slug: st
         <div className="mb-8">
           <h2 className="text-2xl font-bold">{brandName} Wholesale FAQ</h2>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
           <div className="rounded-xl border border-border bg-surface p-6">
             <h3 className="text-lg font-bold mb-2">Can I buy {brandName} vapes in bulk?</h3>
             <p className="text-sm text-muted">
