@@ -296,7 +296,7 @@ export default async function AdminPage({
         pricingNote: item.pricing_note ?? '',
         price: item.price,
         quantity: item.quantity,
-        moq: item.moq ?? 1,
+        moq: item.moq ?? 0,
         market: item.market,
         warehouseLocation: item.warehouse_location,
         description: item.description ?? '',
@@ -435,7 +435,7 @@ export default async function AdminPage({
           pricingNote: item.pricing_note ?? '',
           price: item.price,
           quantity: item.quantity,
-          moq: item.moq ?? 1,
+          moq: item.moq ?? 0,
           market: item.market,
           warehouseLocation: item.warehouse_location,
           description: item.description ?? '',
@@ -640,6 +640,7 @@ export default async function AdminPage({
             >
               {workflowSecondaryLabel}
             </Link>
+            {isAdminUser && <Link href="/admin/inventory/new" className="rounded-lg bg-teal-DEFAULT px-4 py-2 text-sm font-semibold text-background">新建库存</Link>}
             {isAdminUser && (
               <Link
                 href="/admin/tools"
@@ -818,7 +819,7 @@ export default async function AdminPage({
                     <div key={item.id} className="rounded-xl border border-border p-4 space-y-4">
                       <div className="flex justify-between gap-3">
                         <div>
-                          <div className="font-semibold">{item.title}</div>
+                          <div className="font-semibold">{item.title || '未命名库存'}</div>
                           <div className="text-sm text-muted">{item.brand} · {item.market}</div>
                         </div>
                         <div className="text-right text-sm">

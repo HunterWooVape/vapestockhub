@@ -11,8 +11,11 @@ export default function InventoryDetailNavigation({ sections }: InventoryDetailN
   const [activeId, setActiveId] = useState(sections[0]?.id ?? '')
 
   useEffect(() => {
+    const ownerDocument = navRef.current?.ownerDocument
+    const view = ownerDocument?.defaultView
+    if (!ownerDocument || !view) return
     const targets = sections.flatMap(section => {
-      const element = document.getElementById(section.id)
+      const element = ownerDocument.getElementById(section.id)
       return element ? [element] : []
     })
     if (!targets.length) return
@@ -20,31 +23,31 @@ export default function InventoryDetailNavigation({ sections }: InventoryDetailN
     let frame = 0
     const update = () => {
       frame = 0
-      const anchorOffset = Number.parseFloat(window.getComputedStyle(targets[0]).scrollMarginTop) || 0
+      const anchorOffset = Number.parseFloat(view.getComputedStyle(targets[0]).scrollMarginTop) || 0
       const threshold = Math.max(anchorOffset, 64 + (navRef.current?.offsetHeight ?? 52) + 16) + 1
-      const atBottom = window.scrollY > 0 && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2
+      const atBottom = view.scrollY > 0 && view.innerHeight + view.scrollY >= ownerDocument.documentElement.scrollHeight - 2
       const current = atBottom
         ? targets[targets.length - 1]
         : [...targets].reverse().find(target => target.getBoundingClientRect().top <= threshold) ?? targets[0]
       setActiveId(previous => previous === current.id ? previous : current.id)
     }
     const scheduleUpdate = () => {
-      if (!frame) frame = window.requestAnimationFrame(update)
+      if (!frame) frame = view.requestAnimationFrame(update)
     }
 
     scheduleUpdate()
-    window.addEventListener('scroll', scheduleUpdate, { passive: true })
-    window.addEventListener('resize', scheduleUpdate)
-    window.addEventListener('hashchange', scheduleUpdate)
+    view.addEventListener('scroll', scheduleUpdate, { passive: true })
+    view.addEventListener('resize', scheduleUpdate)
+    view.addEventListener('hashchange', scheduleUpdate)
     const observer = new ResizeObserver(scheduleUpdate)
-    observer.observe(document.documentElement)
+    observer.observe(ownerDocument.documentElement)
     if (navRef.current) observer.observe(navRef.current)
 
     return () => {
-      window.cancelAnimationFrame(frame)
-      window.removeEventListener('scroll', scheduleUpdate)
-      window.removeEventListener('resize', scheduleUpdate)
-      window.removeEventListener('hashchange', scheduleUpdate)
+      view.cancelAnimationFrame(frame)
+      view.removeEventListener('scroll', scheduleUpdate)
+      view.removeEventListener('resize', scheduleUpdate)
+      view.removeEventListener('hashchange', scheduleUpdate)
       observer.disconnect()
     }
   }, [sections])

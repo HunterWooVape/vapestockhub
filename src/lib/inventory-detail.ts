@@ -1,4 +1,5 @@
 import type { InventoryRecord } from './inventory'
+import { readStockRows, stockTotal } from './stock-entry'
 
 export type InventoryBreakdown = {
   configurations: { key: string; label: string; total: number }[]
@@ -8,7 +9,7 @@ export type InventoryBreakdown = {
   notes: string
 }
 
-type ManifestItem = Pick<InventoryRecord, 'description' | 'quantity' | 'flavor'>
+type ManifestItem = Pick<InventoryRecord, 'description' | 'quantity' | 'flavor' | 'stock_rows' | 'stock_notes' | 'entry_version'>
 type ParsedRow = { label: string; quantity: number; unit: 'pcs' | 'sets' | null }
 
 const quantityPattern = /^(?:0|[1-9]\d*|[1-9]\d{0,2}(?:,\d{3})+)$/
@@ -64,6 +65,24 @@ function isManifestNote(line: string): boolean {
  * read-only adapter: unfamiliar formats retain their original description.
  */
 export function buildInventoryBreakdown(item: ManifestItem): InventoryBreakdown | null {
+  if (item.entry_version === 1) {
+    if (!item.stock_rows?.length) return null
+    try {
+      const rows = readStockRows(item.stock_rows)
+      const total = stockTotal(rows)
+      if (total !== item.quantity) return null
+      const configurationKeys = [...new Set(rows.map((row) => JSON.stringify([row.configuration, row.nicotine]))) ]
+      const labels = [...new Set(rows.map((row) => row.flavor))]
+      return {
+        configurations: configurationKeys.map((key, index) => {
+          const [configuration, nicotine] = JSON.parse(key) as string[]
+          return { key: `configuration-${index + 1}`, label: configurationKeys.length === 1 ? 'Quantity' : [configuration, nicotine].filter(Boolean).join(' / ') || 'Quantity', total: stockTotal(rows.filter((row) => JSON.stringify([row.configuration, row.nicotine]) === key)) }
+        }),
+        rows: labels.map((label) => ({ label, quantities: configurationKeys.map((key) => rows.find((row) => row.flavor === label && JSON.stringify([row.configuration, row.nicotine]) === key)?.quantity ?? null) })),
+        total, unit: 'pcs', notes: item.stock_notes ?? '',
+      }
+    } catch { return null }
+  }
   if (!item.description?.trim() || !Number.isSafeInteger(item.quantity) || item.quantity < 0) return null
 
   const lines = item.description.replace(/\r\n?/g, '\n').split('\n').map((line) => line.trim())

@@ -525,31 +525,14 @@ export function getInventoryQualityReport(
     blockingIssues.push('quantity-invalid')
   }
 
-  if (!values.market.trim() && !values.warehouseLocation.trim()) {
-    blockingIssues.push('market-or-warehouse-required')
-  }
 
   if (!isValidInventorySlug(values.slug.trim())) {
     blockingIssues.push('slug-invalid')
   }
 
-  if (!values.description.trim()) {
-    blockingIssues.push('description-required')
-  }
 
-  if (!values.imageUrl.trim()) {
-    if (values.pricingMode === 'inquiry_only') {
-      warnings.push('image-recommended-inquiry-only')
-    } else {
-      blockingIssues.push('image-required')
-    }
-  } else if (isPlaceholderInventoryImage(values.imageUrl)) {
-    if (values.pricingMode === 'inquiry_only') {
-      warnings.push('image-recommended-inquiry-only')
-    } else {
-      blockingIssues.push('placeholder-image')
-    }
-  }
+  if (!values.imageUrl.trim()) blockingIssues.push('image-required')
+  else if (isPlaceholderInventoryImage(values.imageUrl)) blockingIssues.push('placeholder-image')
 
   if (values.imageUrl.trim() && getImageFileNameRisk(values.imageUrl)) {
     warnings.push('image-file-name-risk')
@@ -625,7 +608,7 @@ export function createEmptyInventoryAiDraftPackage(
       pricing_note: '',
       price: '',
       quantity: '',
-      moq: '1',
+      moq: '',
       market: '',
       featured_markets: [],
       market_access_note: '',
@@ -834,7 +817,7 @@ export function parseInventoryAiDraftPackage(input: string):
       pricing_note: getStringValue(normalizedFields.pricing_note),
       price: getStringValue(normalizedFields.price),
       quantity: getStringValue(normalizedFields.quantity),
-      moq: getStringValue(normalizedFields.moq) || '1',
+      moq: getStringValue(normalizedFields.moq),
       market: getStringValue(normalizedFields.market),
       featured_markets: getStringArrayValue(normalizedFields.featured_markets),
       market_access_note: getStringValue(normalizedFields.market_access_note),
@@ -927,7 +910,7 @@ export function convertAiDraftPackageToInventoryDraft(
     pricingNote: draftPackage.normalizedFields.pricing_note.trim(),
     price: Number(draftPackage.normalizedFields.price) || 0,
     quantity: Number(draftPackage.normalizedFields.quantity) || 0,
-    moq: Number(draftPackage.normalizedFields.moq) || 1,
+    moq: Number(draftPackage.normalizedFields.moq) || 0,
     market: draftPackage.normalizedFields.market.trim(),
     featuredMarkets: draftPackage.normalizedFields.featured_markets,
     marketAccessNote: draftPackage.normalizedFields.market_access_note.trim(),

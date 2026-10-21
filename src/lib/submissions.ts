@@ -300,7 +300,7 @@ export function convertSubmissionToDraftSeed(values: SupplierSubmissionValues) {
     pricingNote: normalizedValues.pricingNote,
     price: parseSubmissionNumber(normalizedValues.unitPriceText) ?? 0,
     quantity: parseSubmissionInteger(normalizedValues.availableQtyText) ?? 0,
-    moq: parseSubmissionInteger(normalizedValues.moqText) ?? 1,
+    moq: parseSubmissionInteger(normalizedValues.moqText) ?? 0,
     market: normalizedValues.targetMarket,
     featuredMarkets: splitSubmissionMarketTags(normalizedValues.featuredMarketsText),
     marketAccessNote: normalizedValues.marketAccessNote,
@@ -332,7 +332,7 @@ export function buildAiDraftPackageSeedFromSubmission(values: SupplierSubmission
   draftPackage.normalizedFields.pricing_note = normalizedValues.pricingNote
   draftPackage.normalizedFields.price = normalizedValues.unitPriceText
   draftPackage.normalizedFields.quantity = normalizedValues.availableQtyText
-  draftPackage.normalizedFields.moq = normalizedValues.moqText || '1'
+  draftPackage.normalizedFields.moq = normalizedValues.moqText
   draftPackage.normalizedFields.market = normalizedValues.targetMarket
   draftPackage.normalizedFields.featured_markets = splitSubmissionMarketTags(normalizedValues.featuredMarketsText)
   draftPackage.normalizedFields.market_access_note = normalizedValues.marketAccessNote

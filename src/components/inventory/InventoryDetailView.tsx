@@ -10,6 +10,7 @@ import { buildInventoryImageAlt, getInventoryImageSrc, hasRealInventoryImage, to
 import { buildInventoryBreakdown } from '@/lib/inventory-detail'
 import { buildInventoryInquiry, formatVerifiedDate, hasPublicPrice, isSoldOut, needsAvailabilityConfirmation } from '@/lib/inventory-lifecycle'
 import { getInventoryFeaturedMarkets } from '@/lib/inventory-markets'
+import { publicMoq } from '@/lib/inventory-public-fields'
 
 type Fact = { label: string; value: string | number | null | undefined }
 const presentFacts = (facts: Fact[]) => facts.filter((fact) => fact.value !== null && fact.value !== undefined && String(fact.value).trim() !== '')
@@ -32,9 +33,9 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
   const marketSlug = primaryMarketLabel ? toSlug(primaryMarketLabel) : ''
   const brandSlug = toSlug(item.brand)
   const hasStockBreakdown = Boolean(breakdown || flavorList.length)
-  const sourceText = item.description?.trim() ? item.description : null
+  const sourceText = item.entry_version === 1 ? null : item.description?.trim() ? item.description : null
   const pricingNote = publicPrice ? item.pricing_note?.trim() : null
-  const stockText = breakdown ? breakdown.notes : sourceText
+  const stockText = item.entry_version === 1 ? item.stock_notes : breakdown ? breakdown.notes : sourceText
   const hasLotText = Boolean(stockText || item.market_access_note?.trim() || pricingNote)
   const metadata = presentFacts([
     { label: 'Production date', value: item.production_date_text },
@@ -44,12 +45,14 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
   const productFacts = presentFacts([
     { label: 'Brand', value: item.brand },
     { label: 'Product type', value: item.product_type },
+    { label: 'Model', value: item.model_name },
     { label: 'Configurations', value: breakdown && breakdown.configurations.length > 1 ? breakdown.configurations.map((configuration) => configuration.label).join(' / ') : null },
   ])
   const technicalFacts = presentFacts([
     { label: 'Puff count', value: item.puff && item.puff > 0 ? `${format(item.puff)} puffs` : null },
     { label: 'Nicotine', value: item.nicotine },
     { label: 'E-liquid capacity', value: item.e_liquid },
+    ...(item.product_parameters ?? []).map((pair) => ({ label: pair.name, value: pair.value })),
   ])
   const hasNotes = Boolean(hasLotText || metadata.length)
   const hasSpecifications = Boolean(productFacts.length || technicalFacts.length)
@@ -60,7 +63,7 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
   ]
   const summaryFacts = presentFacts([
     { label: soldOut ? 'Original warehouse' : 'Warehouse', value: item.warehouse_location },
-    { label: soldOut ? 'Previous MOQ' : 'Minimum order', value: item.moq > 0 ? `${format(item.moq)} pcs` : null },
+    { label: soldOut ? 'Previous MOQ' : 'Minimum order', value: publicMoq(item) ? `${format(publicMoq(item)!)} pcs` : null },
   ])
   const inventoryFaqs = [
     {
