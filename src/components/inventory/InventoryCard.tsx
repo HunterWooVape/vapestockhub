@@ -5,6 +5,7 @@ import { ArrowUpRight, MapPin } from 'lucide-react'
 import { getInventoryFeaturedMarkets } from '@/lib/inventory-markets'
 import { buildInventoryImageAlt, getInventoryImageSrc, hasRealInventoryImage, type InventoryRecord } from '@/lib/inventory'
 import { hasPublicPrice, isSoldOut, needsAvailabilityConfirmation } from '@/lib/inventory-lifecycle'
+import { publicMoq } from '@/lib/inventory-public-fields'
 
 export interface InventoryItem {
   id: string
@@ -20,7 +21,8 @@ export interface InventoryItem {
   pricing_note: string | null
   price: number | null
   quantity: number
-  moq: number
+  moq: number | null
+  moq_public?: boolean
   warehouse_location: string
   images: string[] | null
   featured_markets?: string[] | null
@@ -76,7 +78,7 @@ export default function InventoryCard({ item, layout = 'grid' }: { item: Invento
             {featuredMarkets.length > 0 && <p className="mt-2 text-[11px] text-muted">Featured for {featuredMarkets.join(', ')}</p>}
             <div className="mt-3 grid max-w-xs grid-cols-2 gap-3 border-t border-border pt-3 tabular-nums">
               <div><p className="text-[10px] text-muted">{soldOut ? 'Availability' : 'Available stock'}</p><p className="mt-1 text-sm font-semibold sm:text-base">{soldOut ? 'Sold out' : `${item.quantity.toLocaleString()} pcs`}</p></div>
-              <div><p className="text-[10px] text-muted">MOQ</p><p className="mt-1 text-sm font-semibold sm:text-base">{item.moq.toLocaleString()}</p></div>
+              {publicMoq(item) && <div><p className="text-[10px] text-muted">MOQ</p><p className="mt-1 text-sm font-semibold sm:text-base">{publicMoq(item)!.toLocaleString()}</p></div>}
             </div>
           </div>
           <div className="col-span-2 flex items-center justify-between gap-4 border-t border-border bg-background/25 px-4 py-3 md:col-span-1 md:flex-col md:items-start md:justify-center md:border-t-0 md:border-l md:px-5 md:py-5">
@@ -104,7 +106,7 @@ export default function InventoryCard({ item, layout = 'grid' }: { item: Invento
           {featuredMarkets.length > 0 && <p className="line-clamp-2 text-xs text-muted">Featured for {featuredMarkets.join(', ')}</p>}
           <div className="mt-auto flex items-end justify-between gap-3 border-t border-border pt-4">
             <div className="min-w-0"><p className="mb-1 text-[10px] text-muted">{soldOut ? 'Previous unit price' : 'Unit price'}</p>{price}</div>
-            <div className="shrink-0 text-right tabular-nums"><p className="mb-1 text-[10px] text-muted">{soldOut ? 'Availability' : 'Available stock'}</p><p className="text-sm font-semibold">{soldOut ? 'Sold out' : `${item.quantity.toLocaleString()} pcs`}</p><p className="mt-1 text-[10px] text-muted">{soldOut ? 'Restock / alternatives →' : `MOQ: ${item.moq.toLocaleString()}`}</p></div>
+            <div className="shrink-0 text-right tabular-nums"><p className="mb-1 text-[10px] text-muted">{soldOut ? 'Availability' : 'Available stock'}</p><p className="text-sm font-semibold">{soldOut ? 'Sold out' : `${item.quantity.toLocaleString()} pcs`}</p>{(soldOut || publicMoq(item)) && <p className="mt-1 text-[10px] text-muted">{soldOut ? 'Restock / alternatives →' : `MOQ: ${publicMoq(item)!.toLocaleString()}`}</p>}</div>
           </div>
         </div>
       </Link>

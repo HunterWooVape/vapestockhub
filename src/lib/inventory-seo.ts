@@ -2,12 +2,13 @@ import type { InventoryRecord } from '@/lib/inventory'
 import { getInventoryImageSrc } from '@/lib/inventory'
 import { hasPublicPrice, isSoldOut } from '@/lib/inventory-lifecycle'
 import { siteConfig } from '@/lib/site'
+import { publicMoq } from '@/lib/inventory-public-fields'
 
 export function buildInventoryMetadataDescription(item: InventoryRecord) {
   if (isSoldOut(item)) {
     return `${item.title} wholesale lot — sold out. Review product specifications and previous lot details${item.warehouse_location ? ` for ${item.warehouse_location}` : ''}. Ask about restock or alternative stock.`
   }
-  return `${item.title} wholesale stock. ${item.quantity.toLocaleString()} pcs listed, MOQ ${item.moq.toLocaleString()} pcs${item.warehouse_location ? `, warehouse: ${item.warehouse_location}` : ''}. Confirm current availability and pricing by inquiry.`
+  return `${item.title} wholesale stock. ${item.quantity.toLocaleString()} pcs listed${publicMoq(item) ? `, MOQ ${publicMoq(item)!.toLocaleString()} pcs` : ''}${item.warehouse_location ? `, warehouse: ${item.warehouse_location}` : ''}. Confirm current availability and pricing by inquiry.`
 }
 
 export function buildInventoryJsonLd(item: InventoryRecord) {

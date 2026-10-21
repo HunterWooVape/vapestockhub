@@ -1,3 +1,5 @@
+import type { ProductParameter, StockRow } from './stock-entry'
+
 export type InventoryRecord = {
   id: string
   slug: string
@@ -14,7 +16,14 @@ export type InventoryRecord = {
   production_date_text: string | null
   price: number | null
   quantity: number
-  moq: number
+  moq: number | null
+  moq_public?: boolean
+  model_name?: string | null
+  product_highlight?: string | null
+  stock_rows?: StockRow[] | null
+  stock_notes?: string | null
+  product_parameters?: ProductParameter[] | null
+  entry_version?: number
   market: string
   featured_markets: string[] | null
   market_access_note: string | null

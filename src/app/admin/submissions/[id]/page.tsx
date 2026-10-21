@@ -549,7 +549,7 @@ export default async function EditSubmissionPage({
         pricing_note: draftSeed.pricingNote || null,
         price: draftSeed.price,
         quantity: draftSeed.quantity,
-        moq: draftSeed.moq,
+        moq: draftSeed.moq > 0 ? draftSeed.moq : null,
         market: draftSeed.market,
         featured_markets: draftSeed.featuredMarkets,
         market_access_note: draftSeed.marketAccessNote || null,

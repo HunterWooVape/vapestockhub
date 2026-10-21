@@ -25,6 +25,9 @@ jobs:
     - name: Lint
       run: npm run lint
 
+    - name: Inventory tests
+      run: node --import tsx --test scripts/*.test.ts
+
     - name: Build
       run: npm run build
       env:

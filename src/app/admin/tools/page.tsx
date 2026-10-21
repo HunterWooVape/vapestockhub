@@ -6,7 +6,6 @@ import { redirect } from 'next/navigation'
 import {
   contactVisibilityOptions,
   convertAiDraftPackageToInventoryDraft,
-  formatPricingModeLabel,
   getInventoryAiDraftPackageExample,
   normalizeELiquidValue,
   normalizeKnownValue,
@@ -14,10 +13,7 @@ import {
   normalizeProductTypeValue,
   normalizeWarehouseLocation,
   parseInventoryAiDraftPackage,
-  pricingModeOptions,
-  productTypeOptions,
 } from '@/lib/admin-inventory'
-import { dataEntryGuidelines, normalizeMarketLabel } from '@/lib/entry-standards'
 import { toSlug } from '@/lib/inventory'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
@@ -155,75 +151,6 @@ export default async function AdminToolsPage({
   const serviceKeyReady = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
   const monitoringWebhookReady = isMonitoringWebhookConfigured()
 
-  async function createInventoryAction(formData: FormData) {
-    'use server'
-
-    const actionCookies = await cookies()
-    const actionSessionValue = actionCookies.get(adminSessionCookieName)?.value
-
-    if (!isBackofficeAuthenticated(actionSessionValue)) {
-      redirect(buildBackofficeLoginRedirect('/admin/tools'))
-    }
-
-    if (!isAdminRole(actionSessionValue)) {
-      redirect('/admin?error=insufficient-role')
-    }
-
-    const adminClient = createAdminClient()
-    if (!adminClient) {
-      redirect('/admin/tools?error=missing-service-role-key')
-    }
-
-    const title = String(formData.get('title') || '').trim()
-    const brand = normalizeKnownValue(String(formData.get('brand') || '').trim(), knownBrands)
-    const productType = normalizeProductTypeValue(String(formData.get('product_type') || ''), 'Other')
-    const pricingMode = getSelectedValue(
-      String(formData.get('pricing_mode') || 'exact_price').trim(),
-      pricingModeOptions,
-      'exact_price'
-    )
-    const pricingNote = String(formData.get('pricing_note') || '').trim()
-    const price = Number(formData.get('price') || 0)
-    const quantity = Number(formData.get('quantity') || 0)
-    const market = normalizeKnownValue(normalizeMarketLabel(String(formData.get('market') || '')), knownMarkets)
-    const warehouseLocation = normalizeWarehouseLocation(String(formData.get('warehouse_location') || ''))
-
-    if (!title || !brand || !productType || quantity <= 0 || (!market && !warehouseLocation)) {
-      redirect('/admin/tools?error=missing-required-fields')
-    }
-
-    const slug = await buildUniqueInventorySlug(adminClient, title)
-
-    // 工具页只保留最低必填项，图片为空时不再写入占位图，避免制造假数据。
-    await adminClient.from('inventory').insert({
-      slug,
-      title,
-      brand,
-      product_type: productType,
-      pricing_mode: pricingMode,
-      pricing_note: pricingNote || null,
-      price,
-      quantity,
-      moq: 1,
-      market,
-      warehouse_location: warehouseLocation,
-      description: null,
-      images: [],
-      nicotine: null,
-      flavor: null,
-      puff: null,
-      e_liquid: null,
-      production_date_text: null,
-      contact_visibility: 'contact_required',
-      status: 'draft',
-      is_featured: false,
-      is_urgent_clearance: false,
-    })
-
-    revalidateInventoryRoutes(slug)
-    redirect('/admin/tools?success=inventory-created-draft')
-  }
-
   async function importAiDraftPackageAction(formData: FormData) {
     'use server'
 
@@ -273,7 +200,7 @@ export default async function AdminToolsPage({
       pricing_note: draftValues.pricingNote?.trim() || null,
       price: draftValues.price ?? 0,
       quantity: draftValues.quantity ?? 0,
-      moq: draftValues.moq ?? 1,
+      moq: draftValues.moq && draftValues.moq > 0 ? draftValues.moq : null,
       market,
       featured_markets: draftValues.featuredMarkets ?? [],
       market_access_note: draftValues.marketAccessNote?.trim() || null,
@@ -411,45 +338,9 @@ export default async function AdminToolsPage({
         <div className="rounded-2xl border border-border bg-surface p-6 space-y-5">
           <div className="space-y-1">
             <h2 className="text-xl font-bold">手动新建草稿</h2>
-            <p className="text-sm text-muted">只填最低必填项，创建后再进入编辑页补全。</p>
           </div>
 
-          <form action={createInventoryAction} className="grid grid-cols-1 gap-4">
-            <input name="title" placeholder="标题" required className="rounded-lg border border-border bg-background px-4 py-3" />
-            <input name="brand" list="brand-options" placeholder="品牌" required className="rounded-lg border border-border bg-background px-4 py-3" />
-            <select name="product_type" defaultValue="Disposable Vape" className="rounded-lg border border-border bg-background px-4 py-3">
-              {productTypeOptions.map((option) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-            <select name="pricing_mode" defaultValue="exact_price" className="rounded-lg border border-border bg-background px-4 py-3">
-              {pricingModeOptions.map((option) => (
-                <option key={option} value={option}>{formatPricingModeLabel(option)}</option>
-              ))}
-            </select>
-            <input name="price" type="number" step="0.01" placeholder="价格 USD（Inquiry Only 可留空）" className="rounded-lg border border-border bg-background px-4 py-3" />
-            <textarea name="pricing_note" placeholder="报价备注（可选）" className="min-h-24 rounded-lg border border-border bg-background px-4 py-3 text-sm" />
-            <input name="quantity" type="number" placeholder="库存数量" required className="rounded-lg border border-border bg-background px-4 py-3" />
-            <input name="market" list="market-options" placeholder="目标市场" required className="rounded-lg border border-border bg-background px-4 py-3" />
-            <input name="warehouse_location" placeholder="仓库位置" required className="rounded-lg border border-border bg-background px-4 py-3" />
-            <div className="rounded-xl border border-border bg-background/60 px-4 py-3 text-xs text-muted">
-              <p>{dataEntryGuidelines.brand}</p>
-              <p className="mt-1">{dataEntryGuidelines.market}</p>
-              <p className="mt-1">{dataEntryGuidelines.imageFileName}</p>
-            </div>
-            <button className="rounded-lg bg-teal-DEFAULT px-4 py-3 font-semibold text-background">创建草稿</button>
-
-            <datalist id="brand-options">
-              {knownBrands.map((brand) => (
-                <option key={brand} value={brand} />
-              ))}
-            </datalist>
-            <datalist id="market-options">
-              {knownMarkets.map((market) => (
-                <option key={market} value={market} />
-              ))}
-            </datalist>
-          </form>
+          <Link href="/admin/inventory/new" className="inline-flex rounded-lg bg-teal-DEFAULT px-4 py-3 text-sm font-semibold text-background">新建库存</Link>
         </div>
 
         <div className="rounded-2xl border border-border bg-surface p-6 space-y-5">

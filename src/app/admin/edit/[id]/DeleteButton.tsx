@@ -6,12 +6,12 @@ export default function DeleteButton() {
       type="submit"
       className="rounded-lg border border-status-error text-status-error px-4 py-2 hover:bg-status-error/10 transition-colors"
       onClick={(e) => {
-        if (!window.confirm('Are you sure you want to permanently delete this item? This action cannot be undone.')) {
+        if (!window.confirm('确定永久删除这条库存？删除后无法恢复。')) {
           e.preventDefault()
         }
       }}
     >
-      Delete Item
+      删除库存
     </button>
   )
 }

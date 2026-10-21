@@ -1,6 +1,7 @@
 import { format, isValid, parseISO } from 'date-fns'
 
 import type { InventoryRecord } from '@/lib/inventory'
+import { publicMoq } from '@/lib/inventory-public-fields'
 
 export const PUBLIC_INVENTORY_STATUSES = ['active', 'sold'] as const
 
@@ -31,9 +32,9 @@ export function sortInventoryByAvailability<T extends Pick<InventoryRecord, 'sta
   })
 }
 
-export function buildInventoryInquiry(item: Pick<InventoryRecord, 'title' | 'status' | 'moq' | 'warehouse_location'>) {
+export function buildInventoryInquiry(item: Pick<InventoryRecord, 'title' | 'status' | 'moq' | 'warehouse_location' | 'moq_public'>) {
   if (isSoldOut(item)) {
     return `Hi VapeStockHub, I'm looking for restock or alternatives to ${item.title}${item.warehouse_location ? ` in ${item.warehouse_location}` : ''}. Please confirm current options, quantity, MOQ and pricing.`
   }
-  return `Hi VapeStockHub, I'm interested in ${item.title}. Please confirm current price, available quantity, MOQ (${item.moq.toLocaleString()} pcs) and warehouse availability${item.warehouse_location ? ` in ${item.warehouse_location}` : ''}.`
+  return `Hi VapeStockHub, I'm interested in ${item.title}. Please confirm current price, available quantity, MOQ${publicMoq(item) ? ` (${publicMoq(item)!.toLocaleString()} pcs)` : ''} and warehouse availability${item.warehouse_location ? ` in ${item.warehouse_location}` : ''}.`
 }
