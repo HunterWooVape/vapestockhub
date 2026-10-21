@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Archive, ArrowUp, ChevronDown, ChevronRight, ClipboardList, Clock3, FileText, Package, SlidersHorizontal } from 'lucide-react'
+import { Archive, ArrowUp, ChevronDown, ChevronRight, Clock3, Package, SlidersHorizontal } from 'lucide-react'
 
 import ContactButtons from '@/components/contact/ContactButtons'
 import InventoryCard from '@/components/inventory/InventoryCard'
@@ -51,7 +51,7 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
     { label: 'Nicotine', value: item.nicotine },
     { label: 'E-liquid capacity', value: item.e_liquid },
   ])
-  const hasNotes = Boolean(stockText || sourceText || metadata.length || item.market_access_note?.trim() || pricingNote)
+  const hasNotes = Boolean(hasLotText || metadata.length)
   const hasSpecifications = Boolean(productFacts.length || technicalFacts.length)
   const sections = [
     ...(hasStockBreakdown ? [{ id: 'stock-breakdown', label: 'Stock breakdown' }] : []),
@@ -111,7 +111,7 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
           </div>
           {summaryFacts.length > 0 && <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-5 text-sm">{summaryFacts.map((fact) => <div key={fact.label} className="min-w-0"><dt className="text-[10px] text-muted">{fact.label}</dt><dd className="mt-2 break-words font-medium">{fact.value}</dd></div>)}</dl>}
           {!publicPrice && <p className="mt-5 text-sm font-medium">{item.pricing_mode === 'inquiry_only' ? 'Pricing on request' : soldOut ? 'Price on inquiry' : 'Contact for price'}</p>}
-          {soldOut ? <p className="mt-5 border-l-2 border-muted/40 pl-3 text-xs leading-6 text-muted">This lot is sold out. Quantities and terms shown here refer to the original lot.</p> : reconfirm ? <p className="mt-5 border-l-2 border-amber-400/40 pl-3 text-xs leading-6 text-muted">Availability to reconfirm. Contact us for current quantities and terms.</p> : null}
+          {soldOut ? <p className="mt-5 border-l-2 border-muted/40 pl-3 text-xs leading-6 text-muted">This lot is sold out. Ask about restock or alternative stock.</p> : reconfirm ? <p className="mt-5 border-l-2 border-amber-400/40 pl-3 text-xs leading-6 text-muted">Availability to reconfirm. Contact us for current quantities and terms.</p> : null}
           <div className="mt-6"><ContactButtons compact sourcePageType="inventory" sourcePageSlug={item.slug} itemSlug={item.slug} primaryLabel={soldOut ? 'Ask about restock via Telegram' : 'Request quote via Telegram'} message={buildInventoryInquiry(item)} /></div>
           {verifiedDate && <p className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] text-muted"><Clock3 className="size-3.5 shrink-0" aria-hidden="true" /><span>{soldOut ? 'Original lot last confirmed' : 'Last confirmed'}</span><span className="ml-auto tabular-nums">{verifiedDate}</span></p>}
         </div>
@@ -120,30 +120,28 @@ export default function InventoryDetailView({ item, relatedItems }: { item: Inve
       <InventoryDetailNavigation sections={sections} />
 
       {hasStockBreakdown && <section id="stock-breakdown" aria-labelledby="stock-heading" className="scroll-mt-36 pt-10">
-        <div className="mb-6 flex flex-wrap items-end justify-between gap-3"><div><h2 id="stock-heading" className="text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Stock breakdown</h2><p className="mt-2 text-xs text-muted">{breakdown ? soldOut ? 'Original quantities by variant and configuration.' : 'Listed quantities by variant and configuration.' : soldOut ? 'Variants recorded for the original lot.' : 'Variants recorded with this listing.'}</p></div><span className="rounded-md border border-border bg-surface/50 px-3 py-1.5 text-[11px] text-muted tabular-nums">{breakdown ? `${breakdown.rows.length} variants${breakdown.configurations.length > 1 ? ` / ${breakdown.configurations.length} configurations` : ''}` : `${flavorList.length} variants`}</span></div>
+        <h2 id="stock-heading" className="mb-6 text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Stock breakdown</h2>
         {breakdown ? <InventoryStockBreakdown breakdown={breakdown} soldOut={soldOut} /> : <ul className="flex flex-wrap gap-2 rounded-xl border border-border bg-surface/30 p-5 sm:p-6">{flavorList.map((flavor) => <li key={flavor} className="max-w-full break-words rounded-md border border-border bg-background px-3 py-2 text-xs font-medium">{flavor}</li>)}</ul>}
       </section>}
 
       {hasNotes && <section id="stock-notes" aria-labelledby="notes-heading" className="scroll-mt-36 pt-12">
-        <div className="mb-5"><h2 id="notes-heading" className="text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Stock notes</h2><p className="mt-2 text-xs text-muted">{soldOut ? 'Details recorded for this lot.' : 'Lot details and conditions.'}</p></div>
+        <h2 id="notes-heading" className="mb-5 text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Stock notes</h2>
         {(hasLotText || metadata.length > 0) && <div className={`overflow-hidden rounded-xl border border-border bg-surface/35 ${hasLotText && metadata.length ? 'grid md:grid-cols-[1.15fr_1fr]' : ''}`}>
           {hasLotText && <div className={`min-w-0 p-5 sm:p-7 ${metadata.length ? 'border-b border-border md:border-b-0 md:border-r' : ''}`}>
-            <h3 className="flex items-center gap-2 text-sm font-semibold"><FileText className="size-3.5" aria-hidden="true" />Lot details</h3>
-            {stockText && <p className="mt-5 whitespace-pre-wrap break-words text-sm leading-7 text-muted">{stockText}</p>}
+            {stockText && <p className="whitespace-pre-wrap break-words text-sm leading-7 text-muted">{stockText}</p>}
             {item.market_access_note?.trim() && <div className="mt-5"><h4 className="text-xs font-medium">Market access note</h4><p className="mt-2 whitespace-pre-wrap break-words text-xs leading-6 text-muted">{item.market_access_note}</p></div>}
             {pricingNote && <div className="mt-5"><h4 className="text-xs font-medium">{soldOut ? 'Original pricing note' : 'Pricing note'}</h4><p className="mt-2 whitespace-pre-wrap break-words text-xs leading-6 text-muted">{pricingNote}</p></div>}
           </div>}
           {metadata.length > 0 && <dl className="grid min-w-0 grid-cols-2 gap-x-5 gap-y-6 p-5 text-xs sm:p-7">{metadata.map((fact) => <div key={fact.label} className="min-w-0"><dt className="text-[10px] text-muted">{fact.label}</dt><dd className="mt-2 break-words font-medium">{fact.value}</dd></div>)}</dl>}
         </div>}
-        {breakdown && sourceText && <details id="original-manifest" className="group mt-4 scroll-mt-36 rounded-xl border border-border"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 text-xs text-muted outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-teal-DEFAULT sm:px-6"><span className="flex items-center gap-2"><ClipboardList className="size-3.5" aria-hidden="true" />Original manifest</span><ChevronDown className="size-3.5 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" /></summary><div className="border-t border-border p-5 sm:p-6"><p className="whitespace-pre-wrap break-words text-xs leading-7 text-muted">{sourceText}</p></div></details>}
       </section>}
 
-      {hasSpecifications && <section id="product-specifications" aria-labelledby="specs-heading" className="scroll-mt-36 pt-12"><div className="mb-6"><h2 id="specs-heading" className="text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Product specifications</h2><p className="mt-2 text-xs text-muted">Product information recorded with the listing.</p></div><div className={`grid gap-4 ${productFacts.length && technicalFacts.length ? 'md:grid-cols-2' : ''}`}>
+      {hasSpecifications && <section id="product-specifications" aria-labelledby="specs-heading" className="scroll-mt-36 pt-12"><h2 id="specs-heading" className="mb-6 text-2xl font-semibold tracking-[-.035em] sm:text-[27px]">Product specifications</h2><div className={`grid gap-4 ${productFacts.length && technicalFacts.length ? 'md:grid-cols-2' : ''}`}>
         {productFacts.length > 0 && <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-surface/35"><h3 className="flex items-center gap-2 border-b border-border px-5 py-4 text-xs font-semibold sm:px-6"><Package className="size-3.5" aria-hidden="true" />Product</h3><FactRows facts={productFacts} /></div>}
         {technicalFacts.length > 0 && <div className="min-w-0 overflow-hidden rounded-xl border border-border bg-surface/35"><h3 className="flex items-center gap-2 border-b border-border px-5 py-4 text-xs font-semibold sm:px-6"><SlidersHorizontal className="size-3.5" aria-hidden="true" />Specifications</h3><FactRows facts={technicalFacts} /></div>}
       </div></section>}
 
-      <section aria-labelledby="faq-heading" className="mt-12 border-t border-border pt-10"><div className="grid gap-6 lg:grid-cols-[.7fr_1.3fr] lg:gap-12"><div><h2 id="faq-heading" className="text-xl font-semibold tracking-tight">About this {soldOut ? 'record' : 'listing'}</h2><p className="mt-3 max-w-xs text-xs leading-6 text-muted">{soldOut ? 'Historical listing information.' : 'Availability and inquiry details.'}</p></div><div className="divide-y divide-border border-y border-border">{inventoryFaqs.map((faq, index) => <details key={faq.question} className="group" open={index === 0}><summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-teal-DEFAULT">{faq.question}<ChevronDown className="size-3.5 shrink-0 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" /></summary><p className="pb-5 text-xs leading-6 text-muted">{faq.answer}</p></details>)}</div></div></section>
+      <section aria-labelledby="faq-heading" className="mt-12 border-t border-border pt-10"><div className="grid gap-6 lg:grid-cols-[.7fr_1.3fr] lg:gap-12"><h2 id="faq-heading" className="text-xl font-semibold tracking-tight">Wholesale Stock Offer FAQ</h2><div className="divide-y divide-border border-y border-border">{inventoryFaqs.map((faq, index) => <details key={faq.question} className="group" open={index === 0}><summary className="flex cursor-pointer list-none items-center justify-between gap-5 py-5 text-sm font-medium outline-none focus-visible:ring-2 focus-visible:ring-teal-DEFAULT">{faq.question}<ChevronDown className="size-3.5 shrink-0 text-muted transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden="true" /></summary><p className="pb-5 text-xs leading-6 text-muted">{faq.answer}</p></details>)}</div></div></section>
 
       {relatedItems.length > 0 && <section aria-labelledby="related-heading" className="mt-12 border-t border-border pt-10"><div className="mb-6 flex items-end justify-between gap-4"><h2 id="related-heading" className="text-xl font-semibold tracking-tight">Related stock</h2>{marketSlug && <Link href={`/market/${marketSlug}`} className="text-xs font-medium text-teal-DEFAULT hover:text-teal-hover">View all →</Link>}</div><div className="grid gap-6 md:grid-cols-3">{relatedItems.map((relatedItem) => <InventoryCard key={relatedItem.id} item={relatedItem} />)}</div></section>}
       <div className="mt-10 flex justify-end border-t border-border pt-6"><a href="#overview" className="inline-flex items-center gap-1.5 text-xs text-muted outline-none hover:text-teal-DEFAULT focus-visible:ring-2 focus-visible:ring-teal-DEFAULT">Back to top<ArrowUp className="size-3.5" aria-hidden="true" /></a></div>
